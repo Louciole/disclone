@@ -1,3 +1,3 @@
 # Disclone.
 
-A shitty Discord
+A shitty Discord frontend

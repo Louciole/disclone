@@ -754,7 +754,7 @@ body{
     flex: 1 1 auto;
 }
 
-.selected-info:first-child{
+.selected-info .group:first-child{
     width: 100%;
     position: relative;
     overflow: hidden;
