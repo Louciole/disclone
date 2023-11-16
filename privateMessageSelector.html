@@ -1,0 +1,30 @@
+<div id="search">
+    <label>
+        <input type="text" placeholder="Rechercher/lancer une conversation">
+    </label>
+</div>
+<div class="scrollable">
+    <div class="item selected" onclick="changeActiveConv('friends')">
+        <div class="grey pfp"></div>
+        <p>Amis</p>
+    </div>
+    <div id="message-menu">
+        <h2>MESSAGES PRIVÉS</h2>
+        <div class="icon">+</div>
+        <span class="tooltip bottom">Créer un MP</span>
+    </div>
+    <div class="item" onclick="changeActiveConv('monax')">
+        <div class="pfp green">
+            <div class="activity grey"></div>
+        </div>
+        <p>Sleepy Monax</p>
+        <div class="close">+</div>
+    </div>
+    <div class="item" onclick="changeActiveConv('loha')">
+        <div class="pfp red">
+            <div class="activity orange"></div>
+        </div>
+        <p>Lou (loha)</p>
+        <div class="close">+</div>
+    </div>
+</div>
