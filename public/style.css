@@ -15,7 +15,7 @@ html{
 
 @font-face {
     font-family: "Open Sans";
-    src: url("./fonts/OpenSans-VariableFont_wdth,wght.ttf");
+    src: url("../fonts/OpenSans-VariableFont_wdth,wght.ttf");
     font-weight: 125 950;
     font-stretch: 75% 125%;
     font-style: normal;
@@ -34,6 +34,7 @@ body{
     height: 100%;
     display: flex;
     flex-direction: column;
+    color: var(--text2);
     flex: 1;
 }
 
@@ -758,4 +759,22 @@ body{
     width: 100%;
     position: relative;
     overflow: hidden;
+}
+
+.friends-block input{
+    width: 100%;
+    background: var(--bg4);
+    border-radius: 5px;
+    height: 1.2rem;
+    padding: 0.4rem;
+    border: none;
+}
+
+#content h2{
+    font-size: 0.75rem;
+}
+
+.input-icon{
+    position: absolute;
+    height: 1.2rem;
 }
