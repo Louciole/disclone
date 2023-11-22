@@ -83,6 +83,10 @@ function mute(){
     event.currentTarget.lastElementChild.classList.toggle("visible")
 }
 
+function silent_typing(){
+    event.currentTarget.lastElementChild.classList.toggle("visible")
+}
+
 function toggleFM(id){
     openingFM=true
     activeFM=document.getElementById(id)

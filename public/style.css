@@ -7,7 +7,7 @@ html{
     --bg4: #1E1F22;
     --text: #F2F3F5;
     --text2: #a8a8a8;
-    --text3: #3f3f44;
+    --text3: #3b3d44;
     --green: #27a94b;
     --red: #ED4245;
     --orange: #FF9A00;
@@ -15,7 +15,7 @@ html{
 
 @font-face {
     font-family: "Open Sans";
-    src: url("../fonts/OpenSans-VariableFont_wdth,wght.ttf");
+    src: url("fonts/OpenSans-VariableFont_wdth,wght.ttf");
     font-weight: 125 950;
     font-stretch: 75% 125%;
     font-style: normal;
@@ -389,7 +389,7 @@ body{
 
 #sec-selector .item p{
     width: -webkit-fill-available;
-    width: -moz-available;;
+    width: -moz-available;
 }
 
 #sec-selector .item.selected{
@@ -777,4 +777,37 @@ body{
 .input-icon{
     position: absolute;
     height: 1.2rem;
+}
+
+.chat-input{
+    background: var(--text3);
+    border: none;
+    width: 90%;
+    height: 1.2rem;
+    padding: 0.6rem;
+    border-radius: 8px;
+    display: flex;
+}
+
+.chat-input input{
+    width: -webkit-fill-available;
+    width: -moz-available;;
+    background: transparent;
+    border: none;
+}
+
+.chat-input .icon-wrapper {
+    height: 100%;
+    aspect-ratio: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+}
+
+.chat-input .icon{
+    height: 100%;
+    aspect-ratio: 1;
+    background: var(--text2);
+    border-radius: 50%;
 }
