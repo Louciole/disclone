@@ -7,6 +7,7 @@ html{
     --bg4: #1E1F22;
     --text: #F2F3F5;
     --text2: #a8a8a8;
+    --text2bis: #4c4f57;
     --text3: #3b3d44;
     --green: #27a94b;
     --red: #ED4245;
@@ -36,6 +37,7 @@ body{
     flex-direction: column;
     color: var(--text2);
     flex: 1;
+    align-items: center;
 }
 
 #main-selector{
@@ -155,6 +157,10 @@ body{
 
 .grey{
     background: var(--text2);
+}
+
+.gray2{
+    background: var(--text2bis);
 }
 
 .tooltip {
@@ -746,6 +752,7 @@ body{
     padding: 0.2rem 0.5rem;
     border-radius: 4px;
     cursor: pointer;
+    color: var(--text);
 }
 
 .inline-thingy{
@@ -761,10 +768,14 @@ body{
     overflow: hidden;
 }
 
+.friends-block{
+    width: 92%;
+}
+
 .friends-block input{
     width: 100%;
     background: var(--bg4);
-    border-radius: 5px;
+    border-radius: 5px 0 0 5px;
     height: 1.2rem;
     padding: 0.4rem;
     border: none;
@@ -787,6 +798,9 @@ body{
     padding: 0.6rem;
     border-radius: 8px;
     display: flex;
+    margin-bottom: 1.8rem;
+    margin-top: 1.2rem;
+    gap: 1rem;
 }
 
 .chat-input input{
@@ -810,4 +824,104 @@ body{
     aspect-ratio: 1;
     background: var(--text2);
     border-radius: 50%;
+}
+
+.message-group{
+    display: flex;
+}
+
+.message-group .pfp{
+    height: 2.2rem;
+    margin: 0.3rem 1rem;
+}
+
+.message{
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.message:hover{
+    background: var(--bg2);
+}
+
+.sender{
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.sender h3{
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.sender p{
+    font-size: 0.72rem;
+    margin: 0;
+}
+
+.message .content{
+    margin: 0;
+}
+
+.message .content p{
+    margin: 0.2rem 0;
+    font-size: 0.9rem;
+    color: var(--text);
+}
+
+.search{
+    display: flex;
+    justify-content: space-between;
+}
+
+.search .icon{
+    background: var(--bg4);
+    border-radius: 0 5px 5px 0;
+    height: 1.2rem;
+    display: flex;
+    padding: 0.4rem;
+    width: 1.4rem;
+    justify-content: center;
+    cursor: text;
+}
+
+.backdrop-bidule{
+    width: 0.5rem;
+    height: 2rem;
+    background: linear-gradient(90deg, rgba(255,255,255,0) 0%, var(--bg) 100%);
+    position: relative;
+    backdrop-filter: blur(1px);
+    right: 0.5rem;
+}
+
+.search input:focus{
+    outline: none;
+}
+
+#welcome-message .pfp{
+    height: 5rem;
+}
+
+.inline{
+    display: flex;
+    align-items: center;
+}
+
+#content .scrollable{
+    display: flex;
+    flex-direction: column-reverse;
+}
+
+#welcome-message {
+    margin: 1rem;
+}
+
+#welcome-message h1{
+    color: var(--text);
+}
+
+#welcome-message h2{
+    color: var(--text);
 }
