@@ -89,7 +89,7 @@
                 <div class="step">
                     <h2>Créer un serveur</h2>
                     <p>Ton serveur est l'endroit où tu retrouves tes amis. Crée le tien et lance une discussion.</p>
-                    <div class="category" onclick="nextStep('createServerSteps')">
+                    <div class="category" onclick="gotoStep(1,'createServerSteps')">
                         <div class="blue circle"></div>
                         <h4>Créer le mien</h4>
                         <div class="icon">></div>
@@ -99,7 +99,7 @@
                     <h2>Personalise ton serveur</h2>
                     <p>Donne une personnalité à ton nouveau serveur en choisissant un nom et une icône. Tu pourras toujours les modifier plus tard.</p>
                     <div class="inline space-between">
-                        <div class="btn grey" onclick="prevStep('createServerSteps')">Retour</div>
+                        <div class="btn grey" onclick="gotoStep(0,'createServerSteps')">Retour</div>
                         <div class="btn blue" onclick="newServer()">Créer</div>
                     </div>
                 </div>

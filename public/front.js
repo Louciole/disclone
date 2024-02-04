@@ -39,6 +39,7 @@ function createServer(){
 }
 
 function closeMenu(cible = undefined){
+    //TODO generalize reset page count
     if(!cible){
         if(event.target !== event.currentTarget){
             return
@@ -48,6 +49,7 @@ function closeMenu(cible = undefined){
         const cibleEl= document.querySelector(cible)
         cibleEl.style.display = "none";
     }
+    gotoStep(0,'createServerSteps')
 }
 
 function loadTab(tabName){
@@ -96,14 +98,10 @@ function toggleGroup(){
     event.currentTarget.classList.toggle("closed")
 }
 
-function nextStep(stepsID){
+function gotoStep(step,stepsID){
     const menu = document.getElementById(stepsID)
-    menu.style.transform=`translateX(${-100/menu.childElementCount}%)`
-}
-
-function prevStep(stepsID){
-    const menu = document.getElementById(stepsID)
-    menu.style.transform=`translateX(${100/menu.childElementCount}%)`
+    console.log(step)
+    menu.style.transform=`translateX(${-100*step/menu.childElementCount}%)`
 }
 
 function newServer(){
@@ -115,4 +113,5 @@ function newServer(){
             <span class="tooltip left">Nouveau serveur</span>
         </div>
     `)
+    closeMenu('#create-server')
 }
