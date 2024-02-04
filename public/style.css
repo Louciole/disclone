@@ -962,3 +962,30 @@ body{
     border-radius: 50%;
     background: var(--text2bis);
 }
+
+#emoji-board{
+    display: flex;
+    position: absolute;
+    background: var(--bg2);
+    box-shadow: -4px 9px 12px -3px #00000052;
+    border: 1px solid var(--bg3);
+    border-radius: 0.5rem;
+}
+
+#emoji-board .menu{
+    padding: 0.3rem 1rem;
+    border-bottom: 1px solid var(--bg4);
+}
+
+#emoji-board input{
+    width: 100%;
+    background: var(--bg4);
+    border-radius: 5px 0 0 5px;
+    height: 1.2rem;
+    padding: 0.4rem;
+    border: none;
+}
+
+#emoji-board .gap{
+    gap: 1rem;
+}
