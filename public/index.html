@@ -26,10 +26,12 @@
             <span class="tooltip left">Messages privés</span>
         </div>
         <hr>
-        <div class="container">
-            <div class="item serveur" onclick="changeActiveTab('server')">RS</div>
-            <div class="indicator"></div>
-            <span class="tooltip left">Random serveur</span>
+        <div id="servers">
+            <div class="container">
+                <div class="item serveur" onclick="changeActiveTab('server')">RS</div>
+                <div class="indicator"></div>
+                <span class="tooltip left">Random serveur</span>
+            </div>
         </div>
         <div class="container">
             <div id="new-server" class="item action" onclick="createServer()">+</div>
@@ -83,12 +85,24 @@
     <section id="create-server" style="display:none" onclick="closeMenu()">
         <div class="menu">
             <div class="close" onclick="closeMenu('#create-server')">+</div>
-            <h2>Créer un serveur</h2>
-            <p>Ton serveur est l'endroit où tu retrouves tes amis. Crée le tien et lance une discussion.</p>
-            <div class="category">
-                <div class="blue circle"></div>
-                <h4>Créer le mien</h4>
-                <div class="icon">></div>
+            <div class="steps" id="createServerSteps">
+                <div class="step">
+                    <h2>Créer un serveur</h2>
+                    <p>Ton serveur est l'endroit où tu retrouves tes amis. Crée le tien et lance une discussion.</p>
+                    <div class="category" onclick="nextStep('createServerSteps')">
+                        <div class="blue circle"></div>
+                        <h4>Créer le mien</h4>
+                        <div class="icon">></div>
+                    </div>
+                </div>
+                <div class="step">
+                    <h2>Personalise ton serveur</h2>
+                    <p>Donne une personnalité à ton nouveau serveur en choisissant un nom et une icône. Tu pourras toujours les modifier plus tard.</p>
+                    <div class="inline space-between">
+                        <div class="btn grey" onclick="prevStep('createServerSteps')">Retour</div>
+                        <div class="btn blue" onclick="newServer()">Créer</div>
+                    </div>
+                </div>
             </div>
         </div>
     </section>

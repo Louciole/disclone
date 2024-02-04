@@ -268,11 +268,22 @@ body{
     background: var(--text);
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: flex-start;
     border-radius: 0.3rem;
     padding: 2rem;
     text-align: center;
     z-index: 20;
+    overflow: hidden;
+}
+
+.steps{
+    display: flex;
+}
+
+.step{
+    width: 80vw;
+    max-width: 400px;
+    margin-right: 2rem;
 }
 
 .menu h2{
@@ -288,9 +299,21 @@ body{
     position: absolute;
     font-size: 2.5rem;
     color: var(--text2);
-    transform: translate(205px, -35px) rotateZ(45deg);
+    transform: translate(392px, -35px) rotateZ(45deg);
     transition: color 100ms;
     cursor: pointer;
+}
+
+.space-between{
+    justify-content: space-between;
+}
+
+.menu .btn{
+    padding: 0.7rem 1.7rem;
+}
+
+.menu .btn:hover{
+    opacity: 0.9;
 }
 
 .menu .close:hover{

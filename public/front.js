@@ -95,3 +95,24 @@ function toggleFM(id){
 function toggleGroup(){
     event.currentTarget.classList.toggle("closed")
 }
+
+function nextStep(stepsID){
+    const menu = document.getElementById(stepsID)
+    menu.style.transform=`translateX(${-100/menu.childElementCount}%)`
+}
+
+function prevStep(stepsID){
+    const menu = document.getElementById(stepsID)
+    menu.style.transform=`translateX(${100/menu.childElementCount}%)`
+}
+
+function newServer(){
+    const servers = document.getElementById('servers')
+    servers.insertAdjacentHTML("beforeend",`
+        <div class="container">
+            <div class="item serveur" onclick="changeActiveTab('server')">NS</div>
+            <div class="indicator"></div>
+            <span class="tooltip left">Nouveau serveur</span>
+        </div>
+    `)
+}
