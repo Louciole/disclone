@@ -47,13 +47,13 @@
     <div class="icon-wrapper">
         <div class="icon"></div>
     </div>
-    <div class="icon-wrapper">
+    <div class="icon-wrapper" onclick="toggleFM('emoji-board')">
         <div class="icon"></div>
     </div>
 </div>
-<div id="emoji-board" style="display: none">
+<div id="emoji-board">
     <div class="menu">
-        <div class="inline">
+        <div class="inline gap">
             <div class="cat">GIF</div>
             <div class="cat">Autocollants</div>
             <div class="cat selected">Émoji</div>
@@ -61,7 +61,7 @@
         <div class="inline">
             <div class="search">
                 <label style="width: 100%;">
-                    <input type="text">
+                    <input type="text" placeholder="Trouve l'émoji parfait">
                 </label>
                 <div class="icon">
                     <div class="circle grey input-icon"></div>
@@ -69,6 +69,17 @@
             </div>
         </div>
     </div>
-    <div class="selector"></div>
-    <div class="descriptor"></div>
+    <div class="selector">
+        <div class="cat-selector"></div>
+        <div class="scrollable"></div>
+    </div>
+    <div class="descriptor">
+        <div class="tp-button">
+            <div class="pfp grey"></div>
+        </div>
+        <div class="inline">
+            <div id="hovered-emoji"></div>
+            <p></p>
+        </div>
+    </div>
 </div>

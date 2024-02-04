@@ -966,15 +966,27 @@ body{
 #emoji-board{
     display: flex;
     position: absolute;
+    bottom: 4.6rem;
+    right: calc(2.5% + 0.5rem);
     background: var(--bg2);
-    box-shadow: -4px 9px 12px -3px #00000052;
+    box-shadow: -4px 6px 10px -3px #00000036;
     border: 1px solid var(--bg3);
     border-radius: 0.5rem;
+    visibility: hidden;
+    flex-direction: column;
+    overflow: clip;
 }
 
 #emoji-board .menu{
-    padding: 0.3rem 1rem;
+    padding: 1rem 1rem;
     border-bottom: 1px solid var(--bg4);
+}
+
+#emoji-board .menu .gap{
+    margin-bottom: 0.6rem;
+}
+#emoji-board .search{
+    width: 100%;
 }
 
 #emoji-board input{
@@ -988,4 +1000,58 @@ body{
 
 #emoji-board .gap{
     gap: 1rem;
+}
+
+
+#emoji-board .cat{
+    padding: 0.1rem 0.5rem;
+    cursor: pointer;
+}
+
+#emoji-board .selected{
+    background: var(--text2bis);
+    color: var(--text);
+    border-radius: 4px;
+}
+
+#emoji-board .descriptor{
+    height: 2.8rem;
+    width: 100%;
+    background: var(--bg3);
+}
+
+#emoji-board .tp-button{
+    height: 100%;
+    width: 3rem;
+    background: var(--bg4);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+}
+
+#emoji-board .tp-button:hover {
+    color: var(--text);
+}
+
+#emoji-board .tp-button .pfp{
+    margin: 0;
+    height: 50%;
+}
+
+#emoji-board .selector{
+    display: flex;
+    width: 30rem;
+    height: 22rem;
+    flex-direction: row;
+}
+
+#emoji-board .cat-selector{
+    height: 100%;
+    width: 3rem;
+    background: var(--bg4);
+}
+
+#emoji-board .scrollable{
+    width: calc(100% - 4rem);
 }
