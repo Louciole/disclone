@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title> Carbonlab | 404 🫠</title>
+    <link href="./404.css" rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <meta name="viewport" id="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=10.0,minimal-ui">
+</head>
+<body onload="ready()">
+<div class="wrapper">
+    <h1>404</h1>
+    <h2>Nothing here</h2>
+    <div class=btn onclick="window.location.href='/'">Go back</div>
+</div>
+<div id="layer"></div>
+</body>
+</html>
+
+<script>
+    function makeParticles(layer) {
+        const N = 64
+        const WIDTH = window.innerWidth
+        let particles = [];
+
+        for (let i = 0; i < N; i += 1) {
+            particles.push(document.createElement('div'))
+            particles[i].className = "leaf"
+            particles[i].style.left = (Math.random() * WIDTH*1.2).toString() + "px"
+            particles[i].style.animation = `falling ${Math.random()*5+5}s cubic-bezier(0.69, 0.58, 0.65, 1.01) ${Math.random()*5}s infinite`
+            layer.appendChild(particles[i])
+        }
+    }
+
+    function ready() {
+        const layer = document.getElementById('layer');
+        makeParticles(layer);
+    }
+</script>
