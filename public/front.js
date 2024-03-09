@@ -17,6 +17,7 @@ function initFront(){
             }
         }
     }, false);
+    loadEmojis()
 }
 
 function changeActiveTab(tabName){
@@ -114,4 +115,8 @@ function newServer(){
         </div>
     `)
     closeMenu('#create-server')
+}
+
+function loadEmojis(){
+    const board = document.getElementById('emoji-board')
 }
