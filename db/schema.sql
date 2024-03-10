@@ -1,20 +1,3 @@
-CREATE EXTENSION postgres_fdw;
-
-CREATE SERVER uniauth
-    FOREIGN DATA WRAPPER postgres_fdw
-    OPTIONS (host 'localhost', port '5432', dbname 'seedtest');
-
-CREATE USER MAPPING FOR lou
-    SERVER uniauth
-    OPTIONS (user 'lou', password 'PASSWORD');
-
-CREATE FOREIGN TABLE accounts (
-    id bigserial NOT NULL
-    )
-    SERVER uniauth
-    OPTIONS (schema_name 'public', table_name 'accounts');
-
-
 create table server (
     id bigserial NOT NULL PRIMARY KEY,
     name varchar(44) NOT NULL,

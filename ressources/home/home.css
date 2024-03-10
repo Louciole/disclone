@@ -7,6 +7,7 @@ body{
     --blue: rgba(88, 101, 242, 1);
     --white: #fcfcfc;
     --black: #171715;
+    background: var(--black);
 }
 
 header{

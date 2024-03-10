@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <title> Disclone | Login 🧮</title>
+    <meta name="referrer" content="always">
+    <meta name="viewport" id="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=10.0,minimal-ui">
+    <meta name="referrer" content="always">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Smooth Projects">
+    <meta content="website" property="og:type">
+    <meta content="https://smoop.carbonlab.dev" property="og:url">
+    <meta name="description" content="Focus yourself on what really matters. If you were searching for a simple and efficient way to manage your projects you're in the right place">
+    <meta name="keywords" content="Smoop, smooth projects, project, gestion, app">
+    <meta content="Smooth Projects" property="og:site_name">
+    <meta content="Focus yourself on what really matters." property="og:title">
+    <meta content="/logo.png" property="og:image">
+
+    <link href="../home/auth.css" rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <script src="../home/auth.js"></script>
+</head>
+<body onload="attachFormSubmitEvent('logForm',loginSubmit)">
+<p id="messageframe"></p>
+<form id="logForm" >
+
+    <h6 class="login">Login or Create your account</h6>
+    <p class="login">Please note that no information will be used for a commercial use or sold and that you will NOT receive a newsletter and not be spammed</p>
+
+    <input class="input login" name="email" id="email" type="email" placeholder="Email address *" required>
+    <input class="input login" name="password" id="password" type="password" placeholder="Password *" minlength="8" required>
+
+    <button type="submit" name="action" class="submit login">Continue</button>
+</form>
+</body>
+</html>
