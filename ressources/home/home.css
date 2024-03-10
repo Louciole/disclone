@@ -81,3 +81,11 @@ header .btn {
     font-size: 1.2rem;
     padding: 1rem 2rem;
 }
+
+a:visited {
+    text-decoration: none;
+}
+
+a:link {
+    text-decoration: none;
+}

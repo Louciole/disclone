@@ -9,8 +9,7 @@ PATH = dirname(abspath(__file__))
 class DBInitializer(Server):
     def initUniauth(self):
         if sys.argv[1].upper() == 'Y':
-            self.uniauth.cur.execute(open(self.path + "/db/UNIAUTH.sql", "r").read())
-            self.uniauth.conn.commit()
+            self.uniauth.initUniauth()
 
     def initDB(self):
         self.referenceUniauth()

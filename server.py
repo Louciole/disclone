@@ -11,6 +11,7 @@ class Disclone(Server):
 
     @cherrypy.expose
     def channels(self, uid="me"):
+        self.checkJwt()
         return open(PATH + "/ressources/me.html")
 
 

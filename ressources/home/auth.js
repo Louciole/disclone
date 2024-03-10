@@ -13,7 +13,7 @@ function loginSubmit(event) {
     request.onload = function() { // request successful
         console.log(request.responseText)
         if (request.responseText === "ok"){
-            window.location.href = "/projects";
+            window.location.href = "/channels";
         }else if(request.responseText === "verif"){
             window.location.href = "/verif";
         }else{
@@ -37,7 +37,7 @@ function signupSubmit(event){
     request.open('POST', url, true);
     request.onload = function() { // request successful
         if (request.responseText === "ok"){
-            window.location.href = "/channels/@me";
+            window.location.href = "/channels";
         }else{
             errorBox.innerHTML=request.responseText
         }
