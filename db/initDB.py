@@ -20,7 +20,7 @@ class DBInitializer(Server):
         self.db.cur.execute("CREATE EXTENSION if not exists postgres_fdw;")
         self.db.cur.execute(
             sql.SQL("""
-            CREATE SERVER uniauth
+            CREATE SERVER if not exists uniauth
             FOREIGN DATA WRAPPER postgres_fdw
             OPTIONS (host {}, port {}, dbname {});
             """).format(
@@ -31,7 +31,7 @@ class DBInitializer(Server):
 
         self.db.cur.execute(
             sql.SQL("""
-            CREATE USER MAPPING FOR CURRENT_USER SERVER uniauth
+            CREATE USER MAPPING if not exists FOR CURRENT_USER SERVER uniauth
             OPTIONS (user '%s', password '%s');
             """).format(
                 sql.Literal(self.config.get('DB', 'DB_USER')),
@@ -39,9 +39,9 @@ class DBInitializer(Server):
             ))
         self.db.cur.execute(
             """
-            CREATE FOREIGN TABLE accounts (id bigserial NOT NULL)
+            CREATE FOREIGN TABLE if not exists account (id bigserial NOT NULL)
             SERVER uniauth
-            OPTIONS (schema_name 'public', table_name 'accounts');
+            OPTIONS (schema_name 'public', table_name 'account');
             """)
 
 

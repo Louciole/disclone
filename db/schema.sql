@@ -9,11 +9,16 @@ create table accessServer (
     account integer NOT NULL,
     server integer NOT NULL
 );
+ALTER TABLE accessServer
+ADD CONSTRAINT SERVACC_SERV_CONSTRAINT FOREIGN KEY (server) REFERENCES server (id) ON UPDATE CASCADE;
+
+create table conversationElement (
+    id bigserial NOT NULL PRIMARY KEY
+);
 
 create table conversation (
-    id bigserial NOT NULL PRIMARY KEY,
     name varchar(255) NOT NULL
-);
+) inherits (conversationElement);
 
 create table accessConversation (
     id bigserial NOT NULL PRIMARY KEY,
@@ -21,64 +26,12 @@ create table accessConversation (
     conversation integer NOT NULL
 );
 
-create table channelMessage (
+create table message (
     id bigserial NOT NULL PRIMARY KEY,
     sender integer NOT NULL,
-    server integer NOT NULL,
+    place integer NOT NULL,
     body TEXT,
     timestamp DATE DEFAULT CURRENT_TIMESTAMP
 );
-
-create table convMessage (
-    id bigserial NOT NULL PRIMARY KEY,
-    sender integer NOT NULL,
-    server integer NOT NULL,
-    body TEXT,
-    timestamp DATE DEFAULT CURRENT_TIMESTAMP
-);
-
-create table threadMessage (
-    id bigserial NOT NULL PRIMARY KEY,
-    sender integer NOT NULL,
-    server integer NOT NULL,
-    body TEXT,
-    timestamp DATE DEFAULT CURRENT_TIMESTAMP
-);
-
-create table postMessage (
-    id bigserial NOT NULL PRIMARY KEY,
-    sender integer NOT NULL,
-    server integer NOT NULL,
-    body TEXT,
-    timestamp DATE DEFAULT CURRENT_TIMESTAMP
-);
-
-create table post (
-    id bigserial NOT NULL PRIMARY KEY,
-    server integer NOT NULL
-);
-
-create table thread (
-    id bigserial NOT NULL PRIMARY KEY,
-    server integer NOT NULL
-);
-
-create table channel (
-    id bigserial NOT NULL PRIMARY KEY,
-    server integer NOT NULL
-);
-
-create table role (
-     id bigserial NOT NULL PRIMARY KEY,
-     server integer NOT NULL
-);
-
-create table roleAccess (
-     id bigserial NOT NULL PRIMARY KEY,
-     server integer NOT NULL
-);
-
-create table channelAccess (
-    id bigserial NOT NULL PRIMARY KEY,
-    server integer NOT NULL
-);
+ALTER TABLE message
+ADD CONSTRAINT MSG_PLACE_CONSTRAINT FOREIGN KEY (place) REFERENCES conversationElement (id) ON UPDATE CASCADE;
