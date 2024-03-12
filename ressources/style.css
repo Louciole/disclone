@@ -1078,3 +1078,93 @@ body{
 #emoji-board .scrollable{
     width: calc(100% - 4rem);
 }
+
+#settings{
+    position: absolute;
+    width: 100vw;
+    height: 100svh;
+    background: var(--bg);
+    color: var(--text2);
+    flex-direction: row;
+    justify-content: center;
+    z-index: 100;
+}
+
+#settings-list {
+    background: var(--bg3);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    min-width: 15rem;
+    width: 40vw;
+    padding-top: 3rem;
+}
+
+#settings-list section{
+    width: 15rem;
+}
+
+#settings-list .item{
+    padding: 0.4rem 0.6rem;
+    display: flex;
+    font-size: 1rem;
+    font-weight: 500;
+    margin: 0.1rem 1.2rem;
+    justify-content: space-between;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+#settings-list .item:hover{
+    background: var(--bg);
+}
+
+#settings .scrollable{
+    height: 100svh;
+    max-height: 100svh;
+}
+
+#settings .close{
+    position: absolute;
+    border: 3px solid;
+    font-size: 3rem;
+    font-weight: 100;
+    border-radius: 50%;
+    width: 3rem;
+    display: flex;
+    height: 3rem;
+    right: 4rem;
+    color: var(--text2);
+    transform: rotateZ(45deg);
+    transition: color 100ms;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+}
+
+#settings .close:hover{
+    color: var(--text);
+}
+
+#settings h3{
+    font-size: 0.7rem;
+    margin: 0.1rem 1.2rem;
+    padding: 0 0.6rem;
+}
+
+#settings .misc{
+    padding: 0.1rem 0.6rem;
+    display: flex;
+    font-size: 0.8rem;
+    font-weight: 300;
+    margin: 0.1rem 1.2rem;
+    justify-content: space-between;
+    cursor: pointer;
+}
+
+#settings-list hr {
+    margin: 0.5rem 1.8rem;
+    border: none;
+    border-bottom: 1px solid;
+    border-color: var(--text2bis);
+}

@@ -162,4 +162,26 @@ function loadEmojis(){
     const board = document.getElementById('emoji-board')
 }
 
+function openSettings(){
+    const settings = document.getElementById('settings')
+    settings.style.display = "flex"
+}
 
+function logout(){
+    const url = "/logout";
+    let request = new XMLHttpRequest();
+    request.open('POST', url, true);
+    request.onload = function() { // request successful
+        console.log("logged out",request.responseText)
+
+        if (request.responseText === "ok"){
+            window.location.href = "/auth";
+        }
+    };
+
+    request.onerror = function() {
+        console.log("request failed")
+    };
+
+    request.send();
+}
