@@ -1168,3 +1168,42 @@ body{
     border-bottom: 1px solid;
     border-color: var(--text2bis);
 }
+
+#setting-content {
+    min-width: 25rem;
+    width: 45vw;
+    padding-top: 3rem;
+    margin-left: 3rem;
+    display: flex;
+    flex-direction: column;
+}
+
+#settings h1{
+    margin: 0;
+}
+
+#settings .banner {
+    background: wheat;
+    height: 10%;
+}
+
+#settings .profil-picture {
+    height: 80px;
+    width: 80px;
+    background: var(--red);
+    border-radius: 50%;
+    position: absolute;
+    transform: translate(15px, -50%);
+    border: 6px solid var(--bg3);
+}
+
+
+#settings .profil-wrapper{
+    background: var(--bg3);
+    border-radius: 8px;
+}
+
+#settings .btn {
+    width: fit-content;
+    padding: 0.4rem 1rem;
+}

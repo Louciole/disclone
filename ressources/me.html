@@ -13,10 +13,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Disclone</title>
     <link rel="icon" type="image/x-icon" href="./images/favicon.ico">
-    <script src="front.js"></script>
+    <script type="module" src="front.mjs"></script>
     <link href="style.css" rel="stylesheet">
 </head>
-<body onload="initFront()">
+<body>
     <section id="main-selector">
         <div class="container">
             <div id="logo" class="item selected" onclick="changeActiveTab('privateMessage')">
@@ -105,7 +105,7 @@
         <div id="settings-list" class="scrollable">
             <section id="user-settings">
                 <h3>PARAMÈTRES UTILISATEURS</h3>
-                <div class="item selected">Mon compte</div>
+                <div class="item selected"  onclick="navigateSetting('account')">Mon compte</div>
                 <div class="item">Profils</div>
                 <div class="item">Confidentialité & sécurité</div>
                 <div class="item">Demandes d'amis</div>
@@ -133,6 +133,36 @@
         </div>
         <div id="setting-panel" class="scrollable">
             <div class="close" onclick="closeMenu('#settings')">+</div>
+            <div id="setting-content">
+                <h1>Mon Compte</h1>
+                <div class="user-profile">
+                    <div class="banner"></div>
+                    <div class="profil-picture"></div>
+                    <div class="profil-wrapper">
+                        <div class="profil-badges"></div>
+                        <div class="profil-infos">
+                            <div class="inline">
+                                <div class="vertical">
+                                    <h3>NOM D'AFFICHAGE</h3>
+                                    <p>Lou !</p>
+                                </div>
+                                <div class="btn grey">Modifier</div>
+                            </div>
+                            <div class="inline">
+                                <div class="vertical">
+                                    <h3>NOM D'UTILISATEUR</h3>
+                                    <p>lou_ciole</p>
+                                </div>
+                                <div class="btn grey">Modifier</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <hr>
+                <h3>SUPPRESSION DU COMPTE</h3>
+                Attention la suppression concerne TOUS les services carbonlab
+                <div class="btn red">Supprimer le compte</div>
+            </div>
         </div>
     </section>
 </body>

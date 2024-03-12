@@ -3,6 +3,10 @@ var currentConv;
 let activeFM;
 let openingFM = false;
 
+import {settings} from "/settings.mjs"
+
+initFront()
+
 function initFront(){
     currentTab=document.getElementById("logo")
     loadTab("privateMessage")
@@ -39,6 +43,7 @@ function createServer(){
     const createMenu=document.getElementById("create-server")
     createMenu.style.display="flex"
 }
+window.createServer = createServer
 
 function closeMenu(cible = undefined){
     //TODO generalize reset page count
@@ -53,6 +58,7 @@ function closeMenu(cible = undefined){
     }
     gotoStep(0,'createServerSteps')
 }
+window.closeMenu = closeMenu
 
 function loadTab(tabName){
     const effect = function() {
@@ -98,29 +104,35 @@ function loadSelector(filename,effect){
 function deafen(){
     event.currentTarget.lastElementChild.classList.toggle("visible")
 }
+window.deafen = deafen
 
 function mute(){
     event.currentTarget.lastElementChild.classList.toggle("visible")
 }
+window.mute = mute
 
 function silent_typing(){
     event.currentTarget.lastElementChild.classList.toggle("visible")
 }
+window.silent_typing = silent_typing
 
 function toggleFM(id){
     openingFM=true
     activeFM=document.getElementById(id)
 }
+window.toggleFM = toggleFM
 
 function toggleGroup(){
     event.currentTarget.classList.toggle("closed")
 }
+window.toggleGroup = toggleGroup
 
 function gotoStep(step,stepsID){
     const menu = document.getElementById(stepsID)
     console.log(step)
     menu.style.transform=`translateX(${-100*step/menu.childElementCount}%)`
 }
+window.gotoStep = gotoStep
 
 function newServer(){
     let request = new XMLHttpRequest();
@@ -135,6 +147,7 @@ function newServer(){
     request.send();
     closeMenu('#create-server')
 }
+window.newServer = newServer
 
 function getSlug(name){
     const words = name.split(' ')
@@ -166,6 +179,7 @@ function openSettings(){
     const settings = document.getElementById('settings')
     settings.style.display = "flex"
 }
+window.openSettings = openSettings
 
 function logout(){
     const url = "/logout";
@@ -184,4 +198,9 @@ function logout(){
     };
 
     request.send();
+}
+window.logout = logout
+
+function navigateSettings(element){
+    //TODO
 }
