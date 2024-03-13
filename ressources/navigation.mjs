@@ -1,4 +1,6 @@
-import {loadTemplate} from "/front.mjs"
+import {loadTemplate} from "/main.mjs"
+import {loadConv, loadTab} from "./crud.mjs";
+import global from "/global.mjs"
 
 export function initNav(){
     document.addEventListener('click', function (event) {
@@ -14,15 +16,19 @@ export function initNav(){
 }
 
 function openMenu(id){
-    const settings = document.getElementById(id)
-    if (settings){
-        settings.style.display = "flex"
+    const menu = document.getElementById(id)
+    if (menu){
+        menu.style.display = "flex"
     }else{
         loadTemplate(id.concat(".html"), undefined, id)
     }
-
 }
 window.openMenu = openMenu
+
+function goTo(id,target){
+    loadTemplate(target.concat(".html"), id)
+}
+window.goTo = goTo
 
 
 let activeFM;
@@ -60,3 +66,21 @@ function closeMenu(cible = undefined){
     gotoStep(0,'createServerSteps')
 }
 window.closeMenu = closeMenu
+
+export function changeActiveTab(tabName){
+    global.state.currentTab.classList.remove("selected")
+    global.state.currentTab=event.currentTarget
+    global.state.currentTab.classList.add("selected")
+    loadTab(tabName)
+}
+
+export function changeActiveConv(convName){
+    global.state.currentConv.classList.remove("selected")
+    global.state.currentConv=event.currentTarget
+    global.state.currentConv.classList.add("selected")
+    loadConv(convName)
+}
+
+function navigateSettings(element){
+    //TODO
+}

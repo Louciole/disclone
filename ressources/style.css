@@ -791,11 +791,11 @@ body{
     overflow: hidden;
 }
 
-.friends-block{
+#friends-block{
     width: 92%;
 }
 
-.friends-block input{
+#friends-block input{
     width: 100%;
     background: var(--bg4);
     border-radius: 5px 0 0 5px;
