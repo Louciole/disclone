@@ -1207,3 +1207,28 @@ body{
     width: fit-content;
     padding: 0.4rem 1rem;
 }
+
+#change-username{
+    z-index: 101;
+    position: absolute;
+    width: 100vw;
+    height: 100svh;
+    justify-content: center;
+    align-items: center;
+    background: #000000a8;
+}
+
+#change-username .menu {
+    width: 80vw;
+    height: fit-content;
+    max-width: 400px;
+    background: var(--text);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    border-radius: 0.3rem;
+    padding: 2rem;
+    text-align: center;
+    z-index: 20;
+    overflow: hidden;
+}

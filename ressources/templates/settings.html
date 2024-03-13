@@ -1,0 +1,64 @@
+<section id="settings" style="display:none">
+  <div id="settings-list" class="scrollable">
+    <section id="user-settings">
+      <h3>PARAMÈTRES UTILISATEURS</h3>
+      <div class="item selected"  onclick="navigateSetting('account')">Mon compte</div>
+      <div class="item">Profils</div>
+      <div class="item">Confidentialité & sécurité</div>
+      <div class="item">Demandes d'amis</div>
+      <hr>
+    </section>
+    <section id="app-settings">
+      <h3>PARAMÈTRES DE L'APPLI</h3>
+      <div class="item">Voix & Vidéo</div>
+      <div class="item">Discuter</div>
+      <div class="item">Notifications</div>
+      <div class="item">Raccourcis clavier</div>
+      <div class="item">Langue</div>
+      <div class="item">Mode streamer</div>
+      <hr>
+    </section>
+    <section id="account-actions" onclick="logout()">
+      <div class="item">Déconnexion
+        <div class="grey circle"></div>
+      </div>
+      <hr>
+    </section>
+    <section id="misc-information">
+      <div class="misc">demo v0</div>
+    </section>
+  </div>
+  <div id="setting-panel" class="scrollable">
+    <div class="close" onclick="closeMenu('#settings')">+</div>
+    <div id="setting-content">
+      <h1>Mon Compte</h1>
+      <div class="user-profile">
+        <div class="banner"></div>
+        <div class="profil-picture"></div>
+        <div class="profil-wrapper">
+          <div class="profil-badges"></div>
+          <div class="profil-infos">
+            <div class="inline">
+              <div class="vertical">
+                <h3>NOM D'AFFICHAGE</h3>
+                <p>${user.display}</p>
+              </div>
+              <div class="btn grey">Modifier</div>
+            </div>
+            <div class="inline">
+              <div class="vertical">
+                <h3>NOM D'UTILISATEUR</h3>
+                <p>${user.username}</p>
+              </div>
+              <div class="btn grey" onclick="openMenu('change-username')">Modifier</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <hr>
+      <h3>SUPPRESSION DU COMPTE</h3>
+      Attention la suppression concerne TOUS les services carbonlab
+      <div class="btn red">Supprimer le compte</div>
+    </div>
+  </div>
+</section>

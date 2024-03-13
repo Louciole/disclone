@@ -1,0 +1,16 @@
+<section id="change-username" style="display:none" onclick="closeMenu()">
+  <div class="menu">
+    <div class="close" onclick="closeMenu('#change-username')">+</div>
+    <div class="steps" id="">
+      <div class="step">
+        <h2>Change your username</h2>
+        <p>Enter a new username.</p>
+        <input type="text" value="${user.username}" id="username-input">
+        <div class="inline space-between">
+          <div class="btn grey" onclick="closeMenu('#change-username')">Cancel</div>
+          <div class="btn blue" onclick="changeUsername()">Done</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

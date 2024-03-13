@@ -1,28 +1,51 @@
-var currentTab;
+const dom = document.querySelector("body")
+let currentTab = document.getElementById("logo")
 var currentConv;
-let activeFM;
-let openingFM = false;
+let user={}
 
-import {settings} from "/settings.mjs"
+import {initNav} from "/navigation.mjs"
+
 
 initFront()
+initNav()
 
 function initFront(){
-    currentTab=document.getElementById("logo")
     loadTab("privateMessage")
     loadConv("friends")
     loadServers()
-    document.addEventListener('click', function (event) {
-        if (activeFM && !activeFM.contains(event.target)) {
-            activeFM.classList.toggle("visible")
-            if (!openingFM){
-                activeFM = undefined
-            }else{
-                openingFM=false
-            }
-        }
-    }, false);
     loadEmojis()
+    loadUser()
+}
+
+export function loadTemplate(template, target=undefined, flex= undefined){
+    const effect = function() {
+        console.log(target, flex)
+        if (target){
+            //maybe not using eval
+            document.getElementById(target).innerHTML = eval('`' + this.responseText + '`');
+        }else{
+            dom.insertAdjacentHTML('beforeend',eval('`' + this.responseText + '`'))
+        }
+        if (flex){
+            document.getElementById(flex).style.display = "flex"
+        }
+    };
+
+    xhr( '/templates/'.concat(template), effect)
+}
+
+function loadUser(){
+    let request = new XMLHttpRequest();
+    request.open('POST', "/getUserInfo", true);
+    request.onload = function() { // request successful
+        user=JSON.parse(request.responseText)
+    };
+
+    request.onerror = function() {
+        console.log("request failed")
+    };
+
+    request.send();
 }
 
 function changeActiveTab(tabName){
@@ -39,34 +62,13 @@ function changeActiveConv(convName){
     loadConv(convName)
 }
 
-function createServer(){
-    const createMenu=document.getElementById("create-server")
-    createMenu.style.display="flex"
-}
-window.createServer = createServer
-
-function closeMenu(cible = undefined){
-    //TODO generalize reset page count
-    if(!cible){
-        if(event.target !== event.currentTarget){
-            return
-        }
-        event.target.style.display = "none";
-    }else{
-        const cibleEl= document.querySelector(cible)
-        cibleEl.style.display = "none";
-    }
-    gotoStep(0,'createServerSteps')
-}
-window.closeMenu = closeMenu
-
 function loadTab(tabName){
     const effect = function() {
         document.getElementById('sec-selector').innerHTML = this.responseText;
         currentConv=document.querySelector("#sec-selector .selected")
     };
 
-    loadSelector(tabName.concat("Selector.html"),effect)
+    xhr(tabName.concat("Selector.html"),effect)
 }
 
 function loadConv(name){
@@ -75,7 +77,7 @@ function loadConv(name){
         currentConv=document.querySelector("#sec-selector .selected")
     };
 
-    loadSelector(name.concat(".html"),effect)
+    xhr(name.concat(".html"),effect)
 }
 
 function loadServers(){
@@ -94,45 +96,15 @@ function loadServers(){
     request.send();
 }
 
-function loadSelector(filename,effect){
+export function xhr(filename,effect){
     let xhr= new XMLHttpRequest();
     xhr.open('GET', filename, true);
     xhr.onload=effect
+    xhr.onerror = function() {
+        console.log("request failed")
+    };
     xhr.send();
 }
-
-function deafen(){
-    event.currentTarget.lastElementChild.classList.toggle("visible")
-}
-window.deafen = deafen
-
-function mute(){
-    event.currentTarget.lastElementChild.classList.toggle("visible")
-}
-window.mute = mute
-
-function silent_typing(){
-    event.currentTarget.lastElementChild.classList.toggle("visible")
-}
-window.silent_typing = silent_typing
-
-function toggleFM(id){
-    openingFM=true
-    activeFM=document.getElementById(id)
-}
-window.toggleFM = toggleFM
-
-function toggleGroup(){
-    event.currentTarget.classList.toggle("closed")
-}
-window.toggleGroup = toggleGroup
-
-function gotoStep(step,stepsID){
-    const menu = document.getElementById(stepsID)
-    console.log(step)
-    menu.style.transform=`translateX(${-100*step/menu.childElementCount}%)`
-}
-window.gotoStep = gotoStep
 
 function newServer(){
     let request = new XMLHttpRequest();
@@ -175,12 +147,6 @@ function loadEmojis(){
     const board = document.getElementById('emoji-board')
 }
 
-function openSettings(){
-    const settings = document.getElementById('settings')
-    settings.style.display = "flex"
-}
-window.openSettings = openSettings
-
 function logout(){
     const url = "/logout";
     let request = new XMLHttpRequest();
@@ -200,6 +166,22 @@ function logout(){
     request.send();
 }
 window.logout = logout
+
+function changeUsername(){
+    const input = document.getElementById("username-input")
+    let request = new XMLHttpRequest();
+    request.open('POST', "/change?element=username&value=".concat(input.value), true);
+    request.onload = function() { // request successful
+        //TODO
+    };
+
+    request.onerror = function() {
+        console.log("request failed")
+    };
+
+    request.send();
+}
+window.changeUsername = changeUsername
 
 function navigateSettings(element){
     //TODO

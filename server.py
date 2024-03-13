@@ -13,7 +13,11 @@ class Disclone(Server):
     @cherrypy.expose
     def channels(self, uid="me"):
         self.checkJwt()
-        return open(PATH + "/ressources/me.html")
+        return open(PATH + "/ressources/main.html")
+
+    def onLogin(self, uid):
+        if not self.db.getSomething("disclone_account", uid):
+            self.db.insertDict("disclone_account", {"id": uid, "username": '#'+str(uid)})
 
 
     #-----------------------------------API-------------------------------------
@@ -31,7 +35,22 @@ class Disclone(Server):
         return json.dumps(servers)
 
     @cherrypy.expose
+    def getUserInfo(self):
+        uid = self.getUser()
+        user = self.db.getSomething("disclone_account", uid)
+        return json.dumps(user)
+
+    @cherrypy.expose
     def sendMessage(self):
         pass
+
+    @cherrypy.expose
+    def change(self, element, value):
+        uid = self.getUser()
+        if not self.db.getSomething("disclone_account", value, element):
+            self.db.edit("disclone_account", uid, element, value)
+        else:
+            return "this "+element+" already exists"
+
 
 Disclone(path=PATH, configFile="/server.ini")
