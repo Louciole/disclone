@@ -45,6 +45,16 @@ class Disclone(Server):
         pass
 
     @cherrypy.expose
+    def friends(self, action, arg):
+        uid = self.getUser()
+        if action == "add":
+            friendId = self.db.getSomething("disclone_account", arg, "username")
+            self.db.insertDict("boatakopin", {"kopinPrincipal": uid, "kopinSecondaire": friendId, "verified": False})
+        elif action == "accept":
+            self.db.edit("boatakopin", arg, "verified", True)
+
+
+    @cherrypy.expose
     def change(self, element, value):
         uid = self.getUser()
         if not self.db.getSomething("disclone_account", value, element):
