@@ -802,6 +802,11 @@ body{
     height: 1.2rem;
     padding: 0.4rem;
     border: none;
+    color: var(--text);
+}
+
+#friends-block input.fill{
+    height: 100%;
 }
 
 #content h2{

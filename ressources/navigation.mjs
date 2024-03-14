@@ -1,5 +1,4 @@
 import {loadTemplate} from "/main.mjs"
-import {loadConv, loadTab} from "./crud.mjs";
 import global from "/global.mjs"
 
 export function initNav(){
@@ -71,14 +70,14 @@ export function changeActiveTab(tabName){
     global.state.currentTab.classList.remove("selected")
     global.state.currentTab=event.currentTarget
     global.state.currentTab.classList.add("selected")
-    loadTab(tabName)
+    goTo('sec-selector', tabName)
 }
 
 export function changeActiveConv(convName){
     global.state.currentConv.classList.remove("selected")
     global.state.currentConv=event.currentTarget
     global.state.currentConv.classList.add("selected")
-    loadConv(convName)
+    goTo('content',convName)
 }
 
 function navigateSettings(element){

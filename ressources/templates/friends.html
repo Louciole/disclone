@@ -3,9 +3,9 @@
         <div class="inline-thingy">
             <div class="title"><div class="circle grey"></div>Amis</div>
             <hr>
-            <div class="cat selected">En ligne</div>
-            <div class="cat">Tous</div>
-            <div class="cat">En attente</div>
+            <div class="cat selected" onclick="goTo('friends-block','main-friend')">En ligne</div>
+            <div class="cat" >Tous</div>
+            <div class="cat" onclick="goTo('friends-block','waiting-friend')">En attente</div>
             <div class="cat">Bloqué</div>
             <div class="green btn" onclick="goTo('friends-block','add-friend')">Ajouter</div>
         </div>
@@ -19,16 +19,5 @@
     </div>
 </div>
 <div id="friends-block">
-    <div class="search">
-        <label style="width: 100%;">
-            <input type="text" placeholder="Rechercher">
-        </label>
-        <div class="icon">
-            <div class="circle grey input-icon"></div>
-        </div>
-    </div>
-    <h2>EN LIGNE ─ 0</h2>
-    <div class="scrollable">
 
-    </div>
 </div>

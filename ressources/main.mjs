@@ -1,16 +1,17 @@
 import {initNav, changeActiveTab} from "/navigation.mjs"
-import {xhr, loadConv, loadTab, loadServers, loadUser} from "/crud.mjs"
+import {xhr, loadServers, loadUser} from "/crud.mjs"
 import global from "/global.mjs"
 
 const dom = document.querySelector("body")
 global.state.currentTab = document.getElementById("logo")
 
 initNav()
-loadTab("privateMessage")
-loadConv("friends")
+goTo('sec-selector',"privateMessage")
+goTo('content',"friends")
 loadServers()
 loadEmojis()
 loadUser()
+goTo('friends-block','main-friend')
 
 
 export function loadTemplate(template, target=undefined, flex= undefined){

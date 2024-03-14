@@ -42,15 +42,6 @@ function newServer(){
 }
 window.newServer = newServer
 
-export function loadConv(name){
-    const effect = function() {
-        document.getElementById('content').innerHTML = this.responseText;
-        global.state.currentConv=document.querySelector("#sec-selector .selected")
-    };
-
-    xhr(name.concat(".html"),effect)
-}
-
 export function loadServers(){
     const onload = function() {
         const response = JSON.parse(this.responseText)
@@ -59,15 +50,6 @@ export function loadServers(){
         }
     };
     xhr("getUserServers",onload)
-}
-
-export function loadTab(tabName){
-    const effect = function() {
-        document.getElementById('sec-selector').innerHTML = this.responseText;
-        global.state.currentConv=document.querySelector("#sec-selector .selected")
-    };
-
-    xhr(tabName.concat("Selector.html"),effect)
 }
 
 export function loadUser(){
@@ -83,3 +65,14 @@ export function loadUser(){
 
     request.send();
 }
+
+function friend(action, element){
+    //element is the id of the invitation for an accept or the username for an add
+    const domElt= document.getElementById(element)
+    const effect = function() {
+        console.log("invitation processed")
+    };
+
+    xhr("friends?action=".concat(action,"&arg=",domElt.value),effect)
+}
+window.friend = friend

@@ -48,8 +48,9 @@ class Disclone(Server):
     def friends(self, action, arg):
         uid = self.getUser()
         if action == "add":
-            friendId = self.db.getSomething("disclone_account", arg, "username")
-            self.db.insertDict("boatakopin", {"kopinPrincipal": uid, "kopinSecondaire": friendId, "verified": False})
+            friendId = self.db.getSomething("disclone_account", arg, "username")['id']
+            print(friendId)
+            self.db.insertDict("boatakopin", {"kopinprincipal": uid, "kopinsecondaire": friendId, "accepted": False})
         elif action == "accept":
             self.db.edit("boatakopin", arg, "verified", True)
 
