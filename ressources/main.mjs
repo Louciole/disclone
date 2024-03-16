@@ -1,4 +1,4 @@
-import {initNav, changeActiveTab} from "/navigation.mjs"
+import {initNav} from "/navigation.mjs"
 import {xhr, loadServers, loadUser} from "/crud.mjs"
 import global from "/global.mjs"
 
@@ -47,7 +47,7 @@ export function addServer(name){
     const servers = document.getElementById('servers')
     servers.insertAdjacentHTML("beforeend",`
         <div class="container">
-            <div class="item serveur" onclick="changeActiveTab('server')">${getSlug(name)}</div>
+            <div class="item serveur" onclick="goTo('sec-selector','serverSelector',{'category':'currentTab' ,'event': event})">${getSlug(name)}</div>
             <div class="indicator"></div>
             <span class="tooltip left">${name}</span>
         </div>

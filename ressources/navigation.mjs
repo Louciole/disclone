@@ -25,8 +25,20 @@ function openMenu(id){
 }
 window.openMenu = openMenu
 
-function goTo(id,target){
+function goTo(id, target, selected=undefined){
     loadTemplate(target.concat(".html"), id)
+    if(selected){
+        if(global.state[selected.category]){
+            global.state[selected.category].classList.remove("selected")
+        }
+
+        if(selected.event){
+            global.state[selected.category] = selected.event.currentTarget
+        }else{
+            global.state[selected.category] = selected.target
+        }
+        global.state[selected.category].classList.add("selected")
+    }
 }
 window.goTo = goTo
 

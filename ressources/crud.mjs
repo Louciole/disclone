@@ -62,7 +62,7 @@ function difference(arrKeys, dict) {
             result.push(key);
         }
     }
-    return result;
+    return Array.from(result);
 }
 
 function loadUsers(keys){
@@ -78,7 +78,7 @@ function loadUsers(keys){
             global.users[key.id] = key
         }
     };
-    xhr("getUsersInfo?users="+diff, onload, "GET",false)
+    xhr("getUsersInfo?users="+JSON.stringify(diff), onload, "GET",false)
 }
 
 

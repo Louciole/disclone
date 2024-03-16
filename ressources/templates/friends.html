@@ -3,11 +3,11 @@
         <div class="inline-thingy">
             <div class="title"><div class="circle grey"></div>Amis</div>
             <hr>
-            <div class="cat selected" onclick="goTo('friends-block','main-friend')">En ligne</div>
-            <div class="cat" onclick="goTo('friends-block','all-friend')">Tous</div>
-            <div class="cat" onclick="goTo('friends-block','waiting-friend')">En attente</div>
-            <div class="cat" onclick="goTo('friends-block','blocked')">Bloqué</div>
-            <div class="green btn" onclick="goTo('friends-block','add-friend')">Ajouter</div>
+            <div class="cat selected" onclick="goTo('friends-block','main-friend',{'category':'currentFriendTab' ,'event': event})">En ligne</div>
+            <div class="cat" onclick="goTo('friends-block','all-friend',{'category':'currentFriendTab' ,'event': event})">Tous</div>
+            <div class="cat" onclick="goTo('friends-block','waiting-friend',{'category':'currentFriendTab' ,'event': event})">En attente</div>
+            <div class="cat" onclick="goTo('friends-block','blocked',{'category':'currentFriendTab' ,'event': event})">Bloqué</div>
+            <div class="green btn" onclick="goTo('friends-block','add-friend',{'category':'currentFriendTab' ,'event': event})">Ajouter</div>
         </div>
     </div>
     <div class="group">
