@@ -16,7 +16,6 @@ goTo('friends-block','main-friend')
 
 export function loadTemplate(template, target=undefined, flex= undefined){
     const effect = function() {
-        console.log(target, flex)
         if (target){
             //maybe not using eval
             document.getElementById(target).innerHTML = eval('`' + this.responseText + '`');
@@ -76,3 +75,41 @@ function logout(){
     request.send();
 }
 window.logout = logout
+
+function fillWith(template, list){
+    const effect = function() {};
+    const request = xhr( '/templates/'.concat(template,".html"), effect, "GET", false)
+
+    let content = ""
+    for (let element of list){
+        content += eval('`' + request.responseText + '`')
+    }
+    return content
+}
+window.fillWith = fillWith
+
+function Subscribe(element, content){
+    //subscribe content to element, content will be reevaluated on element change
+    const domElement = document.createElement('div')
+    domElement.className = element
+    domElement.rawContent = content
+
+    if(!Object.hasOwnProperty.call(window, element)){
+        Object.defineProperty(window, element, {
+            set: function(value) {
+                console.log(element,'has been updated to:', value);
+                element = value;
+                const subscriptions = document.querySelector(element)
+                for (let sub of subscriptions){
+                    sub.innerHTML = eval(`${sub.rawContent()}`)
+                }
+            }
+        });
+    }
+
+    domElement.innerHTML = content()
+    return domElement.outerHTML
+}
+window.Subscribe = Subscribe
+
+

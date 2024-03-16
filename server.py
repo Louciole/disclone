@@ -35,6 +35,13 @@ class Disclone(Server):
         return json.dumps(servers)
 
     @cherrypy.expose
+    def getUsersInfo(self, users):
+        uid = self.getUser()
+        print("HEREEEE", users)
+        users = self.db.getFilters("disclone_account", ["id", "in (", users, ")"])
+        return json.dumps(users)
+
+    @cherrypy.expose
     def getUserInfo(self):
         uid = self.getUser()
         user = self.db.getSomething("disclone_account", uid)
@@ -45,14 +52,19 @@ class Disclone(Server):
         pass
 
     @cherrypy.expose
-    def friends(self, action, arg):
+    def friends(self, action, arg=""):
         uid = self.getUser()
         if action == "add":
             friendId = self.db.getSomething("disclone_account", arg, "username")['id']
-            print(friendId)
             self.db.insertDict("boatakopin", {"kopinprincipal": uid, "kopinsecondaire": friendId, "accepted": False})
         elif action == "accept":
             self.db.edit("boatakopin", arg, "verified", True)
+        elif action == "get":
+            friends = self.db.getFilters("boatakopin", ["accepted", "=", True, "and", "kopinprincipal", "=", uid, "or", "kopinsecondaire", "=", uid])
+            return json.dumps(friends)
+        elif action == "invitations":
+            invitations = self.db.getFilters("boatakopin", ["accepted", "=", False, "and", "kopinprincipal", "=", uid, "or", "kopinsecondaire", "=", uid])
+            return json.dumps(invitations)
 
 
     @cherrypy.expose

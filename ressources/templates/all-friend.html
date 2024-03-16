@@ -1,0 +1,12 @@
+<div class="search">
+    <label style="width: 100%;">
+        <input type="text" placeholder="Rechercher">
+    </label>
+    <div class="icon">
+        <div class="circle grey input-icon"></div>
+    </div>
+</div>
+<h2>TOUS LES AMIS ─ ${global.user.friends.length}</h2>
+<div id="" class="scrollable">
+    ${Subscribe("global.user.friends", () => fillWith("friendCard", global.user.friends))}
+</div>

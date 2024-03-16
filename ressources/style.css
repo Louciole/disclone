@@ -937,6 +937,11 @@ body{
     align-items: center;
 }
 
+.vertical{
+    display: flex;
+    flex-direction: column;
+}
+
 #content .scrollable{
     display: flex;
     flex-direction: column-reverse;
