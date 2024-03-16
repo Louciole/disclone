@@ -37,7 +37,6 @@ class Disclone(Server):
     @cherrypy.expose
     def getUsersInfo(self, users):
         uid = self.getUser()
-        print("HEREEEE", users)
         users = self.db.getFilters("disclone_account", ["id", "in (", users, ")"])
         return json.dumps(users)
 

@@ -66,8 +66,12 @@ function difference(arrKeys, dict) {
 }
 
 function loadUsers(keys){
-    console.log(global.users, keys);
     const diff = difference(keys, global.users)
+
+    if(diff.length === 0){
+        return
+    }
+
     const onload = function() {
         const keys = JSON.parse(this.responseText)
         for(let key of keys){
@@ -75,7 +79,6 @@ function loadUsers(keys){
         }
     };
     xhr("getUsersInfo?users="+diff, onload, "GET",false)
-    console.log(global.users)
 }
 
 
@@ -92,6 +95,13 @@ export function loadUser(){
         }
 
         xhr("friends?action=get", onFriendsLoaded)
+
+        const onInvitationsLoaded = function(){
+            global.user.invitations = JSON.parse(this.responseText)
+            loadUsers(global.user.invitations.map(({ id }) => id))
+        }
+
+        xhr("friends?action=invitations", onInvitationsLoaded)
     };
 
     request.onerror = function() {

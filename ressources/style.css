@@ -1242,3 +1242,57 @@ body{
     z-index: 20;
     overflow: hidden;
 }
+
+#friends-block .item{
+    display: flex;
+    height: fit-content;
+    flex-direction: row;
+    align-items: center;
+    padding: 0 0.8rem;
+    margin-bottom: 0.1rem;
+    border-radius: 6px;
+    cursor: pointer;
+
+}
+
+#friends-block .item .container{
+    border-top: 1px solid var(--text2bis);
+    border-bottom: 1px solid var(--text2bis);
+    display: flex;
+    height: 2rem;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 0.7rem 0;
+}
+
+#friends-block .item h5,p{
+   margin: 0;
+}
+
+.action {
+    height: 100%;
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg2);
+    border-radius: 50%;
+    margin-left: 0.5rem;
+}
+
+#friends-block .scrollable {
+    display: flex;
+    flex-direction: column;
+}
+
+.item .inline{
+    display: flex;
+    align-items: center;
+    height: 100%;
+}
+
+.reverse{
+    flex-direction: row-reverse;
+}

@@ -6,11 +6,13 @@ const dom = document.querySelector("body")
 global.state.currentTab = document.getElementById("logo")
 
 initNav()
+loadUser()
+
+goTo('sec-column',"column-perso")
 goTo('sec-selector',"privateMessage")
 goTo('content',"friends")
 loadServers()
 loadEmojis()
-loadUser()
 goTo('friends-block','main-friend')
 
 
@@ -77,6 +79,7 @@ function logout(){
 window.logout = logout
 
 function fillWith(template, list){
+    console.log("fillWith")
     const effect = function() {};
     const request = xhr( '/templates/'.concat(template,".html"), effect, "GET", false)
 
@@ -89,27 +92,31 @@ function fillWith(template, list){
 window.fillWith = fillWith
 
 function Subscribe(element, content){
+    console.log("Subscribe to",element)
     //subscribe content to element, content will be reevaluated on element change
     const domElement = document.createElement('div')
     domElement.className = element
     domElement.rawContent = content
-
-    if(!Object.hasOwnProperty.call(window, element)){
-        Object.defineProperty(window, element, {
-            set: function(value) {
-                console.log(element,'has been updated to:', value);
-                element = value;
-                const subscriptions = document.querySelector(element)
-                for (let sub of subscriptions){
-                    sub.innerHTML = eval(`${sub.rawContent()}`)
-                }
-            }
-        });
-    }
-
     domElement.innerHTML = content()
     return domElement.outerHTML
 }
 window.Subscribe = Subscribe
 
+function setElement(element, value){
+    console.log(element,'has been updated to:', value);
+    element = value;
+    const subscriptions = document.querySelector(element.name.toString())
+    for (let sub of subscriptions){
+        sub.innerHTML = eval(`${sub.rawContent()}`)
+    }
+}
 
+function Save(element){
+    const input = document.getElementById("display-name-input")
+    const onSaved = function (){
+
+    }
+    //TODO make this correctly
+    xhr("change?element=display&value=".concat(input.value), onSaved)
+}
+window.Save = Save

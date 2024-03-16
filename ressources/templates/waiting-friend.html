@@ -6,7 +6,7 @@
         <div class="circle grey input-icon"></div>
     </div>
 </div>
-<h2>EN ATTENTE ─ 0</h2>
+<h2>EN ATTENTE ─ ${global.user.invitations.length}</h2>
 <div class="scrollable">
-
+    ${Subscribe("global.user.invitations", () => fillWith("invitationCard", global.user.invitations))}
 </div>

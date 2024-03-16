@@ -1,5 +1,6 @@
 import {loadTemplate} from "/main.mjs"
 import global from "/global.mjs"
+import {xhr} from "./crud.mjs";
 
 export function initNav(){
     document.addEventListener('click', function (event) {
@@ -80,6 +81,8 @@ export function changeActiveConv(convName){
     goTo('content',convName)
 }
 
-function navigateSettings(element){
-    //TODO
+function getTemplate(name){
+    const request = xhr( '/templates/'.concat(name,".html"), ()=>{}, "GET", false)
+    return eval('`' + request.responseText + '`')
 }
+window.getTemplate = getTemplate
