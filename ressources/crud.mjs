@@ -113,11 +113,18 @@ export function loadUser(){
 
 function friend(action, element){
     //element is the id of the invitation for an accept or the username for an add
-    const domElt= document.getElementById(element)
+    console.log("here")
+
     const effect = function() {
         console.log("invitation processed")
     };
 
-    xhr("friends?action=".concat(action,"&arg=",domElt.value),effect)
+    if(action === "add"){
+        const domElt= document.getElementById(element)
+        console.log(domElt.value)
+        xhr("friends?action=".concat(action,"&arg=",encodeURIComponent(domElt.value)),effect)
+    }else{
+        xhr("friends?action=".concat(action,"&arg=",element),effect)
+    }
 }
 window.friend = friend

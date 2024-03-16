@@ -9,9 +9,9 @@ initNav()
 loadUser()
 
 goTo('sec-column',"column-perso")
-goTo('sec-selector',"privateMessage")
 goTo('content',"friends")
 loadServers()
+goTo('sec-selector',"privateMessage")
 loadEmojis()
 goTo('friends-block','main-friend')
 

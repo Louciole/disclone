@@ -54,10 +54,12 @@ class Disclone(Server):
     def friends(self, action, arg=""):
         uid = self.getUser()
         if action == "add":
-            friendId = self.db.getSomething("disclone_account", arg, "username")['id']
-            self.db.insertDict("boatakopin", {"kopinprincipal": uid, "kopinsecondaire": friendId, "accepted": False})
+            friend = self.db.getSomething("disclone_account", arg, "username")
+            if not friend:
+                return "user not found"
+            self.db.insertDict("boatakopin", {"kopinprincipal": uid, "kopinsecondaire": friend['id'], "accepted": False})
         elif action == "accept":
-            self.db.edit("boatakopin", arg, "verified", True)
+            self.db.edit("boatakopin", arg, "accepted", True)
         elif action == "get":
             friends = self.db.getFilters("boatakopin", ["accepted", "=", True, "and", "kopinprincipal", "=", uid, "or", "kopinsecondaire", "=", uid])
             return json.dumps(friends)
