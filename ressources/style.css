@@ -28,6 +28,7 @@ body{
     margin: 0;
     font-family: 'Open Sans', sans-serif;
     overflow: hidden;
+    background: var(--bg2);
 }
 
 #content{
@@ -363,7 +364,7 @@ body{
 }
 
 ::placeholder {
-    color: var(--text2);
+    color: #777;
     opacity: 1;
 }
 
@@ -416,6 +417,7 @@ body{
     cursor: pointer;
 }
 
+/*noinspection CssInvalidPropertyValue*/
 #sec-selector .item p{
     width: -webkit-fill-available;
     width: -moz-available;
@@ -674,7 +676,7 @@ body{
     color: var(--text);
     display: flex;
     border-bottom: 1px solid var(--bg4);
-    margin-bottom: 0.4rem;
+    margin-bottom: 1rem;
     align-items: center;
     justify-content: space-between;
 }
@@ -813,6 +815,12 @@ body{
     font-size: 0.75rem;
 }
 
+.add h2{
+    font-size: 1.1rem !important;
+    margin: 0.3rem;
+    color: var(--text);
+}
+
 .input-icon{
     position: absolute;
     height: 1.2rem;
@@ -831,6 +839,7 @@ body{
     gap: 1rem;
 }
 
+/*noinspection CssInvalidPropertyValue*/
 .chat-input input{
     width: -webkit-fill-available;
     width: -moz-available;;
@@ -926,6 +935,54 @@ body{
 
 .search input:focus{
     outline: none;
+}
+
+#friends-block .add .search{
+    width: 100%;
+    border: 1px solid black;
+    border-radius: 11px;
+    overflow: clip;
+    margin-top: 1rem;
+}
+
+.add p{
+    font-size: 0.9rem;
+}
+
+#friends-block .add input{
+    width: 100%;
+    background: var(--bg4);
+    border-radius: 5px 0 0 5px;
+    padding: 0 1.5rem;
+    border: none;
+    color: var(--text);
+    font-size: 1rem;
+}
+
+.search .btn{
+    padding: 0.5rem 1.3rem;
+    border-radius: 4px;
+    cursor: pointer;
+    color: var(--text);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.9rem;
+}
+
+#friends-block .add .search:has(input:focus){
+    border: 2px solid var(--accent);
+}
+
+#friends-block .add .search.succeed{
+    border: 2px solid var(--green);
+}
+
+.search .btn-wrapper{
+    background: var(--bg4);
+    border-radius: 0 5px 5px 0;
+    display: flex;
+    padding: 0.6rem 0.8rem;
+    justify-content: center;
 }
 
 .pfp.big{
@@ -1271,7 +1328,7 @@ body{
    margin: 0;
 }
 
-.action {
+.item .action {
     height: 100%;
     aspect-ratio: 1;
     display: flex;

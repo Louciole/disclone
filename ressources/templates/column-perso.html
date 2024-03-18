@@ -9,7 +9,7 @@
       <div class="info-wrapper">
         <div class="info-chariot">
           <p>En ligne</p>
-          <p>${global.user.username}</p>
+          <div>${Subscribe('global.user.username',()=>{return(global.user.username)})}</div>
         </div>
       </div>
     </div>
@@ -33,7 +33,7 @@
     <div class="profil-picture"></div>
     <div class="profil-wrapper">
       <div class="profil-badges"></div>
-      <div class="profil-infos">${global.user.display}</div>
+      <div class="profil-infos">${Subscribe('global.user.display',()=>{return(global.user.display)})}</div>
     </div>
   </div>
 </div>

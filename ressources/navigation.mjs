@@ -25,8 +25,8 @@ function openMenu(id){
 }
 window.openMenu = openMenu
 
-function goTo(id, target, selected=undefined){
-    loadTemplate(target.concat(".html"), id)
+function goTo(id, target, selected=undefined, async=true){
+    loadTemplate(target.concat(".html"), id, undefined, async)
     if(selected){
         if(global.state[selected.category]){
             global.state[selected.category].classList.remove("selected")
@@ -78,20 +78,6 @@ function closeMenu(cible = undefined){
     gotoStep(0,'createServerSteps')
 }
 window.closeMenu = closeMenu
-
-export function changeActiveTab(tabName){
-    global.state.currentTab.classList.remove("selected")
-    global.state.currentTab=event.currentTarget
-    global.state.currentTab.classList.add("selected")
-    goTo('sec-selector', tabName)
-}
-
-export function changeActiveConv(convName){
-    global.state.currentConv.classList.remove("selected")
-    global.state.currentConv=event.currentTarget
-    global.state.currentConv.classList.add("selected")
-    goTo('content',convName)
-}
 
 function getTemplate(name){
     const request = xhr( '/templates/'.concat(name,".html"), ()=>{}, "GET", false)

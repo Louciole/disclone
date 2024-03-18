@@ -8,7 +8,7 @@ global.state.currentTab = document.getElementById("logo")
 initNav()
 loadUser()
 
-goTo('sec-column',"column-perso")
+goTo('sec-column',"column-perso",undefined, false)
 goTo('content',"friends")
 loadServers()
 goTo('sec-selector',"privateMessage")
@@ -16,7 +16,7 @@ loadEmojis()
 goTo('friends-block','main-friend')
 
 
-export function loadTemplate(template, target=undefined, flex= undefined){
+export function loadTemplate(template, target=undefined, flex= undefined, async){
     const effect = function() {
         if (target){
             //maybe not using eval
@@ -29,7 +29,7 @@ export function loadTemplate(template, target=undefined, flex= undefined){
         }
     };
 
-    xhr( '/templates/'.concat(template), effect)
+    xhr( '/templates/'.concat(template), effect,"GET", async)
 }
 
 function getSlug(name){
@@ -92,22 +92,22 @@ function fillWith(template, list){
 window.fillWith = fillWith
 
 function Subscribe(element, content){
-    console.log("Subscribe to",element,global)
+    console.log("Subscribe to",element, global, content,content())
     //subscribe content to element, content will be reevaluated on element change
     const domElement = document.createElement('div')
     domElement.className = element.replaceAll('.','-')
-    domElement.dataset.content = content
     domElement.innerHTML = content()
+    domElement.dataset.content = content
     return domElement.outerHTML
 }
 window.Subscribe = Subscribe
 
-function setElement(element, value){
+export function setElement(element, value){
     console.log(element,'has been updated to:', value);
     eval(`${element} = value`);
-    const subscriptions = document.querySelectorAll("."+element.replaceAll('.','-'))
+    const subscriptions = document.querySelectorAll(`[class^="${element.replaceAll('.','-')}"]`)
     for (let sub of subscriptions){
-        console.log("we need to evaluate",sub.dataset.content)
+        console.log("we need to evaluate",sub)
         const content = eval(sub.dataset.content)
         sub.innerHTML = content()
     }

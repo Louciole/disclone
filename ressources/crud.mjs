@@ -1,4 +1,4 @@
-import {addServer, getRelevantUser} from "/main.mjs"
+import {addServer, getRelevantUser, setElement} from "/main.mjs"
 import global from "/global.mjs"
 
 export function xhr(endpoint,effect,method="GET", async=true){
@@ -88,7 +88,7 @@ export function loadUser(){
     let request = new XMLHttpRequest();
     request.open('POST', "/getUserInfo", true);
     request.onload = function() { // request successful
-        global.user=JSON.parse(request.responseText)
+        setElement('global.user', JSON.parse(request.responseText))
         global.users[global.user.id] = global.user
         console.log("user loaded",global.user)
 

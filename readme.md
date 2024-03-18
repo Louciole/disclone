@@ -1,8 +1,9 @@
 # Disclone.
 
 ❓️A shitty Discord clone based on sakura. <br>  
-🌍 production : https://disclone.carbonlab.dev
-🟢 Status : https://louciole.github.io/carbon-status/
+🌍 Production : https://disclone.carbonlab.dev <br>
+🟢 Status : https://louciole.github.io/carbon-status/ <br>
+🏀 Roadmap : https://smoop.carbonlab.dev/project?uid=53&&access=read-only
 
 
 ## Frontend ! 
