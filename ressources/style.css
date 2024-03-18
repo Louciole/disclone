@@ -977,6 +977,10 @@ body{
     border: 2px solid var(--green);
 }
 
+#friends-block .add .search.failed{
+    border: 2px solid var(--red);
+}
+
 .search .btn-wrapper{
     background: var(--bg4);
     border-radius: 0 5px 5px 0;
@@ -1352,4 +1356,12 @@ body{
 
 .reverse{
     flex-direction: row-reverse;
+}
+
+.failed {
+    color: var(--red);
+}
+
+.succeed {
+    color: var(--green);
 }

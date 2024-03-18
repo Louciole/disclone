@@ -127,7 +127,26 @@ function friend(action, element){
     console.log("here")
 
     const effect = function() {
-        console.log("invitation processed")
+        if (action !== "add"){
+            return
+        }
+
+        const status = document.querySelector(".add .status")
+        const search= document.querySelector(".add .search")
+
+        if(this.responseText === "ok"){
+            status.classList.add("succeed")
+            status.classList.remove("failed")
+            search.classList.add("succeed")
+            search.classList.remove("failed")
+            status.innerHTML = "Well done ! Your friend request has been sent !"
+        }else{
+            status.classList.remove("succeed")
+            status.classList.add("failed")
+            search.classList.remove("succeed")
+            search.classList.add("failed")
+            status.innerHTML = this.responseText
+        }
     };
 
     if(action === "add"){

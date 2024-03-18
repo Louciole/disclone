@@ -84,3 +84,27 @@ function getTemplate(name){
     return eval('`' + request.responseText + '`')
 }
 window.getTemplate = getTemplate
+
+function goodbye(){
+    if (confirm('Voulez-vous vraiment vous désinscrire et supprimer votre compte de tous les services Carbonlab ? (toutes vos informations seront effacées)')) {
+        const url = "/goodbye";
+        let request = new XMLHttpRequest();
+        request.open('POST', url, true);
+        request.onload = function() { // request successful
+            console.log("account deleted",request.responseText)
+
+            if (request.responseText === "ok"){
+                window.location.href = "/auth";
+            }
+        };
+
+        request.onerror = function() {
+            console.log("request failed")
+        };
+
+        request.send();
+    } else {
+        console.log("ouf 😖")
+    }
+}
+window.goodbye = goodbye

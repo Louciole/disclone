@@ -2,7 +2,7 @@
 
 ❓️A shitty Discord clone based on sakura. <br>  
 🌍 Production : https://disclone.carbonlab.dev <br>
-🟢 Status : https://louciole.github.io/carbon-status/ <br>
+🟢 Status : https://status.carbonlab.dev <br>
 🏀 Roadmap : https://smoop.carbonlab.dev/project?uid=53&&access=read-only
 
 

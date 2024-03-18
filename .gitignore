@@ -4,3 +4,4 @@
 /ressources/public/
 /mailing/dkim.txt
 /venv/
+/.venv/
