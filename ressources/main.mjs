@@ -92,11 +92,11 @@ function fillWith(template, list){
 window.fillWith = fillWith
 
 function Subscribe(element, content){
-    console.log("Subscribe to",element)
+    console.log("Subscribe to",element,global)
     //subscribe content to element, content will be reevaluated on element change
     const domElement = document.createElement('div')
-    domElement.className = element
-    domElement.rawContent = content
+    domElement.className = element.replaceAll('.','-')
+    domElement.dataset.content = content
     domElement.innerHTML = content()
     return domElement.outerHTML
 }
@@ -104,19 +104,32 @@ window.Subscribe = Subscribe
 
 function setElement(element, value){
     console.log(element,'has been updated to:', value);
-    element = value;
-    const subscriptions = document.querySelector(element.name.toString())
+    eval(`${element} = value`);
+    const subscriptions = document.querySelectorAll("."+element.replaceAll('.','-'))
     for (let sub of subscriptions){
-        sub.innerHTML = eval(`${sub.rawContent()}`)
+        console.log("we need to evaluate",sub.dataset.content)
+        const content = eval(sub.dataset.content)
+        sub.innerHTML = content()
     }
 }
 
 function Save(element){
     const input = document.getElementById("display-name-input")
-    const onSaved = function (){
 
+    const onSaved = function (){
     }
     //TODO make this correctly
-    xhr("change?element=display&value=".concat(input.value), onSaved)
+    xhr("change?element=display&value=".concat(input.value), onSaved,"POST",false)
+    setElement(element, input.value)
 }
 window.Save = Save
+
+export function getRelevantUser(element){
+    console.log("processing",element)
+    if (global.user.id === element["kopinprincipal"]){
+        return element["kopinsecondaire"]
+    }else{
+        return element["kopinprincipal"]
+    }
+}
+window.getRelevantUser = getRelevantUser

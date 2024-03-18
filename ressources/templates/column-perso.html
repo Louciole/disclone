@@ -5,7 +5,7 @@
       <div class="activity green"></div>
     </div>
     <div>
-      <p class="name">${global.user.display}</p>
+      <div class="name">${Subscribe('global.user.display',()=>{return(global.user.display)})}</div>
       <div class="info-wrapper">
         <div class="info-chariot">
           <p>En ligne</p>

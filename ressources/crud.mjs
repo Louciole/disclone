@@ -1,4 +1,4 @@
-import {addServer} from "/main.mjs"
+import {addServer, getRelevantUser} from "/main.mjs"
 import global from "/global.mjs"
 
 export function xhr(endpoint,effect,method="GET", async=true){
@@ -72,6 +72,8 @@ function loadUsers(keys){
         return
     }
 
+    console.log("loading",diff)
+
     const onload = function() {
         const keys = JSON.parse(this.responseText)
         for(let key of keys){
@@ -88,17 +90,26 @@ export function loadUser(){
     request.onload = function() { // request successful
         global.user=JSON.parse(request.responseText)
         global.users[global.user.id] = global.user
+        console.log("user loaded",global.user)
 
         const onFriendsLoaded = function(){
             global.user.friends = JSON.parse(this.responseText)
-            loadUsers(global.user.friends.map(({ id }) => id))
+            let usersToload = []
+            for (let friendship of global.user.friends){
+                usersToload.push(getRelevantUser(friendship))
+            }
+            loadUsers(usersToload)
         }
 
         xhr("friends?action=get", onFriendsLoaded)
 
         const onInvitationsLoaded = function(){
             global.user.invitations = JSON.parse(this.responseText)
-            loadUsers(global.user.invitations.map(({ id }) => id))
+            let usersToload = []
+            for (let friendship of global.user.invitations){
+                usersToload.push(getRelevantUser(friendship))
+            }
+            loadUsers(usersToload)
         }
 
         xhr("friends?action=invitations", onInvitationsLoaded)

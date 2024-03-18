@@ -8,7 +8,7 @@
             <div class="inline">
                 <div class="vertical">
                     <h3>NOM D'AFFICHAGE</h3>
-                    <p>${global.user.display}</p>
+                    <p>${Subscribe('global.user.display',()=>{return(global.user.display)})}</p>
                 </div>
                 <div class="btn grey" onclick="goTo( 'setting-content', 'profile-settings')">Modifier</div>
             </div>

@@ -61,10 +61,10 @@ class Disclone(Server):
         elif action == "accept":
             self.db.edit("boatakopin", arg, "accepted", True)
         elif action == "get":
-            friends = self.db.getFilters("boatakopin", ["accepted", "=", True, "and", "kopinprincipal", "=", uid, "or", "kopinsecondaire", "=", uid])
+            friends = self.db.getFilters("boatakopin", ["accepted", "=", True, "and (", "kopinprincipal", "=", uid, "or", "kopinsecondaire", "=", uid, ")"])
             return json.dumps(friends)
         elif action == "invitations":
-            invitations = self.db.getFilters("boatakopin", ["accepted", "=", False, "and", "kopinprincipal", "=", uid, "or", "kopinsecondaire", "=", uid])
+            invitations = self.db.getFilters("boatakopin", ["accepted", "=", False, "and (", "kopinprincipal", "=", uid, "or", "kopinsecondaire", "=", uid, ")"])
             return json.dumps(invitations)
 
 

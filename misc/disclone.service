@@ -1,0 +1,9 @@
+[Unit]
+Description=Disclone : a shitty Discord clone by Lou !
+After=multi-user.target
+[Service]
+Type=simple
+Restart=always
+ExecStart=/var/www/html/disclone/venv/bin/python /var/www/html/disclone/server.py
+[Install]
+WantedBy=multi-user.target
