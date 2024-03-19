@@ -47,8 +47,11 @@ let activeFM;
 let openingFM = false;
 
 function toggleFM(id){
-    openingFM=true
-    activeFM=document.getElementById(id)
+    const FM = document.getElementById(id)
+    if(FM !== activeFM){
+        openingFM = true
+        activeFM = FM
+    }
 }
 window.toggleFM = toggleFM
 

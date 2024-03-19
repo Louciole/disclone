@@ -514,6 +514,7 @@ body{
     align-items: center;
     border-radius: 5px;
     cursor: pointer;
+    overflow: hidden;
 }
 
 #profil:hover{
@@ -610,6 +611,7 @@ body{
     font-size: 0.9rem;
     color: var(--text);
     margin: 0;
+    white-space: nowrap;
 }
 
 .line{
@@ -1190,27 +1192,32 @@ body{
     background: var(--bg);
 }
 
+#settings-list .selected {
+    color: var(--text);
+    background: var(--text2bis);
+}
+
 #settings .scrollable{
     height: 100svh;
     max-height: 100svh;
 }
 
 #settings .close{
-    position: absolute;
     border: 3px solid;
-    font-size: 3rem;
-    font-weight: 100;
+    margin: 3rem;
+    font-size: 1.6rem;
+    font-weight: 400;
     border-radius: 50%;
-    width: 3rem;
+    font-family: math;
+    width: 2rem;
     display: flex;
-    height: 3rem;
-    right: 4rem;
+    height: 2rem;
     color: var(--text2);
     transform: rotateZ(45deg);
     transition: color 100ms;
     cursor: pointer;
-    align-items: center;
     justify-content: center;
+    align-items: center;
 }
 
 #settings .close:hover{
@@ -1231,6 +1238,11 @@ body{
     margin: 0.1rem 1.2rem;
     justify-content: space-between;
     cursor: pointer;
+}
+
+#setting-panel {
+    display: flex;
+    flex-direction: row;
 }
 
 #settings-list hr {

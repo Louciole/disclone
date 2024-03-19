@@ -15,7 +15,7 @@
             <div class="inline">
                 <div class="vertical">
                     <h3>NOM D'UTILISATEUR</h3>
-                    <p>${global.user.username}</p>
+                    <p>${Subscribe('global.user.username',()=>{return(global.user.username)})}</p>
                 </div>
                 <div class="btn grey" onclick="openMenu('change-username')">Modifier</div>
             </div>
