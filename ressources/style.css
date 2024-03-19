@@ -721,12 +721,16 @@ body{
     height: 90%;
 }
 
-.profil-infos{
-    width: calc(100% - 2rem);
-    height: calc(100% - 4rem);
+.profil-infos {
+    width: calc(100% - 4rem);
+    height: calc(100% - 6rem);
     background: black;
     margin: 1rem;
+    display: flex;
     border-radius: 8px;
+    padding: 1rem;
+    gap: 1.2rem;
+    flex-direction: column;
 }
 
 .selected-info .title {
@@ -813,8 +817,11 @@ body{
     height: 100%;
 }
 
-#content h2{
+#content .h2{
     font-size: 0.75rem;
+    font-weight: bold;
+    display: flex;
+    margin: 0.83em 0;
 }
 
 .add h2{
@@ -1263,11 +1270,22 @@ body{
 
 #settings h1{
     margin: 0;
+    font-size: 1.2rem;
+    color: var(--text);
+    margin-bottom: 1rem;
+}
+
+#settings .user-profile{
+    display: flex;
+    height: fit-content;
+    flex-direction: column;
+    border-radius: 8px;
+    overflow: clip;
 }
 
 #settings .banner {
     background: wheat;
-    height: 10%;
+    height: 5rem;
 }
 
 #settings .profil-picture {
@@ -1276,14 +1294,15 @@ body{
     background: var(--red);
     border-radius: 50%;
     position: absolute;
-    transform: translate(15px, -50%);
-    border: 6px solid var(--bg3);
+    transform: translate(15px, +50%);
+    border: 6px solid var(--bg4);
 }
 
 
 #settings .profil-wrapper{
-    background: var(--bg3);
-    border-radius: 8px;
+    background: var(--bg4);
+    height: fit-content;
+    padding-bottom: 1rem;
 }
 
 #settings .btn {
@@ -1376,4 +1395,23 @@ body{
 
 .succeed {
     color: var(--green);
+}
+
+#setting-content h3{
+    margin: 0.3rem 0;
+    padding: 0;
+}
+
+#settings .profil-infos{
+    background: var(--bg3);
+}
+
+#settings .profil-badges{
+    height: 3rem;
+}
+
+#setting-content hr{
+    width: 100%;
+    margin: 2rem 0;
+    border: 1px solid var(--text3);
 }

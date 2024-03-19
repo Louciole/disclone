@@ -6,7 +6,7 @@
         <div class="circle grey input-icon"></div>
     </div>
 </div>
-<h2>TOUS LES AMIS ─ ${global.user.friends.length}</h2>
+<div class="h2">TOUS LES AMIS ─ ${Subscribe("global.user.friends", () => {return global.user.friends.length})}</div>
 <div id="" class="scrollable">
     ${Subscribe("global.user.friends", () => fillWith("friendCard", global.user.friends))}
 </div>

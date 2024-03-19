@@ -14,17 +14,12 @@ export function xhr(endpoint,effect,method="GET", async=true){
 
 function changeUsername(){
     const input = document.getElementById("username-input")
-    let request = new XMLHttpRequest();
-    request.open('POST', "/change?element=username&value=".concat(input.value), true);
-    request.onload = function() { // request successful
-        //TODO
-    };
 
-    request.onerror = function() {
-        console.log("request failed")
+    const onload = function() { // request successful
+        setElement('global.user.username', input.value)
+        closeMenu('#change-username')
     };
-
-    request.send();
+    xhr("/change?element=username&value=".concat(input.value),onload,"POST")
 }
 window.changeUsername = changeUsername
 
