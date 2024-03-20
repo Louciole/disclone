@@ -285,6 +285,9 @@ body{
     width: 80vw;
     max-width: 400px;
     margin-right: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
 }
 
 .menu h2{
@@ -1310,6 +1313,11 @@ body{
     padding: 0.4rem 1rem;
 }
 
+#settings .btn:hover{
+    transition: opacity 100ms;
+    opacity: 0.8;
+}
+
 #change-username{
     z-index: 101;
     position: absolute;
@@ -1341,10 +1349,14 @@ body{
     flex-direction: row;
     align-items: center;
     padding: 0 0.8rem;
-    margin-bottom: 0.1rem;
     border-radius: 6px;
     cursor: pointer;
+    width: 100%;
+}
 
+#friends-block .item:hover{
+    transition: background-color 100ms;
+    background: var(--text2bis);
 }
 
 #friends-block .item .container{
@@ -1356,7 +1368,8 @@ body{
     align-items: center;
     justify-content: space-between;
     width: 100%;
-    padding: 0.7rem 0;
+    padding: 0.8rem 0;
+    margin-bottom: 0;
 }
 
 #friends-block .item h5,p{
@@ -1377,6 +1390,13 @@ body{
 #friends-block .scrollable {
     display: flex;
     flex-direction: column;
+    overflow-y: visible;
+}
+
+.column{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 .item .inline{
@@ -1407,11 +1427,34 @@ body{
 }
 
 #settings .profil-badges{
-    height: 3rem;
+    height: calc(3rem - 1.6rem);
+    padding: 0.8rem;
+    padding-left: calc(101px + 0.8rem);
+}
+
+.profil-badges .name{
+    font-size: 1.2rem;
+    color: var(--text);
+    font-weight: 600;
 }
 
 #setting-content hr{
     width: 100%;
     margin: 2rem 0;
     border: 1px solid var(--text3);
+}
+
+.menu input{
+    background: #dadbdd;
+    border: none;
+    border-radius: 5px;
+    height: 1.2rem;
+    width: calc(100% - 3.5rem);
+    font-size: 1rem;
+    margin: 0;
+    padding: 0.7rem 1.7rem;
+}
+
+#setting-content p{
+    margin: 0.8rem 0;
 }

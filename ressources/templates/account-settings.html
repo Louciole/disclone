@@ -3,19 +3,21 @@
     <div class="banner"></div>
     <div class="profil-picture"></div>
     <div class="profil-wrapper">
-        <div class="profil-badges"></div>
+        <div class="profil-badges">
+            <div class="name">${Subscribe('global.user.display',()=>{return(global.user.display)})}</div>
+        </div>
         <div class="profil-infos">
             <div class="inline space-between">
                 <div class="vertical">
                     <h3>NOM D'AFFICHAGE</h3>
-                    <p>${Subscribe('global.user.display',()=>{return(global.user.display)})}</p>
+                    ${Subscribe('global.user.display',()=>{return(global.user.display)})}
                 </div>
-                <div class="btn gray2" onclick="goTo( 'setting-content', 'profile-settings')">Modifier</div>
+                <div class="btn gray2" onclick="goTo( 'setting-content', 'profile-settings',{'category':'currentSettingTab', 'id':'profil-settings'})">Modifier</div>
             </div>
             <div class="inline space-between">
                 <div class="vertical">
                     <h3>NOM D'UTILISATEUR</h3>
-                    <p>${Subscribe('global.user.username',()=>{return(global.user.username)})}</p>
+                    ${Subscribe('global.user.username',()=>{return(global.user.username)})}
                 </div>
                 <div class="btn gray2" onclick="openMenu('change-username')">Modifier</div>
             </div>
@@ -24,5 +26,5 @@
 </div>
 <hr>
 <h3>SUPPRESSION DU COMPTE</h3>
-Attention la suppression concerne TOUS les services carbonlab
+<p>Attention la suppression concerne TOUS les services carbonlab</p>
 <div class="btn red" onclick="goodbye()">Supprimer le compte</div>

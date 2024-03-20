@@ -26,6 +26,6 @@ if [ $uniauth == 'y' ] || [ $uniauth == 'Y' ]
 then
   echo Please enter a db name :
   read uniauthName
-  sudo -u postgres createdb $dbName
+  sudo -u postgres createdb $uniauthName
 fi
 python3 ./db/initDB.py $uniauth

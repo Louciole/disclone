@@ -1,4 +1,4 @@
-import {initNav} from "/navigation.mjs"
+import {initNav, goTo} from "/navigation.mjs"
 import {xhr, loadServers, loadUser} from "/crud.mjs"
 import global from "/global.mjs"
 
@@ -91,11 +91,14 @@ function fillWith(template, list){
 }
 window.fillWith = fillWith
 
-function Subscribe(element, content){
+function Subscribe(element, content, className=undefined){
     console.log("Subscribe to",element, global, content,content())
     //subscribe content to element, content will be reevaluated on element change
     const domElement = document.createElement('div')
     domElement.className = element.replaceAll('.','-')
+    if (className){
+        domElement.classList.add(className)
+    }
     domElement.innerHTML = content()
     domElement.dataset.content = content
     return domElement.outerHTML

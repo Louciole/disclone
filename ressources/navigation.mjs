@@ -25,17 +25,23 @@ function openMenu(id){
 }
 window.openMenu = openMenu
 
-function goTo(id, target, selected=undefined, async=true){
+export function goTo(id, target, selected=undefined, async=true){
     loadTemplate(target.concat(".html"), id, undefined, async)
     if(selected){
+        let targetElt;
         if(global.state[selected.category]){
             global.state[selected.category].classList.remove("selected")
+        }else if(selected.event){
+            selected.event.currentTarget.parentElement.querySelector('.selected').classList.remove("selected")
+        }else if(selected.id){
+            targetElt = document.getElementById(selected.id)
+            targetElt.parentElement.querySelector('.selected').classList.remove("selected")
         }
 
         if(selected.event){
             global.state[selected.category] = selected.event.currentTarget
-        }else{
-            global.state[selected.category] = selected.target
+        }else if(selected.id){
+            global.state[selected.category] = targetElt
         }
         global.state[selected.category].classList.add("selected")
     }

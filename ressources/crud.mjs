@@ -15,6 +15,15 @@ export function xhr(endpoint,effect,method="GET", async=true){
 function changeUsername(){
     const input = document.getElementById("username-input")
 
+    const regex = /^(?=.{3,}$)[a-zA-Z0-9_\-\.]*$/;
+    if (!regex.test(input.value)) {
+        input.setCustomValidity("Invalid username. It must be at least 2 characters in letters, numbers, '_', '-', and '.'.");
+        input.reportValidity()
+        return
+    } else {
+        input.setCustomValidity("");
+    }
+
     const onload = function() { // request successful
         setElement('global.user.username', input.value)
         closeMenu('#change-username')

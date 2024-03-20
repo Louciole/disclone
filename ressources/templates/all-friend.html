@@ -8,5 +8,5 @@
 </div>
 <div class="h2">TOUS LES AMIS ─ ${Subscribe("global.user.friends", () => {return global.user.friends.length})}</div>
 <div id="" class="scrollable">
-    ${Subscribe("global.user.friends", () => fillWith("friendCard", global.user.friends))}
+    ${Subscribe("global.user.friends", () => fillWith("friendCard", global.user.friends), 'column')}
 </div>

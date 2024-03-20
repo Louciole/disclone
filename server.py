@@ -1,6 +1,7 @@
 from sakura import Server
 import cherrypy
 import json
+import re
 
 from os.path import abspath, dirname
 PATH = dirname(abspath(__file__))
@@ -63,7 +64,9 @@ class Disclone(Server):
             self.db.insertDict("boatakopin", {"kopinprincipal": uid, "kopinsecondaire": friend['id'], "accepted": False})
             return "ok"
         elif action == "accept":
-            self.db.edit("boatakopin", arg, "accepted", True)
+            friendship = self.db.getFilters("boatakopin", ["id", "=", arg, "and", "kopinsecondaire", "=", uid])
+            if friendship:
+                self.db.edit("boatakopin", arg, "accepted", True)
         elif action == "get":
             friends = self.db.getFilters("boatakopin", ["accepted", "=", True, "and (", "kopinprincipal", "=", uid, "or", "kopinsecondaire", "=", uid, ")"])
             return json.dumps(friends)
@@ -75,10 +78,19 @@ class Disclone(Server):
     @cherrypy.expose
     def change(self, element, value):
         uid = self.getUser()
-        if not self.db.getSomething("disclone_account", value, element):
-            self.db.edit("disclone_account", uid, element, value)
+        if element == "id":
+            return "forbidden"
+        elif element == "username":
+            if re.fullmatch(REGEX_USERNAME, value):
+                if not self.db.getSomething("disclone_account", value, element):
+                    self.db.edit("disclone_account", uid, element, value)
+                    return "ok"
+                else:
+                    return "this "+element+" already exists"
+            return "invalid username "
         else:
-            return "this "+element+" already exists"
+            self.db.edit("disclone_account", uid, element, value)
 
 
+REGEX_USERNAME = re.compile('^(?=.{3,}$)[a-zA-Z0-9_\-\.]*$')
 Disclone(path=PATH, configFile="/server.ini")
