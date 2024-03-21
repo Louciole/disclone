@@ -57,6 +57,13 @@ export function loadServers(){
     xhr("getUserServers",onload)
 }
 
+export function loadConvs(){
+    const onload = function() {
+        global.state["convs"] = JSON.parse(this.responseText)
+    };
+    xhr("getUserConvs",onload)
+}
+
 function difference(arrKeys, dict) {
     const result = [];
     const dictKeys = new Set(Object.keys(dict)); // Convert dict keys to a set for efficient lookup

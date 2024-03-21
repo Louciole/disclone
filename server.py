@@ -4,7 +4,9 @@ import json
 import re
 
 from os.path import abspath, dirname
+
 PATH = dirname(abspath(__file__))
+
 
 class Disclone(Server):
     @cherrypy.expose
@@ -18,10 +20,9 @@ class Disclone(Server):
 
     def onLogin(self, uid):
         if not self.db.getSomething("disclone_account", uid):
-            self.db.insertDict("disclone_account", {"id": uid, "username": '#'+str(uid)})
+            self.db.insertDict("disclone_account", {"id": uid, "username": '#' + str(uid)})
 
-
-    #-----------------------------------API-------------------------------------
+    # -----------------------------------API-------------------------------------
 
     @cherrypy.expose
     def createServer(self):
@@ -34,6 +35,20 @@ class Disclone(Server):
         uid = self.getUser()
         servers = self.db.getSomethingProxied("server", "accessserver", "account", uid)
         return json.dumps(servers)
+
+    @cherrypy.expose
+    def createConv(self, name, members):
+        account_id = self.getUser()
+        conv_id = self.db.insertDict('conv', {'name': name}, getId=True)
+        self.db.insertDict('accessconversation', {'account': account_id, 'conversation': conv_id})
+        for i in range(0, len(members)):  # this could be batched !
+            self.db.insertDict('accessconversation', {'account': members[i], 'conversation': conv_id})
+
+    @cherrypy.expose
+    def getUserConvs(self):
+        uid = self.getUser()
+        convs = self.db.getSomethingProxied("conversation", "accessconversation", "account", uid)
+        return json.dumps(convs)
 
     @cherrypy.expose
     def getUsersInfo(self, users):
@@ -58,22 +73,29 @@ class Disclone(Server):
             friend = self.db.getSomething("disclone_account", arg, "username")
             if not friend:
                 return "user not found"
-            friendship = self.db.getFilters("boatakopin", ["(kopinprincipal", "=", uid, "or", "kopinsecondaire", "=", friend['id'], ") and (", "(kopinprincipal", "=", friend['id'], "or", "kopinsecondaire", "=", uid, ')'])
+            friendship = self.db.getFilters("boatakopin",
+                                            ["(kopinprincipal", "=", uid, "or", "kopinsecondaire", "=", friend['id'],
+                                             ") and (", "(kopinprincipal", "=", friend['id'], "or", "kopinsecondaire",
+                                             "=", uid, ')'])
             if friendship:
                 return "You're already friends/invitation already sent"
-            self.db.insertDict("boatakopin", {"kopinprincipal": uid, "kopinsecondaire": friend['id'], "accepted": False})
+            self.db.insertDict("boatakopin",
+                               {"kopinprincipal": uid, "kopinsecondaire": friend['id'], "accepted": False})
             return "ok"
         elif action == "accept":
             friendship = self.db.getFilters("boatakopin", ["id", "=", arg, "and", "kopinsecondaire", "=", uid])
             if friendship:
                 self.db.edit("boatakopin", arg, "accepted", True)
         elif action == "get":
-            friends = self.db.getFilters("boatakopin", ["accepted", "=", True, "and (", "kopinprincipal", "=", uid, "or", "kopinsecondaire", "=", uid, ")"])
+            friends = self.db.getFilters("boatakopin",
+                                         ["accepted", "=", True, "and (", "kopinprincipal", "=", uid, "or",
+                                          "kopinsecondaire", "=", uid, ")"])
             return json.dumps(friends)
         elif action == "invitations":
-            invitations = self.db.getFilters("boatakopin", ["accepted", "=", False, "and (", "kopinprincipal", "=", uid, "or", "kopinsecondaire", "=", uid, ")"])
+            invitations = self.db.getFilters("boatakopin",
+                                             ["accepted", "=", False, "and (", "kopinprincipal", "=", uid, "or",
+                                              "kopinsecondaire", "=", uid, ")"])
             return json.dumps(invitations)
-
 
     @cherrypy.expose
     def change(self, element, value):
@@ -86,7 +108,7 @@ class Disclone(Server):
                     self.db.edit("disclone_account", uid, element, value)
                     return "ok"
                 else:
-                    return "this "+element+" already exists"
+                    return "this " + element + " already exists"
             return "invalid username "
         else:
             self.db.edit("disclone_account", uid, element, value)

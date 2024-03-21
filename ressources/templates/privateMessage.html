@@ -13,11 +13,5 @@
         <div class="icon">+</div>
         <span class="tooltip bottom">Créer un MP</span>
     </div>
-    <div class="item" onclick="changeActiveConv('loha')">
-        <div class="pfp red">
-            <div class="activity orange"></div>
-        </div>
-        <p>Lou (loha)</p>
-        <div class="close">+</div>
-    </div>
+    ${Subscribe('global.state.convs',()=>fillWith('conversation_element',global.state.convs))}
 </div>

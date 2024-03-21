@@ -1,5 +1,5 @@
 import {initNav, goTo} from "/navigation.mjs"
-import {xhr, loadServers, loadUser} from "/crud.mjs"
+import {xhr, loadServers, loadUser, loadConvs} from "/crud.mjs"
 import global from "/global.mjs"
 
 const dom = document.querySelector("body")
@@ -7,7 +7,7 @@ global.state.currentTab = document.getElementById("logo")
 
 initNav()
 loadUser()
-
+loadConvs()
 goTo('sec-column',"column-perso",undefined, false)
 goTo('content',"friends")
 loadServers()
