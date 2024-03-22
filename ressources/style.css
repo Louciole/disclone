@@ -1361,15 +1361,15 @@ body{
 
 #friends-block .item .container{
     border-top: 1px solid var(--text2bis);
-    border-bottom: 1px solid var(--text2bis);
     display: flex;
     height: 2rem;
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
     width: 100%;
-    padding: 0.8rem 0;
+    padding: 0.9rem 0;
     margin-bottom: 0;
+    transform: translateY(-0.5px);
 }
 
 #friends-block .item h5,p{
@@ -1455,6 +1455,44 @@ body{
     padding: 0.7rem 1.7rem;
 }
 
+#setting-content input{
+    background: var(--bg4);
+    border: none;
+    color: var(--text);
+    border-radius: 5px;
+    height: 1.2rem;
+    width: calc(100% - 3.5rem);
+    font-size: 1rem;
+    margin: 0;
+    padding: 0.7rem 1.7rem;
+}
+
 #setting-content p{
     margin: 0.8rem 0;
+}
+
+.half{
+    width: 50%;
+    height: 100%;
+}
+
+#setting-content .inline.gap{
+    gap: 3rem;
+}
+
+.save-settings {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    background: var(--bg4);
+    border-radius: 8px;
+    position: fixed;
+    gap: 1rem;
+    bottom: 2rem;
+    padding: 0.3rem 1.2rem;
+}
+
+.underlhover:hover{
+    transition: all 200ms;
+    text-decoration: underline;
 }

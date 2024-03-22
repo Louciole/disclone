@@ -1,14 +1,32 @@
 <h1>Profils</h1>
 
-<div class="vertical">
-    <h3>NOM D'AFFICHAGE</h3>
-    <label>
-        <input type="text" id="display-name-input" value="${global.user.display}">
-    </label>
+<div class="inline gap">
+    <div class="half vertical">
+        <h3>NOM D'AFFICHAGE</h3>
+        <label>
+            <input type="text" id="display-name-input" value="${global.user.display}">
+        </label>
+    </div>
+    <div class="half vertical">
+        <h3>APERCU</h3>
+        <div class="user-profile">
+            <div class="banner"></div>
+            <div class="profil-picture"></div>
+            <div class="profil-wrapper">
+                <div class="profil-badges">
+                </div>
+                <div class="profil-infos">
+                    <div class="name">${Subscribe('global.user.display',()=>{return(global.user.display)})}</div>
+                    <div class="">${Subscribe('global.user.username',()=>{return(global.user.username)})}</div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
 
 <div class="save-settings">
     <p>Attention, il reste des modifications non enregistrées !</p>
-    <div>Réinitialiser</div>
+    <div class="underlhover" onclick="reset()">Réinitialiser</div>
     <div class="btn green" onclick="Save('global.user.display')">Enregistrer les modifications</div>
 </div>
