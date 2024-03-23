@@ -3,6 +3,11 @@ import cherrypy
 import json
 import re
 
+#websockets imports
+import asyncio
+import websockets
+import threading
+
 from os.path import abspath, dirname
 
 PATH = dirname(abspath(__file__))
@@ -18,9 +23,34 @@ class Disclone(Server):
         self.checkJwt()
         return open(PATH + "/ressources/main.html")
 
+    def onStart(self):
+        websocket_thread = threading.Thread(target=self.startWebSockets)
+        websocket_thread.start()
+
     def onLogin(self, uid):
         if not self.db.getSomething("disclone_account", uid):
             self.db.insertDict("disclone_account", {"id": uid, "username": '#' + str(uid)})
+
+    def startWebSockets(self):
+        asyncio.run(self.runWebsockets())
+
+    async def runWebsockets(self):
+        async with websockets.serve(self.handle_message, self.config.get("server", "IP"), int(self.config.get("server", "PORT"))+1):
+            await asyncio.Future()  # Run the server forever
+
+    # --------------------------------WEBSOCKETS--------------------------------
+
+    async def handle_message(self, websocket):
+        async for message in websocket:
+            data = json.loads(message)
+            match data["type"]:
+                case "message":
+                    await websocket.send(message)
+                case _:
+                    print("unknown message received",message)
+
+
+
 
     # -----------------------------------API-------------------------------------
 
