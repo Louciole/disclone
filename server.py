@@ -1,9 +1,11 @@
+import urllib.parse
+
 from sakura import Server
 import cherrypy
 import json
 import re
 
-#websockets imports
+# websockets imports
 import asyncio
 import websockets
 import threading
@@ -23,35 +25,21 @@ class Disclone(Server):
         self.checkJwt()
         return open(PATH + "/ressources/main.html")
 
-    def onStart(self):
-        websocket_thread = threading.Thread(target=self.startWebSockets)
-        websocket_thread.start()
-
     def onLogin(self, uid):
         if not self.db.getSomething("disclone_account", uid):
             self.db.insertDict("disclone_account", {"id": uid, "username": '#' + str(uid)})
+        # self.db.insertDict("connection", {"userid": uid})
 
-    def startWebSockets(self):
-        asyncio.run(self.runWebsockets())
+    def getUserConnection(self, id):
+        return self.db.getSomething("active_client", id, "userid")
 
-    async def runWebsockets(self):
-        async with websockets.serve(self.handle_message, self.config.get("server", "IP"), int(self.config.get("server", "PORT"))+1):
-            await asyncio.Future()  # Run the server forever
-
-    # --------------------------------WEBSOCKETS--------------------------------
-
-    async def handle_message(self, websocket):
-        async for message in websocket:
-            data = json.loads(message)
-            match data["type"]:
-                case "message":
-                    await websocket.send(message)
-                case _:
-                    print("unknown message received",message)
-
-
-
-
+    def newConv(self, name, members):
+        account_id = self.getUser()
+        conv_id = self.db.insertDict('conversation', {'name': name}, getId=True)
+        self.db.insertDict('accessconversation', {'account': account_id, 'conversation': conv_id})
+        for i in range(0, len(members)):  # this could be batched !
+            self.db.insertDict('accessconversation', {'account': members[i], 'conversation': conv_id})
+        return conv_id
     # -----------------------------------API-------------------------------------
 
     @cherrypy.expose
@@ -68,11 +56,9 @@ class Disclone(Server):
 
     @cherrypy.expose
     def createConv(self, name, members):
-        account_id = self.getUser()
-        conv_id = self.db.insertDict('conv', {'name': name}, getId=True)
-        self.db.insertDict('accessconversation', {'account': account_id, 'conversation': conv_id})
-        for i in range(0, len(members)):  # this could be batched !
-            self.db.insertDict('accessconversation', {'account': members[i], 'conversation': conv_id})
+        self.newConv(name, members)
+
+
 
     @cherrypy.expose
     def getUserConvs(self):
@@ -93,8 +79,24 @@ class Disclone(Server):
         return json.dumps(user)
 
     @cherrypy.expose
-    def sendMessage(self):
-        pass
+    def sendMessage(self, conv, content):
+        uid = self.getUser()
+        print("YO", conv)
+        conv = json.loads(conv)
+        print(conv)
+        if not conv.get("id"):
+            conv["id"] = self.newConv("Noname", [uid, conv["dest"]])
+
+        self.db.insertDict("message", {"sender": uid, "place": conv["id"], "body": content})
+
+        return self.getUserConnection(conv["dest"])
+
+
+
+    @cherrypy.expose
+    def registerActivity(self, SDP):
+        uid = self.getUser()
+        self.db.insertDict("active_client", {"userid": uid, "SDP": SDP})
 
     @cherrypy.expose
     def friends(self, action, arg=""):

@@ -4,6 +4,8 @@ let global = {
     "state":{
     },
     "users":{
+    },
+    "convs":{
     }
 }
 export default global

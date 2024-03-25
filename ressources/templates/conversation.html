@@ -1,5 +1,8 @@
 <div class="selected-info">
-    <div class="title"><div class="circle red"></div>Lou (loha)</div>
+    <div class="title">
+        <div class="circle red"></div>
+        ${global.users[global.convs[global.state.activeConv].dest].display}
+    </div>
 </div>
 <div class="scrollable">
     <div class="message-group">
@@ -19,8 +22,8 @@
     <div id="welcome-message">
         <div class="big pfp red">
         </div>
-        <h1>Lou (loha)</h1>
-        <h2>odoo_lou</h2>
+        <h1>${global.users[global.convs[global.state.activeConv].dest].display}</h1>
+        <h2>${global.users[global.convs[global.state.activeConv].dest].username}</h2>
         <p>Ceci est le début de l'historique de tes messages privés avec <b>Lou (loha)</b></p>
         <div class="inline">
             <div class="pfp blue"></div>
@@ -36,7 +39,7 @@
         <div class="icon"></div>
     </div>
     <label style="flex: 1;">
-        <input type="text" placeholder="Envoyer un message à @odoo_lou">
+        <input type="text" placeholder="Envoyer un message à @odoo_lou" onkeyup="sendMessage(event)">
     </label>
 
     <div class="icon-wrapper" onclick="silent_typing()">

@@ -39,12 +39,16 @@ create table if not exists message (
     body TEXT,
     timestamp DATE DEFAULT CURRENT_TIMESTAMP
 );
-ALTER TABLE message
-ADD CONSTRAINT MSG_PLACE_CONSTRAINT FOREIGN KEY (place) REFERENCES conversationElement (id) ON UPDATE CASCADE;
 
 create table if not exists boatakopin (
     id bigserial NOT NULL PRIMARY KEY,
     kopinPrincipal integer not null,
     kopinSecondaire integer not null,
     accepted bool
-)
+);
+
+create table if not exists active_client (
+    id bigserial NOT NULL PRIMARY KEY,
+    userid integer not null,
+    SDP text
+);

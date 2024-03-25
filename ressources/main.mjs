@@ -5,9 +5,12 @@ import global from "/global.mjs"
 const dom = document.querySelector("body")
 global.state.currentTab = document.getElementById("logo")
 
-const WEBSOCKETS = "ws://localhost:9877"
+global.state.activeConv = "newConv"
+global.convs["newConv"] = {
+    "dest":1,
+    "sender":10,
+}
 
-initWebSockets()
 initNav()
 loadUser()
 loadConvs()
@@ -18,25 +21,18 @@ goTo('sec-selector',"privateMessage")
 loadEmojis()
 goTo('friends-block','main-friend')
 
+let myPeerConnection = new RTCPeerConnection()
 
-function initWebSockets(){
-    const socket = new WebSocket(WEBSOCKETS);
-
-    socket.onopen = function(event) {
-        console.log("Connection opened to Python WebSocket server!");
-        const message = {"content" : 'Hello from the JavaScript client!'};
-        socket.send(JSON.stringify(message));
-    };
-
-    socket.onmessage = function(event) {
-        console.log("Received message from Python server:", event.data);
-    };
-
-    socket.onerror = function(error) {
-        console.error("WebSocket error:", error);
-    };
-
-}
+myPeerConnection
+    .createOffer()
+    .then((offer) => myPeerConnection.setLocalDescription(offer))
+    .then(() => {
+        xhr(JSON.stringify(myPeerConnection.localDescription.toJSON()), undefined
+        );
+    })
+    .catch((reason) => {
+        // An error occurred, so handle the failure to connect
+    });
 
 export function loadTemplate(template, target=undefined, flex= undefined, async){
     const effect = function() {
@@ -158,3 +154,14 @@ export function getRelevantUser(element){
     }
 }
 window.getRelevantUser = getRelevantUser
+
+function sendMessage(event){
+    if (event.key === "Enter"){
+        const onload = () => {
+        }
+
+        xhr("sendMessage?conv=".concat(encodeURI(JSON.stringify(global.convs[global.state.activeConv])), "&content=", event.currentTarget.value), onload())
+        event.currentTarget.value = ''
+    }
+}
+window.sendMessage = sendMessage
