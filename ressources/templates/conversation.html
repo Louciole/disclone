@@ -5,20 +5,7 @@
     </div>
 </div>
 <div class="scrollable">
-    <div class="message-group">
-        <div class="pfp red">
-        </div>
-        <div class="message">
-            <div class="sender">
-                <h3>Lou !</h3>
-                <p>Aujourd'hui à 20:13</p>
-            </div>
-            <div class="content">
-                <div class="meta"></div>
-                <p> Hello World !</p>
-            </div>
-        </div>
-    </div>
+    ${Subscribe("global.user.messages", () => fillWith("conversation", global.user.messages))}
     <div id="welcome-message">
         <div class="big pfp red">
         </div>
