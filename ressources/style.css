@@ -231,6 +231,11 @@ section{
     visibility: visible;
 }
 
+.action:hover .tooltip {
+    visibility: visible;
+    transform: translate(0, -2.3rem);
+}
+
 #message-menu .icon:hover ~ .tooltip {
     visibility: visible;
 }

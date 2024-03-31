@@ -1,11 +1,12 @@
 <div class="selected-info">
     <div class="title">
         <div class="circle red"></div>
+        ${console.log(global)}
         ${global.users[global.convs[global.state.activeConv].dest].display}
     </div>
 </div>
 <div class="scrollable">
-    ${Subscribe("global.user.messages", () => fillWith("conversation", global.user.messages))}
+    ${Subscribe('global.convs',()=>fillWith('message',global.convs[global.state.activeConv].messages))}
     <div id="welcome-message">
         <div class="big pfp red">
         </div>

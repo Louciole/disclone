@@ -9,6 +9,14 @@ global.state.activeConv = "newConv"
 global.convs["newConv"] = {
     "dest":1,
     "sender":10,
+    "messages":[
+        {
+            "sender":1,
+            "dest":10,
+            "body":"Hello world !",
+            "timestamp":1711564469154
+        }
+    ]
 }
 
 initNav()
@@ -97,7 +105,7 @@ function logout(){
 window.logout = logout
 
 function fillWith(template, list){
-    console.log("fillWith")
+    console.log("fillWith",template,list)
     const effect = function() {};
     const request = xhr( '/templates/'.concat(template,".html"), effect, "GET", false)
 
@@ -165,3 +173,21 @@ function sendMessage(event){
     }
 }
 window.sendMessage = sendMessage
+
+function getTimeStr(timestamp, options = { locale: "fr-FR" }) {
+    const date = new Date(timestamp);
+
+    const defaultOptions = {
+        year: "numeric",
+        month: "numeric",
+        day: "numeric",
+        hour: "numeric",
+        minute: "numeric",
+        hour12: false,
+    };
+
+    const mergedOptions = { ...defaultOptions, ...options };
+
+    return date.toLocaleDateString(undefined, mergedOptions);
+}
+window.getTimeStr = getTimeStr

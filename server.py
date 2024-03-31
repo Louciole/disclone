@@ -5,11 +5,6 @@ import cherrypy
 import json
 import re
 
-# websockets imports
-import asyncio
-import websockets
-import threading
-
 from os.path import abspath, dirname
 
 PATH = dirname(abspath(__file__))
@@ -57,8 +52,6 @@ class Disclone(Server):
     @cherrypy.expose
     def createConv(self, name, members):
         self.newConv(name, members)
-
-
 
     @cherrypy.expose
     def getUserConvs(self):
