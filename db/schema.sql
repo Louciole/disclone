@@ -37,7 +37,7 @@ create table if not exists message (
     sender integer NOT NULL,
     place integer NOT NULL,
     body TEXT,
-    timestamp DATE DEFAULT CURRENT_TIMESTAMP
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 create table if not exists boatakopin (

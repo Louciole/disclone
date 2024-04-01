@@ -5,7 +5,6 @@ import global from "/global.mjs"
 const dom = document.querySelector("body")
 global.state.currentTab = document.getElementById("logo")
 
-global.state.activeConv = "newConv"
 global.convs["newConv"] = {
     "dest":1,
     "sender":10,

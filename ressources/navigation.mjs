@@ -1,6 +1,6 @@
 import {loadTemplate} from "/main.mjs"
 import global from "/global.mjs"
-import {xhr} from "./crud.mjs";
+import {loadConv, xhr} from "./crud.mjs";
 
 export function initNav(){
     document.addEventListener('click', function (event) {
@@ -117,3 +117,10 @@ function goodbye(){
     }
 }
 window.goodbye = goodbye
+
+function goToConv(convId){
+    global.state.activeConv = convId
+    goTo('content','conversation',undefined,false)
+    loadConv(convId)
+}
+window.goToConv = goToConv

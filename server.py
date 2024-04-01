@@ -66,6 +66,15 @@ class Disclone(Server):
         return json.dumps(users)
 
     @cherrypy.expose
+    def getConvContent(self, convId):
+        uid = self.getUser()
+        conv = self.db.getFilters("accessconversation", ["conversation", "=", convId, "and", "account", "=", uid])
+        if conv:
+            content = self.db.getFilters("message", ["place", "=", convId])
+            print( content)
+            return json.dumps(content, default=str)
+
+    @cherrypy.expose
     def getUserInfo(self):
         uid = self.getUser()
         user = self.db.getSomething("disclone_account", uid)
@@ -74,7 +83,6 @@ class Disclone(Server):
     @cherrypy.expose
     def sendMessage(self, conv, content):
         uid = self.getUser()
-        print("YO", conv)
         conv = json.loads(conv)
         print(conv)
         if not conv.get("id"):
@@ -111,6 +119,9 @@ class Disclone(Server):
             friendship = self.db.getFilters("boatakopin", ["id", "=", arg, "and", "kopinsecondaire", "=", uid])
             if friendship:
                 self.db.edit("boatakopin", arg, "accepted", True)
+                conv_id = self.db.insertDict('conversation', {'name': "MP"}, getId=True)
+                self.db.insertDict('accessconversation', {'account': uid, 'conversation': conv_id})
+                self.db.insertDict('accessconversation', {'account': friendship[0]["kopinprincipal"], 'conversation': conv_id})
         elif action == "get":
             friends = self.db.getFilters("boatakopin",
                                          ["accepted", "=", True, "and (", "kopinprincipal", "=", uid, "or",

@@ -59,7 +59,10 @@ export function loadServers(){
 
 export function loadConvs(){
     const onload = function() {
-        global.state["convs"] = JSON.parse(this.responseText)
+        const keys = JSON.parse(this.responseText)
+        for(let key of keys){
+            global.convs[key.id] = key
+        }
     };
     xhr("getUserConvs",onload)
 }
@@ -94,6 +97,15 @@ function loadUsers(keys){
     xhr("getUsersInfo?users="+JSON.stringify(diff), onload, "GET",false)
 }
 
+export function loadConv(key){
+    const onload = function() {
+        const keys = JSON.parse(this.responseText)
+        for(let key of keys){
+            global.convs[key.id] = key
+        }
+    };
+    xhr("getConvContent?convId="+JSON.stringify(key), onload, "GET",false)
+}
 
 export function loadUser(){
     let request = new XMLHttpRequest();
