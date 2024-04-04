@@ -1,18 +1,18 @@
 <div class="selected-info">
     <div class="title">
         <div class="circle red"></div>
-        ${console.log(global)}
-        ${global.users[global.convs[global.state.activeConv].dest].display}
+        ${console.log(global.convs[global.state.activeConv])}
+        ${getConvName(global.convs[global.state.activeConv])}
     </div>
 </div>
 <div class="scrollable">
-    ${Subscribe('global.convs',()=>fillWith('message',global.convs[global.state.activeConv].messages))}
+    ${Subscribe('global.convs',()=>fillWith('message',global.convs[global.state.activeConv].messages||[]))}
     <div id="welcome-message">
         <div class="big pfp red">
         </div>
-        <h1>${global.users[global.convs[global.state.activeConv].dest].display}</h1>
-        <h2>${global.users[global.convs[global.state.activeConv].dest].username}</h2>
-        <p>Ceci est le début de l'historique de tes messages privés avec <b>Lou (loha)</b></p>
+        <h1>${global.users[global.convs[global.state.activeConv].members[0]].display}</h1>
+        <h2>${global.users[global.convs[global.state.activeConv].members[0]].username}</h2>
+        <p>Ceci est le début de l'historique de tes messages privés avec <b>${getConvName(global.convs[global.state.activeConv])}</b></p>
         <div class="inline">
             <div class="pfp blue"></div>
             <p>1 serveur en commun</p>
@@ -27,7 +27,7 @@
         <div class="icon"></div>
     </div>
     <label style="flex: 1;">
-        <input type="text" placeholder="Envoyer un message à @odoo_lou" onkeyup="sendMessage(event)">
+        <input type="text" placeholder="Envoyer un message à ${getConvName(global.convs[global.state.activeConv])}" onkeyup="sendMessage(event)">
     </label>
 
     <div class="icon-wrapper" onclick="silent_typing()">
@@ -37,6 +37,7 @@
     </div>
     <div class="icon-wrapper">
         <div class="icon"></div>
+
     </div>
     <div class="icon-wrapper" onclick="toggleFM('emoji-board')">
         <div class="icon"></div>

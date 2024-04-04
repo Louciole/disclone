@@ -79,7 +79,7 @@ function difference(arrKeys, dict) {
     return Array.from(result);
 }
 
-function loadUsers(keys){
+export function loadUsers(keys){
     const diff = difference(keys, global.users)
 
     if(diff.length === 0){
@@ -99,12 +99,14 @@ function loadUsers(keys){
 
 export function loadConv(key){
     const onload = function() {
-        const keys = JSON.parse(this.responseText)
-        for(let key of keys){
-            global.convs[key.id] = key
-        }
     };
-    xhr("getConvContent?convId="+JSON.stringify(key), onload, "GET",false)
+
+    const request = xhr("getConvContent?convId="+JSON.stringify(key), onload, "GET",false)
+    const elements = JSON.parse(request.responseText)
+    for(let element in elements){
+        console.log("seeting",element,elements[element])
+        global.convs[key][element] = elements[element]
+    }
 }
 
 export function loadUser(){

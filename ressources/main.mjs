@@ -1,22 +1,10 @@
 import {initNav, goTo} from "/navigation.mjs"
-import {xhr, loadServers, loadUser, loadConvs} from "/crud.mjs"
+import {xhr, loadServers, loadUser, loadConvs, loadUsers} from "/crud.mjs"
 import global from "/global.mjs"
 
 const dom = document.querySelector("body")
 global.state.currentTab = document.getElementById("logo")
 
-global.convs["newConv"] = {
-    "dest":1,
-    "sender":10,
-    "messages":[
-        {
-            "sender":1,
-            "dest":10,
-            "body":"Hello world !",
-            "timestamp":1711564469154
-        }
-    ]
-}
 
 initNav()
 loadUser()
@@ -104,14 +92,22 @@ function logout(){
 window.logout = logout
 
 function fillWith(template, list){
-    console.log("fillWith",template,list)
+    console.log("fillWith",template,list,typeof list)
     const effect = function() {};
     const request = xhr( '/templates/'.concat(template,".html"), effect, "GET", false)
 
     let content = ""
-    for (let element of list){
-        content += eval('`' + request.responseText + '`')
+    if (typeof list == 'object'){
+        for (let elementId in list){
+            const element = list[elementId]
+            content += eval('`' + request.responseText + '`')
+        }
+    }else{
+        for (let element of list){
+            content += eval('`' + request.responseText + '`')
+        }
     }
+
     return content
 }
 window.fillWith = fillWith
@@ -190,3 +186,22 @@ function getTimeStr(timestamp, options = { locale: "fr-FR" }) {
     return date.toLocaleDateString(undefined, mergedOptions);
 }
 window.getTimeStr = getTimeStr
+
+function getConvName(conv){
+    if(conv.name){
+        return conv.name
+    }
+
+    let name = ""
+    loadUsers(conv.members)
+
+    for (let member in conv.members){
+        member = conv.members[member]
+        if(member !== global.user.id){
+            name = name.concat(global.users[member].display)
+        }
+    }
+    conv.name=name
+    return name
+}
+window.getConvName = getConvName

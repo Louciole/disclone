@@ -3,7 +3,7 @@
     </div>
     <div class="message">
         <div class="sender">
-            ${Subscribe("global.users["+element.sender.toString()+"].display", () => {global.users[element.sender].display},"h3")}
+            ${Subscribe("global.users["+element.sender.toString()+"].display", () => {return(global.users[element.sender].display)},"h3")}
             <p>${getTimeStr(element.timestamp)}</p>
         </div>
         <div class="content">

@@ -57,6 +57,11 @@ class Disclone(Server):
     def getUserConvs(self):
         uid = self.getUser()
         convs = self.db.getSomethingProxied("conversation", "accessconversation", "account", uid)
+        for j in range(0, len(convs)):
+            #TODO refactor, this is slow for no reason
+            convs[j]["members"] = self.db.getFilters("accessconversation", ["conversation", "=", convs[j]["id"]])
+            for i in range(0, len(convs[j]["members"])):
+                convs[j]["members"][i] = convs[j]["members"][i]["account"]
         return json.dumps(convs)
 
     @cherrypy.expose
@@ -70,8 +75,9 @@ class Disclone(Server):
         uid = self.getUser()
         conv = self.db.getFilters("accessconversation", ["conversation", "=", convId, "and", "account", "=", uid])
         if conv:
-            content = self.db.getFilters("message", ["place", "=", convId])
-            print( content)
+            content={}
+            content["messages"] = self.db.getFilters("message", ["place", "=", convId])
+            print(content)
             return json.dumps(content, default=str)
 
     @cherrypy.expose
@@ -90,9 +96,8 @@ class Disclone(Server):
 
         self.db.insertDict("message", {"sender": uid, "place": conv["id"], "body": content})
 
+        return
         return self.getUserConnection(conv["dest"])
-
-
 
     @cherrypy.expose
     def registerActivity(self, SDP):
@@ -119,7 +124,7 @@ class Disclone(Server):
             friendship = self.db.getFilters("boatakopin", ["id", "=", arg, "and", "kopinsecondaire", "=", uid])
             if friendship:
                 self.db.edit("boatakopin", arg, "accepted", True)
-                conv_id = self.db.insertDict('conversation', {'name': "MP"}, getId=True)
+                conv_id = self.db.insertDict('conversation', {'name': ""}, getId=True)
                 self.db.insertDict('accessconversation', {'account': uid, 'conversation': conv_id})
                 self.db.insertDict('accessconversation', {'account': friendship[0]["kopinprincipal"], 'conversation': conv_id})
         elif action == "get":

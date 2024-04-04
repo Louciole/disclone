@@ -120,7 +120,7 @@ window.goodbye = goodbye
 
 function goToConv(convId){
     global.state.activeConv = convId
-    goTo('content','conversation',undefined,false)
     loadConv(convId)
+    goTo('content','conversation',undefined,false)
 }
 window.goToConv = goToConv
