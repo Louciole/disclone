@@ -1,6 +1,6 @@
 import {loadTemplate} from "/main.mjs"
 import global from "/global.mjs"
-import {loadConv, xhr} from "./crud.mjs";
+import {loadConv, loadServers, xhr} from "./crud.mjs";
 
 export function initNav(){
     document.addEventListener('click', function (event) {
@@ -119,8 +119,34 @@ function goodbye(){
 window.goodbye = goodbye
 
 function goToConv(convId){
+    let targetElt
+    if(global.state.activeConv){
+        targetElt = document.getElementById("conv".concat(global.state.activeConv))
+    }else{
+        targetElt = document.getElementById("friendCat")
+    }
+    targetElt.classList.remove("selected")
+
     global.state.activeConv = convId
     loadConv(convId)
+
+    targetElt = document.getElementById("conv".concat(convId))
+    targetElt.classList.add("selected")
+
     goTo('content','conversation',undefined,false)
 }
 window.goToConv = goToConv
+
+function goToFriends(event){
+    if(global.state.activeConv){
+        let targetElt = document.getElementById("conv".concat(global.state.activeConv))
+        targetElt.classList.remove("selected")
+    }
+
+    global.state.activeConv = undefined
+    event.currentTarget.classList.add("selected")
+
+    goTo('content',"friends")
+    goTo('friends-block','main-friend')
+}
+window.goToFriends = goToFriends
