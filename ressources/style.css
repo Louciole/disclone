@@ -1510,3 +1510,21 @@ section{
     text-decoration: underline;
     cursor: pointer;
 }
+
+#notif {
+    background: var(--bg);
+    height: fit-content;
+    width: fit-content;
+    z-index: 20;
+    padding: 1rem 1.2rem;
+    line-height: 1.6rem;
+    font-size: 1.2rem;
+    border-radius: 10px;
+    border-bottom: 5px solid var(--lefancypuple);
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    text-align: center;
+    min-width: calc(400px - 2rem);
+    box-shadow: 10px 10px 13px -11px rgb(0, 0, 0);
+}

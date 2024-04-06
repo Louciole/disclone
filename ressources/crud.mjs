@@ -1,4 +1,4 @@
-import {addServer, getRelevantUser, setElement} from "/main.mjs"
+import {addServer, displayNotif, getRelevantUser, pushElement, setElement} from "/main.mjs"
 import global from "/global.mjs"
 
 const WEBSOCKETS = "ws://localhost:9888"
@@ -202,6 +202,16 @@ function initWebSockets(){
             case "register_request":
                 //TODO handle multiserver xhr with the received servID
                 xhr("authWS?connectionId=".concat(message.connectionId),undefined)
+            case "notif":
+                switch (message.content.type){
+                    case "message":
+                        //TODO missing timestamp
+                        const currentDate = new Date()
+                        const timestamp = currentDate.getTime()
+                        message.content.content["timestamp"] = timestamp
+                        pushElement('global.convs['.concat(message.content.content.place,'].messages'),message.content.content)
+                        displayNotif(message.content)
+                }
         }
 
     };

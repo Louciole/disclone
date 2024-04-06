@@ -93,7 +93,12 @@ class Disclone(Server):
             #TODO handle multi server
             if self.pool.get(client["id"]):
                 websocket = self.pool[client["id"]]
-                asyncio.run(ws_send(json.dumps(message)))
+                try:
+                    asyncio.run(ws_send(json.dumps(message)))
+                except Exception as e:
+                    print("exception sending a message on a ws", e)
+                    del self.pool[client["id"]]
+                    self.db.deleteSomething("active_client", client["id"])
             else:
                 self.db.deleteSomething("active_client", client["id"])
 

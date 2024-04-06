@@ -4,7 +4,7 @@ import global from "/global.mjs"
 
 const dom = document.querySelector("body")
 global.state.currentTab = document.getElementById("logo")
-
+const notifElt = document.getElementById("notif")
 
 initNav()
 loadUser()
@@ -103,7 +103,7 @@ function Subscribe(element, content, className=undefined){
     console.log("Subscribe to",element, global, content)
     //subscribe content to element, content will be reevaluated on element change
     const domElement = document.createElement('div')
-    domElement.className = element.replaceAll('.','-')
+    domElement.className = element.replaceAll('.','-').replaceAll('[','🪟').replaceAll(']','🥹')
     if (className){
         domElement.classList.add(className)
     }
@@ -116,7 +116,18 @@ window.Subscribe = Subscribe
 export function setElement(element, value){
     console.log(element,'has been updated to:', value);
     eval(`${element} = value`);
-    const subscriptions = document.querySelectorAll(`[class^="${element.replaceAll('.','-')}"]`)
+    const subscriptions = document.querySelectorAll(`[class^="${element.replaceAll('.','-').replaceAll('[','🪟').replaceAll(']','🥹')}"]`)
+    for (let sub of subscriptions){
+        console.log("we need to evaluate",sub)
+        const content = eval(sub.dataset.content)
+        sub.innerHTML = content()
+    }
+}
+
+export function pushElement(element, value){
+    console.log(element,'has been added:', value);
+    eval(`${element}.push(value)`);
+    const subscriptions = document.querySelectorAll(`[class^="${element.replaceAll('.','-').replaceAll('[','🪟').replaceAll(']','🥹')}"]`)
     for (let sub of subscriptions){
         console.log("we need to evaluate",sub)
         const content = eval(sub.dataset.content)
@@ -151,6 +162,9 @@ function sendMessage(event){
         }
 
         xhr("sendMessage?conv=".concat(encodeURI(JSON.stringify(global.convs[global.state.activeConv])), "&content=", event.currentTarget.value), onload())
+        const currentDate = new Date();
+        const timestamp = currentDate.getTime();
+        pushElement('global.convs['.concat(global.state.activeConv,'].messages'), {"id":global.convs[global.state.activeConv].messages.length, "sender": global.user.id,"place":global.state.activeConv, "body": event.currentTarget.value, "timestamp":timestamp})
         event.currentTarget.value = ''
     }
 }
@@ -192,3 +206,11 @@ function getConvName(conv){
     return name
 }
 window.getConvName = getConvName
+
+export function displayNotif(notif){
+    const notifSound = new Audio('sounds/notification.mp3');
+    notifSound.play();
+    //notifElt.style.display = "flex"
+    //notifElt.innerText = notif.body
+    //setTimeout(() => notifElt.style.display="none", 1500)
+}
