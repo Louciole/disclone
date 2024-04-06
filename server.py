@@ -5,6 +5,11 @@ import cherrypy
 import json
 import re
 
+# websockets imports
+import asyncio
+import websockets
+import threading
+
 from os.path import abspath, dirname
 
 PATH = dirname(abspath(__file__))
@@ -20,10 +25,17 @@ class Disclone(Server):
         self.checkJwt()
         return open(PATH + "/ressources/main.html")
 
+    def onStart(self):
+        self.id = 1  # TODO give a different id to each server to allow them to contact eachother
+        self.pool = {}
+        self.wating_clients = {}
+        self.currentWaiting = 0
+        websocket_thread = threading.Thread(target=self.startWebSockets)
+        websocket_thread.start()
+
     def onLogin(self, uid):
         if not self.db.getSomething("disclone_account", uid):
             self.db.insertDict("disclone_account", {"id": uid, "username": '#' + str(uid)})
-        # self.db.insertDict("connection", {"userid": uid})
 
     def getUserConnection(self, id):
         return self.db.getSomething("active_client", id, "userid")
@@ -35,6 +47,56 @@ class Disclone(Server):
         for i in range(0, len(members)):  # this could be batched !
             self.db.insertDict('accessconversation', {'account': members[i], 'conversation': conv_id})
         return conv_id
+
+    def startWebSockets(self):
+        asyncio.run(self.runWebsockets())
+
+    async def runWebsockets(self):
+        async with websockets.serve(self.handle_message, self.config.get("server", "IP"),
+                                    int(self.config.get("NOTIFICATION", "PORT"))):
+            await asyncio.Future()  # Run the server forever
+
+    # --------------------------------WEBSOCKETS--------------------------------
+
+    async def handle_message(self, websocket):
+        async for message in websocket:
+            data = json.loads(message)
+
+            match data["type"]:
+                case "register":
+                    self.wating_clients[self.currentWaiting] = {"connection": websocket, "uid": data["uid"]}
+                    print(self.wating_clients)
+                    self.currentWaiting += 1
+                    answer = {"type": "register_request", "servId": self.id, "connectionId": self.currentWaiting - 1}
+                    await websocket.send(json.dumps(answer))
+                case _:
+                    print("unknown message received", message)
+
+    @cherrypy.expose
+    def authWS(self, connectionId):
+        account_id = self.getUser()
+        print(self.wating_clients)
+        if self.wating_clients[int(connectionId)]["uid"] != account_id:
+            return "forbidden"
+
+        connection = self.db.insertDict("active_client", {"userid": account_id, "server": self.id}, True)
+        self.pool[connection] = self.wating_clients[int(connectionId)]["connection"]
+        del self.wating_clients[int(connectionId)]
+
+    def sendNotification(self, account, content):
+        message = {"type": "notif", "content": content}
+        async def ws_send(message):
+            await websocket.send(message)
+
+        clients = self.db.getAll("active_client", account, "userid")
+        for client in clients:
+            #TODO handle multi server
+            if self.pool.get(client["id"]):
+                websocket = self.pool[client["id"]]
+                asyncio.run(ws_send(json.dumps(message)))
+            else:
+                self.db.deleteSomething("active_client", client["id"])
+
     # -----------------------------------API-------------------------------------
 
     @cherrypy.expose
@@ -58,7 +120,7 @@ class Disclone(Server):
         uid = self.getUser()
         convs = self.db.getSomethingProxied("conversation", "accessconversation", "account", uid)
         for j in range(0, len(convs)):
-            #TODO refactor, this is slow for no reason
+            # TODO refactor, this is slow for no reason
             convs[j]["members"] = self.db.getFilters("accessconversation", ["conversation", "=", convs[j]["id"]])
             for i in range(0, len(convs[j]["members"])):
                 convs[j]["members"][i] = convs[j]["members"][i]["account"]
@@ -75,9 +137,8 @@ class Disclone(Server):
         uid = self.getUser()
         conv = self.db.getFilters("accessconversation", ["conversation", "=", convId, "and", "account", "=", uid])
         if conv:
-            content={}
+            content = {}
             content["messages"] = self.db.getFilters("message", ["place", "=", convId])
-            print(content)
             return json.dumps(content, default=str)
 
     @cherrypy.expose
@@ -94,10 +155,14 @@ class Disclone(Server):
         if not conv.get("id"):
             conv["id"] = self.newConv("Noname", [uid, conv["dest"]])
 
-        self.db.insertDict("message", {"sender": uid, "place": conv["id"], "body": content})
+        message = {"sender": uid, "place": conv["id"], "body": content}
+        self.db.insertDict("message", message)
 
+        members = self.db.getAll("accessconversation", conv["id"], "conversation")
+        for user in members:
+            if user["account"] != uid:
+                self.sendNotification(user["account"], {"type": "message", "content": message})
         return
-        return self.getUserConnection(conv["dest"])
 
     @cherrypy.expose
     def registerActivity(self, SDP):
@@ -126,7 +191,8 @@ class Disclone(Server):
                 self.db.edit("boatakopin", arg, "accepted", True)
                 conv_id = self.db.insertDict('conversation', {'name': ""}, getId=True)
                 self.db.insertDict('accessconversation', {'account': uid, 'conversation': conv_id})
-                self.db.insertDict('accessconversation', {'account': friendship[0]["kopinprincipal"], 'conversation': conv_id})
+                self.db.insertDict('accessconversation',
+                                   {'account': friendship[0]["kopinprincipal"], 'conversation': conv_id})
         elif action == "get":
             friends = self.db.getFilters("boatakopin",
                                          ["accepted", "=", True, "and (", "kopinprincipal", "=", uid, "or",

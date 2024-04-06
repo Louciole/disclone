@@ -50,5 +50,5 @@ create table if not exists boatakopin (
 create table if not exists active_client (
     id bigserial NOT NULL PRIMARY KEY,
     userid integer not null,
-    SDP text
+    server integer not null
 );

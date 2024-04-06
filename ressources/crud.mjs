@@ -1,6 +1,8 @@
 import {addServer, getRelevantUser, setElement} from "/main.mjs"
 import global from "/global.mjs"
 
+const WEBSOCKETS = "ws://localhost:9888"
+
 export function xhr(endpoint,effect,method="GET", async=true){
     let xhr= new XMLHttpRequest();
     xhr.open(method, endpoint, async);
@@ -86,8 +88,6 @@ export function loadUsers(keys){
         return
     }
 
-    console.log("loading",diff)
-
     const onload = function() {
         const keys = JSON.parse(this.responseText)
         for(let key of keys){
@@ -104,7 +104,6 @@ export function loadConv(key){
     const request = xhr("getConvContent?convId="+JSON.stringify(key), onload, "GET",false)
     const elements = JSON.parse(request.responseText)
     for(let element in elements){
-        console.log("seeting",element,elements[element])
         global.convs[key][element] = elements[element]
     }
 }
@@ -116,6 +115,7 @@ export function loadUser(){
         setElement('global.user', JSON.parse(request.responseText))
         global.users[global.user.id] = global.user
         console.log("user loaded",global.user)
+        initWebSockets()
 
         const onFriendsLoaded = function(){
             global.user.friends = JSON.parse(this.responseText)
@@ -183,3 +183,30 @@ function friend(action, element){
     }
 }
 window.friend = friend
+
+
+function initWebSockets(){
+    const socket = new WebSocket(WEBSOCKETS);
+
+    socket.onopen = function(event) {
+        console.log("Connection opened to Python WebSocket server!");
+        const message = {"type" : 'register', "uid": global.user.id};
+        socket.send(JSON.stringify(message));
+
+    };
+
+    socket.onmessage = function(event) {
+        console.log("Received message from Python server:", event.data);
+        const message = JSON.parse(event.data)
+        switch (message.type){
+            case "register_request":
+                //TODO handle multiserver xhr with the received servID
+                xhr("authWS?connectionId=".concat(message.connectionId),undefined)
+        }
+
+    };
+
+    socket.onerror = function(error) {
+        console.error("WebSocket error:", error);
+    };
+}

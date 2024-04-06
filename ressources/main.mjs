@@ -16,19 +16,6 @@ goTo('sec-selector',"privateMessage")
 loadEmojis()
 goTo('friends-block','main-friend')
 
-let myPeerConnection = new RTCPeerConnection()
-
-myPeerConnection
-    .createOffer()
-    .then((offer) => myPeerConnection.setLocalDescription(offer))
-    .then(() => {
-        xhr(JSON.stringify(myPeerConnection.localDescription.toJSON()), undefined
-        );
-    })
-    .catch((reason) => {
-        // An error occurred, so handle the failure to connect
-    });
-
 export function loadTemplate(template, target=undefined, flex= undefined, async){
     const effect = function() {
         if (target){
@@ -113,7 +100,7 @@ function fillWith(template, list){
 window.fillWith = fillWith
 
 function Subscribe(element, content, className=undefined){
-    console.log("Subscribe to",element, global, content,content())
+    console.log("Subscribe to",element, global, content)
     //subscribe content to element, content will be reevaluated on element change
     const domElement = document.createElement('div')
     domElement.className = element.replaceAll('.','-')
