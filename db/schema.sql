@@ -44,7 +44,8 @@ create table if not exists boatakopin (
     id bigserial NOT NULL PRIMARY KEY,
     kopinPrincipal integer not null,
     kopinSecondaire integer not null,
-    accepted bool
+    accepted bool,
+    conv integer
 );
 
 create table if not exists active_client (

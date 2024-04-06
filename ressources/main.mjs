@@ -135,6 +135,17 @@ export function pushElement(element, value){
     }
 }
 
+export function deleteElement(element, id){
+    console.log(element,'has been removed:', element[id]);
+    eval(`${element}.splice(id,1)`);
+    const subscriptions = document.querySelectorAll(`[class^="${element.replaceAll('.','-').replaceAll('[','🪟').replaceAll(']','🥹')}"]`)
+    for (let sub of subscriptions){
+        console.log("we need to evaluate",sub)
+        const content = eval(sub.dataset.content)
+        sub.innerHTML = content()
+    }
+}
+
 function Save(element){
     const input = document.getElementById("display-name-input")
 

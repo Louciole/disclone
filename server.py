@@ -198,6 +198,8 @@ class Disclone(Server):
                 self.db.insertDict('accessconversation', {'account': uid, 'conversation': conv_id})
                 self.db.insertDict('accessconversation',
                                    {'account': friendship[0]["kopinprincipal"], 'conversation': conv_id})
+                self.db.edit("boatakopin", arg, "conv", conv_id)
+
         elif action == "get":
             friends = self.db.getFilters("boatakopin",
                                          ["accepted", "=", True, "and (", "kopinprincipal", "=", uid, "or",

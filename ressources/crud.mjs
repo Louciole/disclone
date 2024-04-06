@@ -1,4 +1,4 @@
-import {addServer, displayNotif, getRelevantUser, pushElement, setElement} from "/main.mjs"
+import {addServer, deleteElement, displayNotif, getRelevantUser, pushElement, setElement} from "/main.mjs"
 import global from "/global.mjs"
 
 const WEBSOCKETS = "ws://localhost:9888"
@@ -147,9 +147,8 @@ export function loadUser(){
     request.send();
 }
 
-function friend(action, element){
+function friend(action, element, event = undefined){
     //element is the id of the invitation for an accept or the username for an add
-    console.log("here")
 
     const effect = function() {
         if (action !== "add"){
@@ -178,6 +177,13 @@ function friend(action, element){
         const domElt= document.getElementById(element)
         console.log(domElt.value)
         xhr("friends?action=".concat(action,"&arg=",encodeURIComponent(domElt.value)),effect)
+    }else if(action === "accept"){
+        xhr("friends?action=".concat(action,"&arg=",element),effect)
+
+        // doing some magic here to update the local state
+        const invitationNumber = Array.prototype.indexOf.call(event.currentTarget.parentElement.children, event.currentTarget) - 1
+        global.user.friends.push(global.user.invitations[invitationNumber])
+        deleteElement("global.user.invitations",invitationNumber)
     }else{
         xhr("friends?action=".concat(action,"&arg=",element),effect)
     }
