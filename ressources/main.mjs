@@ -135,6 +135,17 @@ export function pushElement(element, value){
     }
 }
 
+export function addElement(element, value){
+    console.log(element,'has been added:', value);
+    eval(`${element}[value.id] = value`);
+    const subscriptions = document.querySelectorAll(`[class^="${element.replaceAll('.','-').replaceAll('[','🪟').replaceAll(']','🥹')}"]`)
+    for (let sub of subscriptions){
+        console.log("we need to evaluate",sub)
+        const content = eval(sub.dataset.content)
+        sub.innerHTML = content()
+    }
+}
+
 export function deleteElement(element, id){
     console.log(element,'has been removed:', element[id]);
     eval(`${element}.splice(id,1)`);

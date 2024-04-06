@@ -1,4 +1,4 @@
-import {addServer, deleteElement, displayNotif, getRelevantUser, pushElement, setElement} from "/main.mjs"
+import {addElement, addServer, deleteElement, displayNotif, getRelevantUser, pushElement, setElement} from "/main.mjs"
 import global from "/global.mjs"
 
 const WEBSOCKETS = "ws://localhost:9888"
@@ -175,7 +175,7 @@ function friend(action, element, event = undefined){
 
     if(action === "add"){
         const domElt= document.getElementById(element)
-        console.log(domElt.value)
+        //TODO add invitation
         xhr("friends?action=".concat(action,"&arg=",encodeURIComponent(domElt.value)),effect)
     }else if(action === "accept"){
         xhr("friends?action=".concat(action,"&arg=",element),effect)
@@ -211,13 +211,36 @@ function initWebSockets(){
             case "notif":
                 switch (message.content.type){
                     case "message":
-                        //TODO missing timestamp
                         const currentDate = new Date()
                         const timestamp = currentDate.getTime()
                         message.content.content["timestamp"] = timestamp
                         pushElement('global.convs['.concat(message.content.content.place,'].messages'),message.content.content)
                         displayNotif(message.content)
+                        break;
+                    case "friend_request":
+                        loadUsers([message.content.content["kopinprincipal"]])
+                        pushElement('global.user.invitations', message.content.content)
+                        break;
+                    case "accepted_request":
+                        loadUsers([message.content.content["kopinsecondaire"]])
+                        pushElement('global.user.friends', message.content.content)
+                        for(let i in global.user.invitations){
+                            const request = global.user.invitations[i]
+                            if (request.id === message.content.content.id){
+                                deleteElement("global.user.invitations", i)
+                                break
+                            }
+                        }
+                        break;
+                    case "added_conv":
+                        addElement('global.convs', message.content.content)
+                        break;
+                    default:
+                        break;
                 }
+                break;
+            default:
+                break;
         }
 
     };

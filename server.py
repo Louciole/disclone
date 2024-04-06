@@ -187,9 +187,12 @@ class Disclone(Server):
                                              "=", uid, ')'])
             if friendship:
                 return "You're already friends/invitation already sent"
-            self.db.insertDict("boatakopin",
-                               {"kopinprincipal": uid, "kopinsecondaire": friend['id'], "accepted": False})
+
+            request = {"kopinprincipal": uid, "kopinsecondaire": friend['id'], "accepted": False}
+            request["id"] = self.db.insertDict("boatakopin", request, True)
+            self.sendNotification(friend['id'], {"type": "friend_request", "content": request})
             return "ok"
+
         elif action == "accept":
             friendship = self.db.getFilters("boatakopin", ["id", "=", arg, "and", "kopinsecondaire", "=", uid])
             if friendship:
@@ -200,11 +203,19 @@ class Disclone(Server):
                                    {'account': friendship[0]["kopinprincipal"], 'conversation': conv_id})
                 self.db.edit("boatakopin", arg, "conv", conv_id)
 
+                friendship[0]["conv"] = conv_id
+                self.sendNotification(friendship[0]["kopinprincipal"], {"type": "accepted_request", "content": friendship[0]})
+
+                conv = {"id": conv_id, "name": "", "members": [uid, friendship[0]["kopinprincipal"]]}
+                self.sendNotification(uid, {"type": "added_conv", "content": conv})
+                self.sendNotification(friendship[0]["kopinprincipal"], {"type": "added_conv", "content": conv})
+
         elif action == "get":
             friends = self.db.getFilters("boatakopin",
                                          ["accepted", "=", True, "and (", "kopinprincipal", "=", uid, "or",
                                           "kopinsecondaire", "=", uid, ")"])
             return json.dumps(friends)
+
         elif action == "invitations":
             invitations = self.db.getFilters("boatakopin",
                                              ["accepted", "=", False, "and (", "kopinprincipal", "=", uid, "or",
