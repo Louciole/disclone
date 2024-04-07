@@ -236,3 +236,12 @@ export function displayNotif(notif){
     //notifElt.innerText = notif.body
     //setTimeout(() => notifElt.style.display="none", 1500)
 }
+
+function notMe(userList){
+    for (let i in userList){
+        if (userList[i] != global.user.id){
+            return userList[i]
+        }
+    }
+}
+window.notMe = notMe
