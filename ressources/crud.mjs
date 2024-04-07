@@ -208,6 +208,7 @@ function initWebSockets(){
             case "register_request":
                 //TODO handle multiserver xhr with the received servID
                 xhr("authWS?connectionId=".concat(message.connectionId),undefined)
+                break
             case "notif":
                 switch (message.content.type){
                     case "message":
