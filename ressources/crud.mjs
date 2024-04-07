@@ -63,7 +63,7 @@ export function loadConvs(){
     const onload = function() {
         const keys = JSON.parse(this.responseText)
         for(let key of keys){
-            global.convs[key.id] = key
+            addElement("global.convs", key)
         }
     };
     xhr("getUserConvs",onload)

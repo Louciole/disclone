@@ -15,6 +15,8 @@ loadServers()
 goTo('sec-selector',"privateMessage")
 loadEmojis()
 goTo('friends-block','main-friend')
+console.log("Client ready", global)
+
 
 export function loadTemplate(template, target=undefined, flex= undefined, async){
     const effect = function() {
@@ -100,7 +102,6 @@ function fillWith(template, list){
 window.fillWith = fillWith
 
 function Subscribe(element, content, className=undefined){
-    console.log("Subscribe to",element, global, content)
     //subscribe content to element, content will be reevaluated on element change
     const domElement = document.createElement('div')
     domElement.className = element.replaceAll('.','-').replaceAll('[','🪟').replaceAll(']','🥹')
@@ -118,7 +119,6 @@ export function setElement(element, value){
     eval(`${element} = value`);
     const subscriptions = document.querySelectorAll(`[class^="${element.replaceAll('.','-').replaceAll('[','🪟').replaceAll(']','🥹')}"]`)
     for (let sub of subscriptions){
-        console.log("we need to evaluate",sub)
         const content = eval(sub.dataset.content)
         sub.innerHTML = content()
     }
