@@ -101,7 +101,7 @@ a:link {
     background: #6370855e;
     transform: translate(31%, 0);
     backdrop-filter: blur(2px);
-    filter: drop-shadow(-3px 3px 8px #000000);
+    filter: drop-shadow(-3px 3px 8px #00000063);
     user-select: none;
 }
 
