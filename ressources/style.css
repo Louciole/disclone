@@ -854,7 +854,7 @@ section{
 .chat-input{
     background: var(--text3);
     border: none;
-    width: 90%;
+    width: calc(100% - 4rem);
     height: 1.2rem;
     padding: 0.6rem;
     border-radius: 8px;
@@ -867,9 +867,17 @@ section{
 /*noinspection CssInvalidPropertyValue*/
 .chat-input input{
     width: -webkit-fill-available;
-    width: -moz-available;;
+    width: -moz-available;
     background: transparent;
     border: none;
+    color: var(--text);
+    height: 100%;
+    padding: 0;
+    display: block;
+}
+
+.chat-input input:focus{
+    outline: none;
 }
 
 .chat-input .icon-wrapper {
@@ -1039,14 +1047,15 @@ section{
 
 #welcome-message h1{
     color: var(--text);
-    margin: 0.3rem 0;
+    font-size: 2rem;
+    margin: 0.6rem 0;
 }
 
 #welcome-message h2{
     color: var(--text);
     font-size: 1.3rem;
     font-weight: 500;
-    margin: 0;
+    margin: 0.8rem 0;
 }
 
 #welcome-message p{
@@ -1056,6 +1065,7 @@ section{
 #welcome-message .inline {
     height: 1.5rem;
     gap: 0.8rem;
+    margin-top: 0.8rem;
 }
 
 #welcome-message .inline .pfp{
@@ -1072,7 +1082,8 @@ section{
 }
 
 #welcome-message .btn:hover{
-    background: var(--text2);
+    background: #6c6d76;
+    transition: all 200ms;
 }
 
 .point{

@@ -179,7 +179,7 @@ export function getRelevantUser(element){
 window.getRelevantUser = getRelevantUser
 
 function sendMessage(event){
-    if (event.key === "Enter"){
+    if (event.key === "Enter" && !event.shiftKey){
         const onload = () => {
         }
 
