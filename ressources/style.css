@@ -6,7 +6,7 @@ html{
     --bg3: #23272A;
     --bg4: #1E1F22;
     --text: #F2F3F5;
-    --text2: #797979;
+    --text2: #a8a8a8;
     --text2bis: #4c4f57;
     --text3: #3b3d44;
     --green: #27a94b;
@@ -888,7 +888,7 @@ section{
 
 .chat-input textarea::placeholder{
     font-family: 'Open Sans', sans-serif;
-    color: var(--text2);
+    color: #797979;
 }
 
 .chat-input .icon-wrapper {
