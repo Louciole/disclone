@@ -25,10 +25,9 @@
     <div class="icon-wrapper">
         <div class="icon"></div>
     </div>
-    <label style="flex: 1;">
-        <input type="text" placeholder="Envoyer un message à @${getConvName(global.convs[global.state.activeConv])}" onkeyup="sendMessage(event)">
+    <label style="flex: 1;height: fit-content;">
+        <textarea rows="1" placeholder="Envoyer un message à @${getConvName(global.convs[global.state.activeConv])}" onkeydown="sendMessage(event)" oninput="resizeHeight(event)"></textarea>
     </label>
-
     <div class="icon-wrapper" onclick="silent_typing()">
         <div class="icon" ></div>
         <span class="tooltip bottom">Enable silent typing</span>

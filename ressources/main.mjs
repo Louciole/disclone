@@ -183,14 +183,25 @@ function sendMessage(event){
         const onload = () => {
         }
 
-        xhr("sendMessage?conv=".concat(encodeURI(JSON.stringify(global.convs[global.state.activeConv])), "&content=", event.currentTarget.value), onload())
-        const currentDate = new Date();
-        const timestamp = currentDate.getTime();
-        pushElement('global.convs['.concat(global.state.activeConv,'].messages'), {"id":global.convs[global.state.activeConv].messages.length, "sender": global.user.id,"place":global.state.activeConv, "body": event.currentTarget.value, "timestamp":timestamp})
-        event.currentTarget.value = ''
+        if (event.currentTarget.value.trim() !== '' ){
+            xhr("sendMessage?conv=".concat(encodeURI(JSON.stringify({'id':global.state.activeConv})), "&content=", encodeURI(event.currentTarget.value)), onload())
+            const currentDate = new Date();
+            const timestamp = currentDate.getTime();
+            pushElement('global.convs['.concat(global.state.activeConv,'].messages'), {"id":global.convs[global.state.activeConv].messages.length, "sender": global.user.id,"place":global.state.activeConv, "body": event.currentTarget.value, "timestamp":timestamp})
+            event.currentTarget.value = ''
+            resizeHeight(event)
+        }
+        event.preventDefault()
     }
 }
 window.sendMessage = sendMessage
+
+
+function resizeHeight(event){
+    const lines = 1 + (event.currentTarget.value.match(/\n/g) || []).length;
+    event.currentTarget.rows = lines > 25 ? 25 : lines;
+}
+window.resizeHeight = resizeHeight
 
 function getTimeStr(timestamp, options = { locale: "fr-FR" }) {
     const date = new Date(timestamp);

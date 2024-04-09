@@ -6,12 +6,14 @@ html{
     --bg3: #23272A;
     --bg4: #1E1F22;
     --text: #F2F3F5;
-    --text2: #a8a8a8;
+    --text2: #797979;
     --text2bis: #4c4f57;
     --text3: #3b3d44;
     --green: #27a94b;
     --red: #ED4245;
     --orange: #FF9A00;
+
+    --sb-size: 9px;
 }
 
 @font-face {
@@ -855,7 +857,8 @@ section{
     background: var(--text3);
     border: none;
     width: calc(100% - 4rem);
-    height: 1.2rem;
+    height: fit-content;
+    max-height: 50svh;
     padding: 0.6rem;
     border-radius: 8px;
     display: flex;
@@ -865,23 +868,32 @@ section{
 }
 
 /*noinspection CssInvalidPropertyValue*/
-.chat-input input{
+.chat-input textarea{
     width: -webkit-fill-available;
     width: -moz-available;
     background: transparent;
     border: none;
     color: var(--text);
     height: 100%;
+    font-size: 0.95rem;
     padding: 0;
-    display: block;
+    line-height: 1.3rem;
+    resize: none;
+    transform: translate(0px, 0.1rem);
 }
 
-.chat-input input:focus{
+.chat-input textarea:focus{
     outline: none;
 }
 
+.chat-input textarea::placeholder{
+    font-family: 'Open Sans', sans-serif;
+    color: var(--text2);
+}
+
 .chat-input .icon-wrapper {
-    height: 100%;
+    height: 1.3rem;
+    margin-top: 0.2rem;
     aspect-ratio: 1;
     display: flex;
     justify-content: center;
@@ -939,6 +951,7 @@ section{
     margin: 0.2rem 0;
     font-size: 0.9rem;
     color: var(--text);
+    white-space: pre-wrap;
 }
 
 .search{
@@ -1538,4 +1551,44 @@ section{
     text-align: center;
     min-width: calc(400px - 2rem);
     box-shadow: 10px 10px 13px -11px rgb(0, 0, 0);
+}
+
+.scrollable::-webkit-scrollbar {
+    width: var(--sb-size)
+}
+
+.scrollable::-webkit-scrollbar-track {
+    background: var(--bg2);
+    border-radius: 9px;
+}
+
+.scrollable::-webkit-scrollbar-thumb {
+    background: var(--bg4);
+    border-radius: 9px;
+}
+
+@supports not selector(::-webkit-scrollbar) {
+    .scrollable {
+        scrollbar-color: var(--bg4)
+        var(--bg2);
+    }
+
+    .chat-input textarea {
+        scrollbar-color: var(--bg4)
+        var(--bg2);
+    }
+}
+
+.chat-input textarea::-webkit-scrollbar-thumb {
+    background: var(--bg4);
+    border-radius: 9px;
+}
+
+.chat-input textarea::-webkit-scrollbar {
+    width: var(--sb-size)
+}
+
+.chat-input textarea::-webkit-scrollbar-track {
+    background: var(--bg2);
+    border-radius: 9px;
 }
