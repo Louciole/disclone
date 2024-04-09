@@ -197,6 +197,14 @@ function sendMessage(event){
 window.sendMessage = sendMessage
 
 
+function checkEnter(event, effect){
+    if (event.key === "Enter"){
+        console.log("enter pressed")
+        effect()
+    }
+}
+window.checkEnter = checkEnter
+
 function resizeHeight(event){
     const lines = 1 + (event.currentTarget.value.match(/\n/g) || []).length;
     event.currentTarget.rows = lines > 25 ? 25 : lines;

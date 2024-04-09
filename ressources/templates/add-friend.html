@@ -3,7 +3,7 @@
     <p>You can add friends with their Discord username.</p>
     <div class="search">
         <label style="width: 100%;">
-            <input class="fill" type="text" id="addFriendInput" placeholder="You can add friends with their Disclone username.">
+            <input class="fill" type="text" id="addFriendInput" placeholder="You can add friends with their Disclone username." onkeydown="checkEnter(event, ()=>{friend('add','addFriendInput')})">
         </label>
         <div class="btn-wrapper">
             <div class="btn blue" onclick="friend('add','addFriendInput')">

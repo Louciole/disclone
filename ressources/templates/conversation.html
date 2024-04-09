@@ -4,7 +4,7 @@
         ${getConvName(global.convs[global.state.activeConv])}
     </div>
 </div>
-<div class="scrollable">
+<div class="scrollable bottom-margin">
     ${Subscribe('global.convs['.concat(global.state.activeConv,'].messages'),()=>fillWith('message',global.convs[global.state.activeConv].messages||[]))}
     <div id="welcome-message">
         <div class="big pfp red">

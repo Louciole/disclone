@@ -863,7 +863,6 @@ section{
     border-radius: 8px;
     display: flex;
     margin-bottom: 1.8rem;
-    margin-top: 1.2rem;
     gap: 1rem;
 }
 
@@ -952,6 +951,7 @@ section{
     font-size: 0.9rem;
     color: var(--text);
     white-space: pre-wrap;
+    user-select: text;
 }
 
 .search{
@@ -1591,4 +1591,8 @@ section{
 .chat-input textarea::-webkit-scrollbar-track {
     background: var(--bg2);
     border-radius: 9px;
+}
+
+.bottom-margin{
+    padding-bottom: 1.2rem;
 }
