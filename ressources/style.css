@@ -915,12 +915,24 @@ section{
 .message-group .pfp{
     height: 2.2rem;
     margin: 0.3rem 1rem;
+    position: absolute;
+    pointer-events: none;
+}
+
+.message-group .group .message:first-child {
+    padding-top: 1.3rem;
+}
+
+.message-group  .group {
+    display: flex;
+    flex: 1;
 }
 
 .message{
     display: flex;
     flex-direction: column;
     flex: 1;
+    padding-left: 4.2rem;
 }
 
 .message:hover{
@@ -931,11 +943,15 @@ section{
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    position: absolute;
+    margin-left: 4.2rem;
+    pointer-events: none;
 }
 
-.sender h3{
+.sender .h3{
+    color: var(--text);
     margin: 0;
-    font-size: 0.9rem;
+    font-size: 1rem;
 }
 
 .sender p{
@@ -1596,4 +1612,5 @@ section{
 
 .bottom-margin{
     padding-bottom: 1.2rem;
+    width: 100%;
 }

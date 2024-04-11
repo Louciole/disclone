@@ -1,14 +1,16 @@
 <div class="message-group">
     <div class="pfp red">
     </div>
-    <div class="message">
-        <div class="sender">
-            ${Subscribe("global.users["+element.sender.toString()+"].display", () => {return(global.users[element.sender].display)},"h3")}
-            <p>${getTimeStr(element.timestamp)}</p>
-        </div>
-        <div class="content">
-            <div class="meta"></div>
-            <p>${element.body}</p>
+    <div class="sender">
+        ${Subscribe("global.users["+element.sender.toString()+"].display", () => {return(global.users[element.sender].display)},"h3")}
+        <p>${getTimeStr(element.timestamp)}</p>
+    </div>
+    <div class="group">
+        <div class="message">
+            <div class="content">
+                <div class="meta"></div>
+                <p>${element.body}</p>
+            </div>
         </div>
     </div>
 </div>
