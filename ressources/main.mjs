@@ -1,6 +1,7 @@
 import {initNav, goTo} from "/navigation.mjs"
 import {xhr, loadServers, loadUser, loadConvs, loadUsers} from "/crud.mjs"
 import global from "/global.mjs"
+import {textToHTML} from "/markdown/utils.mjs";
 
 const dom = document.querySelector("body")
 global.state.currentTab = document.getElementById("logo")
@@ -17,6 +18,7 @@ loadEmojis()
 goTo('friends-block','main-friend')
 console.log("Client ready", global)
 
+console.log("result", textToHTML("# Bonjour monde \n bip \n - a \n - *b* \n - **c** \n - ***d***"))
 
 export function loadTemplate(template, target=undefined, flex= undefined, async){
     const effect = function() {
