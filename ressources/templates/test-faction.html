@@ -1,21 +1,88 @@
-<section id="test-faction" style="display:none" onclick="closeMenu()">
+<section class="menu-wrapper" id="test-faction" style="display:none" onclick="closeMenu()">
   <div class="menu">
     <div class="close" onclick="closeMenu('#test-faction')">+</div>
     <div class="steps" id="testFactionSteps">
       <div class="step">
-        <h2>Change your username</h2>
-        <p>Enter a new username.</p>
-        <div class="category" onclick="gotoStep(1,'testFactionSteps')">
-          <div class="blue circle"></div>
-          <h4>Créer le mien</h4>
-          <div class="icon">></div>
-        </div>
+        <h2>Question 1 sur 5</h2>
+        <p>Qu'est-ce qui vous motive le plus dans la vie ?</p>
+        <div class="option">La gloire et la reconnaissance</div>
+        <div class="option">La liberté et l'expression de soi</div>
+        <div class="option">Une vie simple et paisible</div>
+        <div class="option">Les relations et l'appartenance à une communauté</div>
+        <div class="option">L'honneur et la loyauté</div>
+        <div class="option">Le succès et le pouvoir</div>
         <div class="inline space-between">
-          <div class="btn grey" onclick="closeMenu('#test-faction')">Cancel</div>
-          <div class="btn blue" onclick="next()">Done</div>
+          <div class="btn grey" onclick="closeMenu('#test-faction')">Annuler</div>
+          <div class="btn blue" onclick="gotoStep(1,'testFactionSteps')">Question suivante</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <h2>Question 2 sur 5</h2>
+        <p>Comment vous décririez-vous ?</p>
+        <div class="option">Pratique et indépendant</div>
+        <div class="option">Créatif et idéaliste</div>
+        <div class="option">Charismatique et persuasif</div>
+        <div class="option">Ambitieux et autoritaire</div>
+        <div class="option">Fiable et déterminé</div>
+        <div class="option">Analytique et logique</div>
+        <div class="inline space-between">
+          <div class="btn grey" onclick="closeMenu('#test-faction')">Annuler</div>
+          <div class="btn blue" onclick="gotoStep(2,'testFactionSteps')">Question suivante</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <h2>Question 3 sur 5</h2>
+        <p>Quelles sont vos compétences et vos talents ?</p>
+        <div class="option">Pratique et indépendant</div>
+        <div class="option">Créatif et idéaliste</div>
+        <div class="option">Charismatique et persuasif</div>
+        <div class="option">Ambitieux et autoritaire</div>
+        <div class="option">Fiable et déterminé</div>
+        <div class="option">Analytique et logique</div>
+        <div class="inline space-between">
+          <div class="btn grey" onclick="closeMenu('#test-faction')">Annuler</div>
+          <div class="btn blue" onclick="gotoStep(3,'testFactionSteps')">Question suivante</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <h2>Question 4 sur 5</h2>
+        <p> Quel est votre rêve pour l'avenir ?</p>
+        <div class="option">Pratique et indépendant</div>
+        <div class="option">Créatif et idéaliste</div>
+        <div class="option">Charismatique et persuasif</div>
+        <div class="option">Ambitieux et autoritaire</div>
+        <div class="option">Fiable et déterminé</div>
+        <div class="option">Analytique et logique</div>
+        <div class="inline space-between">
+          <div class="btn grey" onclick="closeMenu('#test-faction')">Annuler</div>
+          <div class="btn blue" onclick="gotoStep(2,'testFactionSteps')">Question suivante</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <h2>Question 5 sur 5</h2>
+        <p> Vous êtes confronté à un obstacle qui semble difficile à surmonter</p>
+        <div class="option">Pratique et indépendant</div>
+        <div class="option">Créatif et idéaliste</div>
+        <div class="option">Charismatique et persuasif</div>
+        <div class="option">Ambitieux et autoritaire</div>
+        <div class="option">Fiable et déterminé</div>
+        <div class="option">Analytique et logique</div>
+        <div class="inline space-between">
+          <div class="btn grey" onclick="closeMenu('#test-faction')">Annuler</div>
+          <div class="btn blue" onclick="gotoStep(2,'testFactionSteps')">Question suivante</div>
         </div>
       </div>
     </div>
   </div>
 </section>
 
+Les Technos: Vous abordez le problème de manière méthodique et analytique, en recherchant des solutions rationnelles et basées sur des faits.
+Les Netrunners: Vous explorez différentes sources d'informations et de perspectives, en cherchant des idées innovantes et des solutions alternatives.
+Les Nomades: Vous comptez sur votre réseau de soutien et votre communauté pour obtenir de l'aide et des encouragements.
+Les Fixeurs: Vous cherchez des solutions collaboratives et des partenariats pour surmonter l'obstacle ensemble.
+Les Solos: Vous faites preuve de persévérance et de détermination, en ne vous laissant pas décourager par les échecs et en continuant à avancer malgré les difficultés.
+Les Corporatistes: Vous utilisez vos ressources et votre influence pour mobiliser des personnes et des moyens afin de surmonter l'obstacle et atteindre vos objectifs.

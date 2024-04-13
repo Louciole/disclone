@@ -268,15 +268,6 @@ section{
     opacity: 1;
 }
 
-#create-server {
-    position: absolute;
-    width: 100vw;
-    height: 100svh;
-    justify-content: center;
-    align-items: center;
-    background: #000000a8;
-}
-
 #create-server .menu {
     width: 80vw;
     height: fit-content;
@@ -1374,12 +1365,10 @@ section{
 
 #change-username{
     z-index: 101;
-    position: absolute;
-    width: 100vw;
-    height: 100svh;
-    justify-content: center;
-    align-items: center;
-    background: #000000a8;
+}
+
+#test-faction{
+    z-index: 101;
 }
 
 #change-username .menu {
@@ -1613,4 +1602,13 @@ section{
 .bottom-margin{
     padding-bottom: 1.2rem;
     width: 100%;
+}
+
+.menu-wrapper{
+    position: absolute;
+    width: 100vw;
+    height: 100svh;
+    justify-content: center;
+    align-items: center;
+    background: #000000a8;
 }
