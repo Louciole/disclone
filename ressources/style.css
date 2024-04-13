@@ -961,12 +961,12 @@ section{
 
 .message .content{
     margin: 0;
+    color: var(--text);
 }
 
 .message .content p{
     margin: 0.2rem 0;
     font-size: 0.9rem;
-    color: var(--text);
     white-space: pre-wrap;
     user-select: text;
 }

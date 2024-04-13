@@ -1,0 +1,21 @@
+<section id="test-faction" style="display:none" onclick="closeMenu()">
+  <div class="menu">
+    <div class="close" onclick="closeMenu('#test-faction')">+</div>
+    <div class="steps" id="testFactionSteps">
+      <div class="step">
+        <h2>Change your username</h2>
+        <p>Enter a new username.</p>
+        <div class="category" onclick="gotoStep(1,'testFactionSteps')">
+          <div class="blue circle"></div>
+          <h4>Créer le mien</h4>
+          <div class="icon">></div>
+        </div>
+        <div class="inline space-between">
+          <div class="btn grey" onclick="closeMenu('#test-faction')">Cancel</div>
+          <div class="btn blue" onclick="next()">Done</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+

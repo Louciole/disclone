@@ -1,7 +1,7 @@
 import {initNav, goTo} from "/navigation.mjs"
 import {xhr, loadServers, loadUser, loadConvs, loadUsers} from "/crud.mjs"
 import global from "/global.mjs"
-import {textToHTML} from "/markdown/utils.mjs";
+import {MDToHTML} from "/markdown/utils.mjs";
 
 const dom = document.querySelector("body")
 global.state.currentTab = document.getElementById("logo")
@@ -18,7 +18,7 @@ loadEmojis()
 goTo('friends-block','main-friend')
 console.log("Client ready", global)
 
-console.log("result", textToHTML("# Bonjour monde \n bip \n - a \n - *b* \n - **c** \n - ***d***"))
+console.log("result", MDToHTML("# Bonjour monde \n bip-boop \n - a \n - *b* \n - **c** \n - ***d*** \n ####sous-titre" ))
 
 export function loadTemplate(template, target=undefined, flex= undefined, async){
     const effect = function() {
@@ -186,7 +186,7 @@ function sendMessage(event){
         }
 
         if (event.currentTarget.value.trim() !== '' ){
-            xhr("sendMessage?conv=".concat(encodeURI(JSON.stringify({'id':global.state.activeConv})), "&content=", encodeURI(event.currentTarget.value)), onload())
+            xhr("sendMessage?conv=".concat(encodeURI(JSON.stringify({'id':global.state.activeConv})), "&content=", encodeURIComponent(event.currentTarget.value)), onload())
             const currentDate = new Date();
             const timestamp = currentDate.getTime();
             pushElement('global.convs['.concat(global.state.activeConv,'].messages'), {"id":global.convs[global.state.activeConv].messages.length, "sender": global.user.id,"place":global.state.activeConv, "body": event.currentTarget.value, "timestamp":timestamp})
