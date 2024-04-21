@@ -103,7 +103,25 @@ function fillWith(template, list){
 }
 window.fillWith = fillWith
 
-function Subscribe(element, content, className=undefined){
+function repaintConv(sub, value){
+    console.log("repainting conv", sub, value)
+
+    if(global.convs[global.state.activeConv].messageGroups[global.convs[global.state.activeConv].messageGroups.length-1].messages.length > 1){
+        sub.lastChild.remove()
+        if (sub.children[sub.children.length-1].classList.contains("separator")){
+            sub.children[sub.children.length-1].remove()
+        }
+    }
+    sub.insertAdjacentHTML("beforeend", fillWith('messageGroup',[global.convs[global.state.activeConv].messageGroups[global.convs[global.state.activeConv].messageGroups.length-1]]))
+
+
+    // au lieu de fillWith on prends l'élément modifié et on l'handle
+    // pour un nouveau message on l'append au groupe
+    // pour un nouveau groupe on l'ajoute a la conv active
+}
+window.repaintConv = repaintConv
+
+function Subscribe(element, content, className=undefined, repaint=undefined){
     //subscribe content to element, content will be reevaluated on element change
     const domElement = document.createElement('div')
     domElement.className = element.replaceAll('.','-').replaceAll('[','🪟').replaceAll(']','🥹')
@@ -111,7 +129,11 @@ function Subscribe(element, content, className=undefined){
         domElement.classList.add(className)
     }
     domElement.innerHTML = content()
-    domElement.dataset.content = content
+    if(repaint){
+        domElement.dataset.repaint = repaint
+    }else{
+        domElement.dataset.content = content
+    }
     return domElement.outerHTML
 }
 window.Subscribe = Subscribe
@@ -132,8 +154,14 @@ export function pushElement(element, value){
     const subscriptions = document.querySelectorAll(`[class^="${element.replaceAll('.','-').replaceAll('[','🪟').replaceAll(']','🥹')}"]`)
     for (let sub of subscriptions){
         console.log("we need to evaluate",sub)
-        const content = eval(sub.dataset.content)
-        sub.innerHTML = content()
+
+        if(sub.dataset.repaint){
+            const fn = eval(sub.dataset.repaint)
+            fn()
+        }else{
+            const content = eval(sub.dataset.content)
+            sub.innerHTML = content()
+        }
     }
 }
 
@@ -256,7 +284,7 @@ function getSeparator(element){
     let date
 
     if(element.id>0){
-        date = getTimeStr(global.convs[global.state.activeConv].messages[element.id-1].timestamp, { locale: "fr-FR",hour: undefined, minute: undefined})
+        date = global.convs[global.state.activeConv].messageGroups[element.id-1].date
     }else{
         date = undefined
     }

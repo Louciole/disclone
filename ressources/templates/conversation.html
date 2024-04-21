@@ -5,7 +5,7 @@
     </div>
 </div>
 <div class="scrollable bottom-margin">
-    ${Subscribe('global.convs['.concat(global.state.activeConv,'].messages'),()=>fillWith('messageGroup',global.convs[global.state.activeConv].messageGroups||[]))}
+    ${Subscribe('global.convs['.concat(global.state.activeConv,'].messages'),()=>fillWith('messageGroup',global.convs[global.state.activeConv].messageGroups||[]), undefined, ()=>(repaintConv(sub, value)))}
     <div id="welcome-message">
         <div class="big pfp red">
         </div>
