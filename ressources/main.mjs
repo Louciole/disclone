@@ -6,6 +6,7 @@ import {MDToHTML} from "/markdown/utils.mjs";
 const dom = document.querySelector("body")
 global.state.currentTab = document.getElementById("logo")
 const notifElt = document.getElementById("notif")
+let templates = {}
 
 initNav()
 loadUser()
@@ -84,8 +85,15 @@ window.logout = logout
 
 function fillWith(template, list){
     console.log("fillWith",template,list,typeof list)
-    const effect = function() {};
-    const request = xhr( '/templates/'.concat(template,".html"), effect, "GET", false)
+
+    let request
+    if(templates[template]){
+        request={"responseText":templates[template]}
+    }else{
+        request = xhr( '/templates/'.concat(template,".html"), undefined, "GET", false)
+        console.log("adding to cache",templates, template)
+        templates[template] = request.responseText
+    }
 
     let content = ""
     if (typeof list == 'object'){

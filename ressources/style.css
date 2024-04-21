@@ -903,6 +903,7 @@ section{
     display: flex;
     min-height: 2rem;
     flex-direction: column;
+    margin: 0.7rem 0;
 }
 
 .message-group .pfp{
@@ -962,7 +963,7 @@ section{
 .separator{
     display: flex;
     width: 100%;
-    height: 2rem;
+    height: 1.2rem;
     justify-content: center;
     align-items: center;
     flex-direction: column;
@@ -973,13 +974,12 @@ section{
     position: relative;
     background: var(--bg);
     z-index: 2;
-    transform: translateY(50%);
 }
 
 .separator .hr{
-    height: 1px;
+    height: 0.1px;
     width: 98%;
-    transform: translateY(50%);
+    transform: translateY(-0.55rem);
     position: relative;
     background: var(--text2bis);
 }
