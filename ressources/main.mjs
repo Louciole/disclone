@@ -18,7 +18,7 @@ loadEmojis()
 goTo('friends-block','main-friend')
 console.log("Client ready", global)
 
-console.log("result", MDToHTML("# Bonjour monde \n bip-boop \n - a \n - *b* \n - **c** \n - ***d*** \n ####sous-titre" ))
+console.log("result", MDToHTML(">BLBAL\n# Bonjour monde \n bip-boop \n - a \n - *b* \n - **c** \n - ***d*** \n ####sous-titre" ))
 
 export function loadTemplate(template, target=undefined, flex= undefined, async){
     const effect = function() {

@@ -1612,3 +1612,7 @@ section{
     align-items: center;
     background: #000000a8;
 }
+
+xmp{
+    display: inline;
+}
