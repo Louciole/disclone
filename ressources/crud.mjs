@@ -106,6 +106,21 @@ export function loadConv(key){
     for(let element in elements){
         global.convs[key][element] = elements[element]
     }
+
+    let lastSender = undefined
+    let lastTimestamp = undefined
+    global.convs[key].messageGroups = []
+
+    for(let message of global.convs[key].messages){
+        // si ça fait moins de 3 minutes de différence, que c'est la même personne et que la date n'a pas changée
+        if(message.sender === lastSender && (new Date(message.timestamp)-new Date(lastTimestamp))/60000<3 && getTimeStr(message.timestamp, { locale: "fr-FR",hour: undefined, minute: undefined}) === getTimeStr(lastTimestamp, { locale: "fr-FR",hour: undefined, minute: undefined})){
+            global.convs[key].messageGroups[global.convs[key].messageGroups.length-1].messages.push(message)
+        }else{
+            lastSender = message.sender
+            newMessageGroup(key, message)
+        }
+        lastTimestamp = message.timestamp
+    }
 }
 
 export function loadUser(){
@@ -175,7 +190,6 @@ function friend(action, element, event = undefined){
 
     if(action === "add"){
         const domElt= document.getElementById(element)
-        //TODO add invitation
         xhr("friends?action=".concat(action,"&arg=",encodeURIComponent(domElt.value)),effect)
     }else if(action === "accept"){
         xhr("friends?action=".concat(action,"&arg=",element),effect)
@@ -190,6 +204,22 @@ function friend(action, element, event = undefined){
 }
 window.friend = friend
 
+function newMessageGroup(conv, message){
+    global.convs[conv].messageGroups.push({"date": getTimeStr(message.timestamp, { locale: "fr-FR",hour: undefined, minute: undefined}), "messages":[message], "id":global.convs[conv].messageGroups.length})
+}
+
+export function handleMessageGroup(message){
+    if (global.convs[message.place].messages.length !== 0){
+        // si ça fait moins de 3 minutes de différence, que c'est la même personne et que la date n'a pas changée
+        if(message.sender === global.convs[message.place].messages[global.convs[message.place].messages.length-1].sender && (new Date(message.timestamp)-new Date(global.convs[message.place].messages[global.convs[message.place].messages.length-1].timestamp))/60000<3 && getTimeStr(message.timestamp, { locale: "fr-FR",hour: undefined, minute: undefined}) === getTimeStr(global.convs[message.place].messages[global.convs[message.place].messages.length-1].timestamp, { locale: "fr-FR",hour: undefined, minute: undefined})){
+            global.convs[message.place].messageGroups[global.convs[message.place].messageGroups.length-1].messages.push(message)
+        }else{
+            newMessageGroup(message.place, message)
+        }
+    }else{
+        newMessageGroup(message.place, message)
+    }
+}
 
 function initWebSockets(){
     const socket = new WebSocket(WEBSOCKETS);
@@ -198,7 +228,6 @@ function initWebSockets(){
         console.log("Connection opened to Python WebSocket server!");
         const message = {"type" : 'register', "uid": global.user.id};
         socket.send(JSON.stringify(message));
-
     };
 
     socket.onmessage = function(event) {
@@ -215,6 +244,7 @@ function initWebSockets(){
                         const currentDate = new Date()
                         const timestamp = currentDate.getTime()
                         message.content.content["timestamp"] = timestamp
+                        handleMessageGroup(message.content)
                         pushElement('global.convs['.concat(message.content.content.place,'].messages'),message.content.content)
                         displayNotif(message.content)
                         break;

@@ -1,5 +1,5 @@
 import {initNav, goTo} from "/navigation.mjs"
-import {xhr, loadServers, loadUser, loadConvs, loadUsers} from "/crud.mjs"
+import {xhr, loadServers, loadUser, loadConvs, loadUsers, handleMessageGroup} from "/crud.mjs"
 import global from "/global.mjs"
 import {MDToHTML} from "/markdown/utils.mjs";
 
@@ -189,7 +189,9 @@ function sendMessage(event){
             xhr("sendMessage?conv=".concat(encodeURI(JSON.stringify({'id':global.state.activeConv})), "&content=", encodeURIComponent(event.currentTarget.value)), onload())
             const currentDate = new Date();
             const timestamp = currentDate.getTime();
-            pushElement('global.convs['.concat(global.state.activeConv,'].messages'), {"id":global.convs[global.state.activeConv].messages.length, "sender": global.user.id,"place":global.state.activeConv, "body": event.currentTarget.value, "timestamp":timestamp})
+            const message = {"id":global.convs[global.state.activeConv].messages.length, "sender": global.user.id,"place":global.state.activeConv, "body": event.currentTarget.value, "timestamp":timestamp}
+            handleMessageGroup(message)
+            pushElement('global.convs['.concat(global.state.activeConv,'].messages'), message)
             event.currentTarget.value = ''
             resizeHeight(event)
         }
@@ -249,6 +251,22 @@ function getConvName(conv){
     return name
 }
 window.getConvName = getConvName
+
+function getSeparator(element){
+    let date
+
+    if(element.id>0){
+        date = getTimeStr(global.convs[global.state.activeConv].messages[element.id-1].timestamp, { locale: "fr-FR",hour: undefined, minute: undefined})
+    }else{
+        date = undefined
+    }
+    if(date !== element.date){
+        return `<div class="separator"><p>${element.date}</p><div class="hr"></div></div>`
+    }else{
+        return ""
+    }
+}
+window.getSeparator = getSeparator
 
 export function displayNotif(notif){
     const notifSound = new Audio('sounds/notification.mp3');
