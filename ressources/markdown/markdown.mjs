@@ -7,16 +7,16 @@ export class Markdown {
     //TODO
     // * ** ''' link color ~~ ||
     HTML_equiv = {
-        "#":"<h${props.level}><xmp>${content}</xmp></h${props.level}>",
-        "text":"<xmp>${content}</xmp>",
+        "#":"<h${props.level}>${content}</h${props.level}>",
+        "text":"${content}",
         "start li":"<li>${content}</li>",
         "*":"<i>${content}</i>",
         "**":"<b>${content}</b>",
-        ">":"<div class='answer'><xmp>${content}</xmp></div>",
+        ">":"<div class='answer'>${content}</div>",
         "'''":"<code>${content}</code>",
         "~~":"<div class='crossed'>${content}</div>",
         "||":"<div class='spoiler'>${content}</div>",
-        "link":"<a href='${props.link}'><xmp>${content}<xmp></a>",
+        "link":"<a href='${props.link}'>${content}</a>",
         "color":"<div style='color: ${props.color}'>${content}</div>",
         "endline":"\n",
         "newline":""

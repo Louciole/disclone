@@ -112,6 +112,8 @@ export function loadConv(key){
     global.convs[key].messageGroups = []
 
     for(let message of global.convs[key].messages){
+        message.body = message.body.replace(/</g, "&lt;")
+
         // si ça fait moins de 3 minutes de différence, que c'est la même personne et que la date n'a pas changée
         if(message.sender === lastSender && (new Date(message.timestamp)-new Date(lastTimestamp))/60000<3 && getTimeStr(message.timestamp, { locale: "fr-FR",hour: undefined, minute: undefined}) === getTimeStr(lastTimestamp, { locale: "fr-FR",hour: undefined, minute: undefined})){
             global.convs[key].messageGroups[global.convs[key].messageGroups.length-1].messages.push(message)
