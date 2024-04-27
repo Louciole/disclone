@@ -1680,3 +1680,19 @@ xmp{
     padding-left: 0.6rem;
     border-radius: 2px;
 }
+
+.spoiler{
+    background: var(--bg3);
+    color: transparent;
+    width: fit-content;
+    border-radius: 3px;
+}
+
+.spoiler.clicked{
+    background: var(--text3);
+    color: var(--text);
+}
+
+.crossed{
+    text-decoration: line-through;
+}

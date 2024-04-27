@@ -15,7 +15,7 @@ export class Markdown {
         ">":"<div class='answer'>${content}</div>",
         "'''":"<code>${content}</code>",
         "~~":"<div class='crossed'>${content}</div>",
-        "||":"<div class='spoiler'>${content}</div>",
+        "||":"<div class='spoiler' onclick='showSpoiler(event)'>${content}</div>",
         "link":"<a href='${props.link}'>${content}</a>",
         "color":"<div style='color: ${props.color}'>${content}</div>",
         "endline":"\n",
@@ -37,6 +37,18 @@ export class Markdown {
                             }
                             currentToken = new Token("*")
                             currentToken.props.level = 1
+                            break
+                        case '|':
+                            if (currentToken.content !== ""){
+                                tokenList.push(currentToken)
+                            }
+                            currentToken = new Token("|")
+                            break
+                        case '~':
+                            if (currentToken.content !== ""){
+                                tokenList.push(currentToken)
+                            }
+                            currentToken = new Token("~")
                             break
                         case '\n':
                             if (commitEndline){
@@ -99,6 +111,12 @@ export class Markdown {
                             currentToken = new Token("*")
                             currentToken.props.level = 1
                             break
+                        case '|':
+                            currentToken = new Token("|")
+                            break
+                        case '~':
+                            currentToken = new Token("~")
+                            break
                         case ' ':
                             currentToken.content = currentToken.content.concat(char)
                             break
@@ -128,6 +146,30 @@ export class Markdown {
                             tokenList.push(currentToken)
                             currentToken = new Token("text")
                             currentToken.content = currentToken.content.concat(char)
+                    }
+                    break
+                case '|':
+                    switch (char){
+                        case "|":
+                            currentToken.type="||"
+                            tokenList.push(currentToken)
+                            currentToken = new Token("text")
+                            break
+                        default:
+                            currentToken.type="text"
+                            currentToken.content="|".concat(char)
+                    }
+                    break
+                case '~':
+                    switch (char){
+                        case "~":
+                            currentToken.type="~~"
+                            tokenList.push(currentToken)
+                            currentToken = new Token("text")
+                            break
+                        default:
+                            currentToken.type="text"
+                            currentToken.content="~".concat(char)
                     }
                     break
             }
@@ -183,6 +225,20 @@ export class Markdown {
                 }
                 token.content = "*".repeat(token.props.level)
                 // should be optimized, because we just drop a part of the render here
+                return [fillTemplate(this.HTML_equiv["text"], token), old_id]
+            case "~~":
+            case "||":
+                while (token_id + 1 < tokens.length) {
+                    token_id += 1
+                    if(tokens[token_id].type === token.type){
+                        token.content = content
+                        return [fillTemplate(this.HTML_equiv[token.type], token), token_id]
+                    }
+                    const render = this.renderToken(tokens[token_id], token_id, tokens)
+                    token_id = render[1]
+                    content = content.concat(render[0])
+                }
+                token.content = token.type
                 return [fillTemplate(this.HTML_equiv["text"], token), old_id]
             default:
                 return [fillTemplate(this.HTML_equiv[token.type], token), token_id]

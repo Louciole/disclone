@@ -9,3 +9,8 @@ export function MDToHTML(text){
     return engine.render(tokens)
 }
 window.MDToHTML = MDToHTML
+
+export function showSpoiler(event){
+    event.currentTarget.classList.toggle("clicked")
+}
+window.showSpoiler = showSpoiler
