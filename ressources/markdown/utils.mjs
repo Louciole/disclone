@@ -14,3 +14,10 @@ export function showSpoiler(event){
     event.currentTarget.classList.toggle("clicked")
 }
 window.showSpoiler = showSpoiler
+
+export function copyCode(event){
+    navigator.clipboard.writeText(event.currentTarget.parentElement.firstElementChild.innerHTML).then(
+        event.currentTarget.style.background = "var(--green)"
+    )
+}
+window.copyCode = copyCode

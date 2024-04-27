@@ -1704,3 +1704,25 @@ xmp{
 .crossed{
     text-decoration: line-through;
 }
+
+.code-wrapper{
+    background: var(--bg3);
+    width: calc(100% - 3rem);
+    height: fit-content;
+    display: flex;
+    padding: 1rem;
+    border-radius: 6px;
+    white-space: pre;
+    border: 1px solid var(--bg4);
+    justify-content: space-between;
+}
+
+.code-wrapper .circle{
+    display: none;
+    height: 1rem;
+    cursor: pointer;
+}
+
+.code-wrapper:hover .circle{
+    display: block;
+}

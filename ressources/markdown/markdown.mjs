@@ -13,13 +13,16 @@ export class Markdown {
         "*":"<i>${content}</i>",
         "**":"<b>${content}</b>",
         ">":"<div class='answer'>${content}</div>",
-        "'''":"<code>${content}</code>",
+        "'''":"<div class='code-wrapper'><code>${content}</code><div class='circle grey' onclick='copyCode(event)'></div></div>",
         "~~":"<div class='crossed'>${content}</div>",
         "||":"<div class='spoiler' onclick='showSpoiler(event)'>${content}</div>",
         "link":"<a href='${props.link}' target='_blank'>${content}</a>",
         "color":"<div style='color: ${props.color}'>${content}</div>",
         "endline":"\n",
-        "newline":""
+        "newline":"",
+        ")":")",
+        "(":"(",
+        "]":"]"
     }
 
     tokenize(str) {
@@ -86,6 +89,7 @@ export class Markdown {
                                 break
                             case '|':
                             case '~':
+                            case "'":
                                 if (currentToken.content !== ""){
                                     tokenList.push(currentToken)
                                 }
@@ -153,7 +157,9 @@ export class Markdown {
                                 currentToken.props.level = 1
                                 break
                             case '|':
-                                currentToken = new Token("|")
+                            case '~':
+                            case "'":
+                                currentToken = new Token(char)
                                 break
                             case '[':
                             case ']':
@@ -161,9 +167,6 @@ export class Markdown {
                             case ')':
                                 tokenList.push(new Token(char))
                                 currentToken = new Token("text")
-                                break
-                            case '~':
-                                currentToken = new Token("~")
                                 break
                             case ' ':
                                 currentToken.content = currentToken.content.concat(char)
@@ -191,12 +194,9 @@ export class Markdown {
                                 }
                                 break
                             case '|':
-                                tokenList.push(currentToken)
-                                currentToken = new Token("|")
-                                break
                             case '~':
                                 tokenList.push(currentToken)
-                                currentToken = new Token("~")
+                                currentToken = new Token(char)
                                 break
                             default:
                                 tokenList.push(currentToken)
@@ -226,6 +226,36 @@ export class Markdown {
                             default:
                                 currentToken.type="text"
                                 currentToken.content="~".concat(char)
+                        }
+                        break
+                    case "'":
+                        switch (char){
+                            case "'":
+                                if(currentToken.props.level && currentToken.props.level<3){
+                                    currentToken.props.level = currentToken.props.level ? currentToken.props.level+1 : 1
+                                }else{
+                                    currentToken.type = "'''"
+                                    currentToken.props.level=0
+                                }
+                                break
+                            default:
+                                currentToken.type = "text"
+                                currentToken.content = currentToken.content.concat(char)
+                        }
+                        break
+                    case "'''":
+                        switch (char){
+                            case "'":
+                                if(currentToken.props.level<3){
+                                    currentToken.props.level += 1
+                                }else{
+                                    tokenList.push(currentToken)
+                                    currentToken = new Token("text")
+                                }
+                                break
+                            default:
+                                currentToken.props.level !==0 ? currentToken.props.level = 0 :
+                                currentToken.content = currentToken.content.concat(char)
                         }
                         break
                 }
