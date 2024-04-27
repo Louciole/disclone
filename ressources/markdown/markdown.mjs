@@ -5,7 +5,7 @@ export class Markdown {
     }
 
     //TODO
-    // * ** ''' link color ~~ ||
+    // ''' link color
     HTML_equiv = {
         "#":"<h${props.level}>${content}</h${props.level}>",
         "text":"${content}",
@@ -16,7 +16,7 @@ export class Markdown {
         "'''":"<code>${content}</code>",
         "~~":"<div class='crossed'>${content}</div>",
         "||":"<div class='spoiler' onclick='showSpoiler(event)'>${content}</div>",
-        "link":"<a href='${props.link}'>${content}</a>",
+        "link":"<a href='${props.link}' target='_blank'>${content}</a>",
         "color":"<div style='color: ${props.color}'>${content}</div>",
         "endline":"\n",
         "newline":""
@@ -27,151 +27,191 @@ export class Markdown {
         let currentToken = new Token("newline")
         let commitEndline = false
 
-        for (let char of str){
-            switch (currentToken.type){
-                case "text":
-                    switch (char){
-                        case '*':
-                            if (currentToken.content !== ""){
-                                tokenList.push(currentToken)
-                            }
-                            currentToken = new Token("*")
-                            currentToken.props.level = 1
-                            break
-                        case '|':
-                            if (currentToken.content !== ""){
-                                tokenList.push(currentToken)
-                            }
-                            currentToken = new Token("|")
-                            break
-                        case '~':
-                            if (currentToken.content !== ""){
-                                tokenList.push(currentToken)
-                            }
-                            currentToken = new Token("~")
-                            break
-                        case '\n':
-                            if (commitEndline){
-                                commitEndline = false
-                                tokenList.push(currentToken)
-                                tokenList.push(new Token("endline"))
-                                currentToken = new Token("newline")
-                            }else{
+        let char_id=0
+        while (char_id < str.length ){
+
+            //look for url
+            if(str.slice(char_id,char_id+6) === "https:" || str.slice(char_id,char_id+5) === "http:" ){
+                currentToken.type="link"
+
+                let look_id = 5
+                let nextToken
+                while (char_id+look_id<str.length){
+                    if(str[char_id+look_id]=== " "){
+                        nextToken = new Token("text")
+                        nextToken.content=" "
+                        break
+                    }
+                    if(str[char_id+look_id]=== "\n"){
+                        nextToken = new Token("newline")
+                        break
+                    }
+                    look_id++
+                }
+                currentToken.content = str.slice(char_id,look_id)
+                currentToken.props.link = currentToken.content
+                tokenList.push(currentToken)
+                if(char_id+look_id>=str.length){
+                    return tokenList;
+                }
+                char_id += look_id
+                currentToken = nextToken
+            }else{
+                const char = str[char_id]
+                switch (currentToken.type){
+                    case "text":
+                        switch (char){
+                            case '*':
+                                if (currentToken.content !== ""){
+                                    tokenList.push(currentToken)
+                                }
+                                currentToken = new Token("*")
+                                currentToken.props.level = 1
+                                break
+                            case '|':
+                                if (currentToken.content !== ""){
+                                    tokenList.push(currentToken)
+                                }
+                                currentToken = new Token("|")
+                                break
+                            case '~':
+                                if (currentToken.content !== ""){
+                                    tokenList.push(currentToken)
+                                }
+                                currentToken = new Token("~")
+                                break
+                            case '\n':
+                                if (commitEndline){
+                                    commitEndline = false
+                                    tokenList.push(currentToken)
+                                    tokenList.push(new Token("endline"))
+                                    currentToken = new Token("newline")
+                                }else{
+                                    currentToken.content = currentToken.content.concat(char)
+                                    currentToken.props.consuming="text"
+                                    currentToken.type="newline"
+                                }
+                                break
+                            default:
                                 currentToken.content = currentToken.content.concat(char)
-                                currentToken.props.consuming="text"
-                                currentToken.type="newline"
-                            }
-                            break
-                        default:
-                            currentToken.content = currentToken.content.concat(char)
-                    }
-                    break
-                case "#":
-                    switch (char){
-                        case '#':
-                            currentToken.props.level = currentToken.props.level<3 ? currentToken.props.level+1 : 3
-                            break
-                        case '\n':
-                            tokenList.push(currentToken)
-                            currentToken = new Token("newline")
-                            break
-                        default:
-                            currentToken.content = currentToken.content.concat(char)
-                    }
-                    break
-                case "newline":
-                    switch (char){
-                        case '#':
-                            if (currentToken.content.trim() !== ""){
-                                currentToken.type=currentToken.props.consuming
+                        }
+                        break
+                    case "#":
+                        switch (char){
+                            case '#':
+                                currentToken.props.level = currentToken.props.level<3 ? currentToken.props.level+1 : 3
+                                break
+                            case '\n':
                                 tokenList.push(currentToken)
-                            }
-                            currentToken = new Token("#")
-                            currentToken.props["level"] = 1
-                            break
-                        case '-':
-                            if (currentToken.content.trim() !== ""){
-                                currentToken.type=currentToken.props.consuming
-                                tokenList.push(currentToken)
-                            }
-                            currentToken = new Token("text")
-                            tokenList.push(new Token("start li"))
-                            commitEndline = true
-                            break
-                        case '>':
-                            if (currentToken.content.trim() !== ""){
-                                currentToken.type=currentToken.props.consuming
-                                tokenList.push(currentToken)
-                            }
-                            currentToken = new Token("text")
-                            tokenList.push(new Token(">"))
-                            commitEndline = true
-                            break
-                        case '*':
-                            currentToken = new Token("*")
-                            currentToken.props.level = 1
-                            break
-                        case '|':
-                            currentToken = new Token("|")
-                            break
-                        case '~':
-                            currentToken = new Token("~")
-                            break
-                        case ' ':
-                            currentToken.content = currentToken.content.concat(char)
-                            break
-                        default:
-                            currentToken.type="text"
-                            currentToken.content = currentToken.content.concat(char)
-                    }
-                    break
-                case "*":
-                    switch (char){
-                        case "*":
-                            currentToken.props.level = currentToken.props.level<3 ? currentToken.props.level+1 : 3
-                            break
-                        case '\n':
-                            if (commitEndline){
-                                commitEndline = false
-                                tokenList.push(currentToken)
-                                tokenList.push(new Token("endline"))
                                 currentToken = new Token("newline")
-                            }else{
+                                break
+                            default:
                                 currentToken.content = currentToken.content.concat(char)
-                                currentToken.props.consuming="text"
-                                currentToken.type="newline"
-                            }
-                            break
-                        default:
-                            tokenList.push(currentToken)
-                            currentToken = new Token("text")
-                            currentToken.content = currentToken.content.concat(char)
-                    }
-                    break
-                case '|':
-                    switch (char){
-                        case "|":
-                            currentToken.type="||"
-                            tokenList.push(currentToken)
-                            currentToken = new Token("text")
-                            break
-                        default:
-                            currentToken.type="text"
-                            currentToken.content="|".concat(char)
-                    }
-                    break
-                case '~':
-                    switch (char){
-                        case "~":
-                            currentToken.type="~~"
-                            tokenList.push(currentToken)
-                            currentToken = new Token("text")
-                            break
-                        default:
-                            currentToken.type="text"
-                            currentToken.content="~".concat(char)
-                    }
-                    break
+                        }
+                        break
+                    case "newline":
+                        switch (char){
+                            case '#':
+                                if (currentToken.content.trim() !== ""){
+                                    currentToken.type=currentToken.props.consuming
+                                    tokenList.push(currentToken)
+                                }
+                                currentToken = new Token("#")
+                                currentToken.props["level"] = 1
+                                break
+                            case '-':
+                                if (currentToken.content.trim() !== ""){
+                                    currentToken.type=currentToken.props.consuming
+                                    tokenList.push(currentToken)
+                                }
+                                currentToken = new Token("text")
+                                tokenList.push(new Token("start li"))
+                                commitEndline = true
+                                break
+                            case '>':
+                                if (currentToken.content.trim() !== ""){
+                                    currentToken.type=currentToken.props.consuming
+                                    tokenList.push(currentToken)
+                                }
+                                currentToken = new Token("text")
+                                tokenList.push(new Token(">"))
+                                commitEndline = true
+                                break
+                            case '*':
+                                currentToken = new Token("*")
+                                currentToken.props.level = 1
+                                break
+                            case '|':
+                                currentToken = new Token("|")
+                                break
+                            case '~':
+                                currentToken = new Token("~")
+                                break
+                            case ' ':
+                                currentToken.content = currentToken.content.concat(char)
+                                break
+                            default:
+                                currentToken.type="text"
+                                currentToken.content = currentToken.content.concat(char)
+                        }
+                        break
+                    case "*":
+                        switch (char){
+                            case "*":
+                                currentToken.props.level = currentToken.props.level<3 ? currentToken.props.level+1 : 3
+                                break
+                            case '\n':
+                                if (commitEndline){
+                                    commitEndline = false
+                                    tokenList.push(currentToken)
+                                    tokenList.push(new Token("endline"))
+                                    currentToken = new Token("newline")
+                                }else{
+                                    currentToken.content = currentToken.content.concat(char)
+                                    currentToken.props.consuming="text"
+                                    currentToken.type="newline"
+                                }
+                                break
+                            case '|':
+                                tokenList.push(currentToken)
+                                currentToken = new Token("|")
+                                break
+                            case '~':
+                                tokenList.push(currentToken)
+                                currentToken = new Token("~")
+                                break
+                            default:
+                                tokenList.push(currentToken)
+                                currentToken = new Token("text")
+                                currentToken.content = currentToken.content.concat(char)
+                        }
+                        break
+                    case '|':
+                        switch (char){
+                            case "|":
+                                currentToken.type="||"
+                                tokenList.push(currentToken)
+                                currentToken = new Token("text")
+                                break
+                            default:
+                                currentToken.type="text"
+                                currentToken.content="|".concat(char)
+                        }
+                        break
+                    case '~':
+                        switch (char){
+                            case "~":
+                                currentToken.type="~~"
+                                tokenList.push(currentToken)
+                                currentToken = new Token("text")
+                                break
+                            default:
+                                currentToken.type="text"
+                                currentToken.content="~".concat(char)
+                        }
+                        break
+                }
+                char_id += 1
             }
         }
         tokenList.push(currentToken)

@@ -951,13 +951,21 @@ section{
 .message .content{
     margin: 0;
     color: var(--text);
+    user-select: text;
 }
 
 .message .content p{
     margin: 0.2rem 0;
     font-size: 0.9rem;
     white-space: pre-wrap;
-    user-select: text;
+}
+
+.message .content a{
+    color:#4f9eea;;
+}
+
+.message .content a:visited{
+    color:#4f9eea;;
 }
 
 .separator{
