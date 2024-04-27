@@ -36,6 +36,7 @@ export class Markdown {
                                 tokenList.push(currentToken)
                             }
                             currentToken = new Token("*")
+                            currentToken.props.level = 1
                             break
                         case '\n':
                             if (commitEndline){
@@ -94,6 +95,10 @@ export class Markdown {
                             tokenList.push(new Token(">"))
                             commitEndline = true
                             break
+                        case '*':
+                            currentToken = new Token("*")
+                            currentToken.props.level = 1
+                            break
                         case ' ':
                             currentToken.content = currentToken.content.concat(char)
                             break
@@ -105,9 +110,7 @@ export class Markdown {
                 case "*":
                     switch (char){
                         case "*":
-                            currentToken.type="**"
-                            tokenList.push(currentToken)
-                            currentToken = new Token("text")
+                            currentToken.props.level = currentToken.props.level<3 ? currentToken.props.level+1 : 3
                             break
                         case '\n':
                             if (commitEndline){
@@ -136,33 +139,54 @@ export class Markdown {
     render(tokens) {
         let result = ""
         for(let token_id = 0;  token_id < tokens.length; token_id+=1){
-            const token = tokens[token_id]
-            let content = ""
-            switch(token.type){
-                case ">":
-                case "start li":
-                    while (token_id+1<tokens.length && tokens[token_id+1].type !== "endline"){
-                        token_id+=1
-                        content = content.concat(fillTemplate(this.HTML_equiv[tokens[token_id].type],tokens[token_id]))
-                    }
-                    token.content = content
-                    result = result.concat(fillTemplate(this.HTML_equiv[token.type],token))
-                    break
-                case "**":
-                    while (tokens[token_id+1].type !== "endline"){
-                        token_id+=1
-                        content = content.concat(fillTemplate(this.HTML_equiv[tokens[token_id].type],tokens[token_id]))
-                    }
-                    token.content = content
-                    result = result.concat(fillTemplate(this.HTML_equiv["-"],token))
-                    break
-                default:
-                    result = result.concat(fillTemplate(this.HTML_equiv[token.type],token))
-            }
-
+            const render = this.renderToken(tokens[token_id], token_id, tokens)
+            token_id = render[1]
+            result = result.concat(render[0])
         }
         console.log("result : ",result)
         return result;
+    }
+
+    renderToken(token, token_id, tokens){
+        const old_id = token_id
+        let content = ""
+        switch(token.type) {
+            case ">":
+            case "start li":
+                while (token_id + 1 < tokens.length && tokens[token_id + 1].type !== "endline") {
+                    token_id += 1
+                    const render = this.renderToken(tokens[token_id], token_id, tokens)
+                    token_id = render[1]
+                    content = content.concat(render[0])
+                }
+                token.content = content
+                return [fillTemplate(this.HTML_equiv[token.type], token), token_id]
+            case "*":
+                // this is suboptimal because we're looking for same size closing
+                // smth like *** a ** b * will not work as intended
+                while (token_id + 1 < tokens.length && tokens[token_id + 1].type !== "endline") {
+                    token_id += 1
+                    if(tokens[token_id].type === "*" && tokens[token_id].props.level === token.props.level){
+                        token.content = content
+                        if (token.props.level % 2) {
+                            if (token.props.level === 3) {
+                                token.content = fillTemplate(this.HTML_equiv["**"], token)
+                            }
+                            return [fillTemplate(this.HTML_equiv["*"], token), token_id]
+                        } else {
+                            return [fillTemplate(this.HTML_equiv["**"], token), token_id]
+                        }
+                    }
+                    const render = this.renderToken(tokens[token_id], token_id, tokens)
+                    token_id = render[1]
+                    content = content.concat(render[0])
+                }
+                token.content = "*".repeat(token.props.level)
+                // should be optimized, because we just drop a part of the render here
+                return [fillTemplate(this.HTML_equiv["text"], token), old_id]
+            default:
+                return [fillTemplate(this.HTML_equiv[token.type], token), token_id]
+        }
     }
 }
 
