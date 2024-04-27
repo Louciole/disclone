@@ -5,7 +5,7 @@ export class Markdown {
     }
 
     //TODO
-    // ''' link color
+    // ''' color
     HTML_equiv = {
         "#":"<h${props.level}>${content}</h${props.level}>",
         "text":"${content}",
@@ -32,26 +32,32 @@ export class Markdown {
 
             //look for url
             if(str.slice(char_id,char_id+6) === "https:" || str.slice(char_id,char_id+5) === "http:" ){
-                currentToken.type="link"
+                if (currentToken.content !== ""){
+                    tokenList.push(currentToken)
+                    currentToken = new Token("link")
+                }else{
+                    currentToken.type="link"
+                }
 
                 let look_id = 5
                 let nextToken
                 while (char_id+look_id<str.length){
-                    if(str[char_id+look_id]=== " "){
-                        nextToken = new Token("text")
-                        nextToken.content=" "
-                        break
-                    }
                     if(str[char_id+look_id]=== "\n"){
                         nextToken = new Token("newline")
                         break
                     }
+                    if([" ",")","]"].includes(str[char_id+look_id])){
+                        nextToken = new Token("text")
+                        break
+                    }
                     look_id++
                 }
-                currentToken.content = str.slice(char_id,look_id)
+                currentToken.content = str.slice(char_id,char_id+look_id)
                 currentToken.props.link = currentToken.content
                 tokenList.push(currentToken)
                 if(char_id+look_id>=str.length){
+                    console.log("ending link", char_id, look_id)
+                    console.log("for", str, str.slice(char_id,look_id))
                     return tokenList;
                 }
                 char_id += look_id
@@ -68,17 +74,22 @@ export class Markdown {
                                 currentToken = new Token("*")
                                 currentToken.props.level = 1
                                 break
-                            case '|':
+                            case '[':
+                            case ']':
+                            case '(':
+                            case ')':
                                 if (currentToken.content !== ""){
                                     tokenList.push(currentToken)
                                 }
-                                currentToken = new Token("|")
+                                tokenList.push(new Token(char))
+                                currentToken = new Token("text")
                                 break
+                            case '|':
                             case '~':
                                 if (currentToken.content !== ""){
                                     tokenList.push(currentToken)
                                 }
-                                currentToken = new Token("~")
+                                currentToken = new Token(char)
                                 break
                             case '\n':
                                 if (commitEndline){
@@ -143,6 +154,13 @@ export class Markdown {
                                 break
                             case '|':
                                 currentToken = new Token("|")
+                                break
+                            case '[':
+                            case ']':
+                            case '(':
+                            case ')':
+                                tokenList.push(new Token(char))
+                                currentToken = new Token("text")
                                 break
                             case '~':
                                 currentToken = new Token("~")
@@ -273,6 +291,27 @@ export class Markdown {
                     if(tokens[token_id].type === token.type){
                         token.content = content
                         return [fillTemplate(this.HTML_equiv[token.type], token), token_id]
+                    }
+                    const render = this.renderToken(tokens[token_id], token_id, tokens)
+                    token_id = render[1]
+                    content = content.concat(render[0])
+                }
+                token.content = token.type
+                return [fillTemplate(this.HTML_equiv["text"], token), old_id]
+            case "[":
+                while (token_id + 1 < tokens.length) {
+                    token_id += 1
+                    if(tokens[token_id].type === "\n"){
+                        break
+                    }
+                    if(tokens[token_id].type === "]"){
+                        if(tokens[token_id+1].type === "(" && tokens[token_id+2].type === "link" && tokens[token_id+3].type === ")"){
+                            token.content = content
+                            token.props.link = tokens[token_id+2].content
+                            return [fillTemplate(this.HTML_equiv["link"], token), token_id+3]
+                        }else{
+                            break
+                        }
                     }
                     const render = this.renderToken(tokens[token_id], token_id, tokens)
                     token_id = render[1]
