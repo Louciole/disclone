@@ -4,11 +4,9 @@ export class Markdown {
     constructor() {
     }
 
-    //TODO
-    // ''' color
     HTML_equiv = {
         "#":"<h${props.level}>${content}</h${props.level}>",
-        "text":"${content}",
+        "text":"<p>${content}</p>",
         "start li":"<li>${content}</li>",
         "*":"<i>${content}</i>",
         "**":"<b>${content}</b>",
@@ -17,11 +15,12 @@ export class Markdown {
         "~~":"<div class='crossed'>${content}</div>",
         "||":"<div class='spoiler' onclick='showSpoiler(event)'>${content}</div>",
         "link":"<a href='${props.link}' target='_blank'>${content}</a>",
-        "color":"<div style='color: ${props.color}'>${content}</div>",
-        "endline":"\n",
+        "color":"<div class='color' style='color: ${props.color}'>${content}</div>",
+        "endline":"<p class='newline'>\n</p>",
         "newline":"",
         ")":")",
         "(":"(",
+        "/>":"/>",
         "]":"]"
     }
 
@@ -59,8 +58,6 @@ export class Markdown {
                 currentToken.props.link = currentToken.content
                 tokenList.push(currentToken)
                 if(char_id+look_id>=str.length){
-                    console.log("ending link", char_id, look_id)
-                    console.log("for", str, str.slice(char_id,look_id))
                     return tokenList;
                 }
                 char_id += look_id
@@ -90,12 +87,16 @@ export class Markdown {
                             case '|':
                             case '~':
                             case "'":
+                            case '/':
+                            case '&':
+                            case '<':
                                 if (currentToken.content !== ""){
                                     tokenList.push(currentToken)
                                 }
                                 currentToken = new Token(char)
                                 break
                             case '\n':
+                                console.log("prout", str.slice(char_id,char_id+5),currentToken)
                                 if (commitEndline){
                                     commitEndline = false
                                     tokenList.push(currentToken)
@@ -106,6 +107,8 @@ export class Markdown {
                                     currentToken.props.consuming="text"
                                     currentToken.type="newline"
                                 }
+                                console.log("reprout", str.slice(char_id,char_id+5),currentToken)
+
                                 break
                             default:
                                 currentToken.content = currentToken.content.concat(char)
@@ -159,6 +162,13 @@ export class Markdown {
                             case '|':
                             case '~':
                             case "'":
+                            case '/':
+                            case '&':
+                            case '<':
+                                if (currentToken.content !== ""){
+                                    currentToken.type = "text"
+                                    tokenList.push(currentToken)
+                                }
                                 currentToken = new Token(char)
                                 break
                             case '[':
@@ -171,7 +181,14 @@ export class Markdown {
                             case ' ':
                                 currentToken.content = currentToken.content.concat(char)
                                 break
+                            case '\n':
+                                console.log("prout2",str.slice(char_id,char_id+5))
+
+                                tokenList.push(new Token("endline"))
+                                break
                             default:
+                                console.log("prout3", str.slice(char_id,char_id+5),currentToken)
+
                                 currentToken.type="text"
                                 currentToken.content = currentToken.content.concat(char)
                         }
@@ -231,8 +248,8 @@ export class Markdown {
                     case "'":
                         switch (char){
                             case "'":
-                                if(currentToken.props.level && currentToken.props.level<3){
-                                    currentToken.props.level = currentToken.props.level ? currentToken.props.level+1 : 1
+                                if(!currentToken.props.level || currentToken.props.level<2){
+                                    currentToken.props.level = currentToken.props.level ? currentToken.props.level+1 : 2
                                 }else{
                                     currentToken.type = "'''"
                                     currentToken.props.level=0
@@ -246,16 +263,74 @@ export class Markdown {
                     case "'''":
                         switch (char){
                             case "'":
-                                if(currentToken.props.level<3){
+                                if(currentToken.props.level<2){
                                     currentToken.props.level += 1
                                 }else{
                                     tokenList.push(currentToken)
                                     currentToken = new Token("text")
+                                    console.log("we're closing at",char)
                                 }
                                 break
                             default:
-                                currentToken.props.level !==0 ? currentToken.props.level = 0 :
+                                if(currentToken.props.level !==0){
+                                    currentToken.content = currentToken.content.concat("'".repeat(currentToken.props.level))
+                                    currentToken.props.level = 0
+                                }
                                 currentToken.content = currentToken.content.concat(char)
+                        }
+                        break
+                    case "&":
+                        console.log("& found",str.slice(char_id, char_id+3),currentToken)
+                        if(str.slice(char_id, char_id+3) === "lt;"){
+                            if (currentToken.content !== ""){
+                                currentToken.type = "text"
+                                tokenList.push(currentToken)
+                            }
+                            char_id+=2
+                            currentToken = new Token("<")
+                        }else{
+                            currentToken.content = currentToken.content.concat(char)
+                            currentToken.type = "text"
+                        }
+                        break
+                    case "<":
+                        console.log("< found !",char)
+                        if (currentToken.content !== ""){
+                            currentToken.type = "text"
+                            tokenList.push(currentToken)
+                        }
+                        currentToken = new Token("<")
+                        switch (char){
+                            case "$":
+                                currentToken.type = "color"
+                                currentToken.props.color=""
+                                break
+                            default:
+                                currentToken.type = "text"
+                                currentToken.content = currentToken.content.concat("&lt;", char)
+                        }
+                        break
+                    case "color":
+                        console.log("color found !")
+                        switch (char){
+                            case " ":
+                                tokenList.push(currentToken)
+                                currentToken = new Token("text")
+                                break
+                            default:
+                                currentToken.props.color = currentToken.props.color.concat(char)
+                        }
+                        break
+                    case "/":
+                        switch (char){
+                            case '>':
+                                currentToken.type = "/>"
+                                tokenList.push(currentToken)
+                                currentToken = new Token("text")
+                                break
+                            default:
+                                currentToken.type = "text"
+                                currentToken.content = currentToken.content.concat("/", char)
                         }
                         break
                 }
@@ -290,7 +365,7 @@ export class Markdown {
                     content = content.concat(render[0])
                 }
                 token.content = content
-                return [fillTemplate(this.HTML_equiv[token.type], token), token_id]
+                return [fillTemplate(this.HTML_equiv[token.type], token), token_id+1]
             case "*":
                 // this is suboptimal because we're looking for same size closing
                 // smth like *** a ** b * will not work as intended
@@ -349,6 +424,21 @@ export class Markdown {
                 }
                 token.content = token.type
                 return [fillTemplate(this.HTML_equiv["text"], token), old_id]
+            case "color":
+                while (token_id + 1 < tokens.length) {
+                    token_id += 1
+                    if(tokens[token_id].type === "/>"){
+                        token.content = content
+                        if(tokens[token_id+1].type === "endline"){
+                            token_id+=1
+                        }
+                        return [fillTemplate(this.HTML_equiv[token.type], token), token_id]
+                    }
+                    const render = this.renderToken(tokens[token_id], token_id, tokens)
+                    token_id = render[1]
+                    content = content.concat(render[0])
+                }
+                break
             default:
                 return [fillTemplate(this.HTML_equiv[token.type], token), token_id]
         }

@@ -954,9 +954,11 @@ section{
     user-select: text;
 }
 
-.message .content p{
-    margin: 0.2rem 0;
-    font-size: 0.9rem;
+.message .content div{
+    user-select: text;
+}
+
+.message .content>p{
     white-space: pre-wrap;
 }
 
@@ -1668,6 +1670,7 @@ xmp{
 .message-group .first-message .message-block{
     display: flex;
     flex-direction: column;
+    flex: 1;
 }
 
 .message h1{
@@ -1725,4 +1728,16 @@ xmp{
 
 .code-wrapper:hover .circle{
     display: block;
+}
+
+.message .content li>div, .message .content li p{
+    display: inline;
+}
+
+.message .content .color{
+    display: flex;
+}
+
+.message .content .color p{
+    white-space: pre;
 }
