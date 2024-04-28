@@ -96,7 +96,6 @@ export class Markdown {
                                 currentToken = new Token(char)
                                 break
                             case '\n':
-                                console.log("prout", str.slice(char_id,char_id+5),currentToken)
                                 if (commitEndline){
                                     commitEndline = false
                                     tokenList.push(currentToken)
@@ -107,8 +106,6 @@ export class Markdown {
                                     currentToken.props.consuming="text"
                                     currentToken.type="newline"
                                 }
-                                console.log("reprout", str.slice(char_id,char_id+5),currentToken)
-
                                 break
                             default:
                                 currentToken.content = currentToken.content.concat(char)
@@ -182,13 +179,9 @@ export class Markdown {
                                 currentToken.content = currentToken.content.concat(char)
                                 break
                             case '\n':
-                                console.log("prout2",str.slice(char_id,char_id+5))
-
                                 tokenList.push(new Token("endline"))
                                 break
                             default:
-                                console.log("prout3", str.slice(char_id,char_id+5),currentToken)
-
                                 currentToken.type="text"
                                 currentToken.content = currentToken.content.concat(char)
                         }
@@ -268,7 +261,6 @@ export class Markdown {
                                 }else{
                                     tokenList.push(currentToken)
                                     currentToken = new Token("text")
-                                    console.log("we're closing at",char)
                                 }
                                 break
                             default:
@@ -280,7 +272,6 @@ export class Markdown {
                         }
                         break
                     case "&":
-                        console.log("& found",str.slice(char_id, char_id+3),currentToken)
                         if(str.slice(char_id, char_id+3) === "lt;"){
                             if (currentToken.content !== ""){
                                 currentToken.type = "text"
@@ -294,7 +285,6 @@ export class Markdown {
                         }
                         break
                     case "<":
-                        console.log("< found !",char)
                         if (currentToken.content !== ""){
                             currentToken.type = "text"
                             tokenList.push(currentToken)
@@ -311,7 +301,6 @@ export class Markdown {
                         }
                         break
                     case "color":
-                        console.log("color found !")
                         switch (char){
                             case " ":
                                 tokenList.push(currentToken)
@@ -348,7 +337,6 @@ export class Markdown {
             token_id = render[1]
             result = result.concat(render[0])
         }
-        console.log("result : ",result)
         return result;
     }
 
