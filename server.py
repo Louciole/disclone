@@ -65,23 +65,43 @@ class Disclone(Server):
             match data["type"]:
                 case "register":
                     self.wating_clients[self.currentWaiting] = {"connection": websocket, "uid": data["uid"]}
-                    print(self.wating_clients)
                     self.currentWaiting += 1
                     answer = {"type": "register_request", "servId": self.id, "connectionId": self.currentWaiting - 1}
                     await websocket.send(json.dumps(answer))
+                case "typing":
+                    members = self.db.getAll("accessconversation", data["conv"], "conversation")
+
+                    for user in members:
+                        await self.sendNotificationAsync(user["account"], data)
                 case _:
                     print("unknown message received", message)
 
     @cherrypy.expose
     def authWS(self, connectionId):
         account_id = self.getUser()
-        print(self.wating_clients)
         if self.wating_clients[int(connectionId)]["uid"] != account_id:
             return "forbidden"
 
         connection = self.db.insertDict("active_client", {"userid": account_id, "server": self.id}, True)
         self.pool[connection] = self.wating_clients[int(connectionId)]["connection"]
         del self.wating_clients[int(connectionId)]
+
+    async def sendNotificationAsync(self, account, content):
+        message = {"type": "notif", "content": content}
+
+        clients = self.db.getAll("active_client", account, "userid")
+        for client in clients:
+            #TODO handle multi server
+            if self.pool.get(client["id"]):
+                websocket = self.pool[client["id"]]
+                try:
+                    await websocket.send(json.dumps(message))
+                except Exception as e:
+                    print("exception sending a message on a ws", e)
+                    del self.pool[client["id"]]
+                    self.db.deleteSomething("active_client", client["id"])
+            else:
+                self.db.deleteSomething("active_client", client["id"])
 
     def sendNotification(self, account, content):
         message = {"type": "notif", "content": content}

@@ -6,6 +6,9 @@ let global = {
     "users":{
     },
     "convs":{
+    },
+    "settings":{
+
     }
 }
 export default global

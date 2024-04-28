@@ -1,5 +1,5 @@
 import {initNav, goTo} from "/navigation.mjs"
-import {xhr, loadServers, loadUser, loadConvs, loadUsers, handleMessageGroup} from "/crud.mjs"
+import {xhr, loadServers, loadUser, loadConvs, loadUsers, handleMessageGroup, sendTyping} from "/crud.mjs"
 import global from "/global.mjs"
 import {MDToHTML} from "/markdown/utils.mjs";
 
@@ -231,6 +231,8 @@ function sendMessage(event){
             resizeHeight(event)
         }
         event.preventDefault()
+    }else{
+        sendTyping()
     }
 }
 window.sendMessage = sendMessage

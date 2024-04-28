@@ -224,15 +224,15 @@ export function handleMessageGroup(message){
 }
 
 function initWebSockets(){
-    const socket = new WebSocket(WEBSOCKETS);
+    global.state.socket = new WebSocket(WEBSOCKETS);
 
-    socket.onopen = function(event) {
+    global.state.socket.onopen = function(event) {
         console.log("Connection opened to Python WebSocket server!");
         const message = {"type" : 'register', "uid": global.user.id};
-        socket.send(JSON.stringify(message));
+        global.state.socket.send(JSON.stringify(message));
     };
 
-    socket.onmessage = function(event) {
+    global.state.socket.onmessage = function(event) {
         console.log("Received message from Python server:", event.data);
         const message = JSON.parse(event.data)
         switch (message.type){
@@ -268,6 +268,15 @@ function initWebSockets(){
                     case "added_conv":
                         addElement('global.convs', message.content.content)
                         break;
+                    case "typing":
+                        if(global.state.activeConv === message.content.conv){
+                            const box = document.getElementById("typing-name")
+                            box.parentElement.style.display="flex";
+                            // todo handle multiple names
+                            box.innerHTML = global.users[message.content.uid].display
+                            setTimeout(() => box.parentElement.style.display="none", 5000)
+                        }
+                        break
                     default:
                         break;
                 }
@@ -278,7 +287,19 @@ function initWebSockets(){
 
     };
 
-    socket.onerror = function(error) {
+    global.state.socket.onerror = function(error) {
         console.error("WebSocket error:", error);
     };
+}
+
+export function sendTyping(){
+    if(global.settings.silent_typing === undefined){
+        global.settings.silent_typing = false
+    }
+
+    if( !global.settings.silent_typing && (!global.state.lastTyping || global.state.lastTyping+5000 < new Date())){
+        const message = {"type" : 'typing', "uid": global.user.id, "conv": global.state.activeConv};
+        global.state.lastTyping = new Date()
+        global.state.socket.send(JSON.stringify(message))
+    }
 }

@@ -853,7 +853,6 @@ section{
     padding: 0.6rem;
     border-radius: 8px;
     display: flex;
-    margin-bottom: 1.8rem;
     gap: 1rem;
 }
 
@@ -1740,4 +1739,52 @@ xmp{
 
 .message .content .color p{
     white-space: pre;
+}
+
+#typing-box{
+    display: flex;
+    width: calc(100% - 4rem);
+    height: 1.8rem;
+    color: var(--text);
+    font-size: 0.8rem;
+}
+
+#typing-box .circle{
+    width:0.4rem;
+    height:0.4rem;
+    background:grey;
+    border-radius:50%;
+}
+
+#typing-box .first{
+    animation: 1.1s ease  0s infinite breath;
+}
+
+#typing-box .second{
+    animation: 1.1s ease  125ms infinite breath;
+}
+
+#typing-box .third{
+    animation: 1.1s ease  250ms infinite breath;
+}
+
+#typing-box .inline{
+    display: none;
+    align-items: center;
+    gap:4px;
+}
+
+@keyframes breath {
+    0% {
+        transform:scale(1);
+        background-color:var(--text2);
+    }
+    33% {
+        transform:scale(1.3);
+        background-color:var(--text);
+    }
+    66% {
+        transform:scale(1);
+        background-color:var(--text2);
+    }
 }

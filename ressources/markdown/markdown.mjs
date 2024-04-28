@@ -19,6 +19,7 @@ export class Markdown {
         "endline":"<p class='newline'>\n</p>",
         "newline":"",
         ")":")",
+        "'":"'",
         "(":"(",
         "/>":"/>",
         "]":"]"
