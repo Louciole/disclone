@@ -91,10 +91,7 @@ export class Markdown {
                             case '/':
                             case '&':
                             case '<':
-                                if (currentToken.content !== ""){
-                                    tokenList.push(currentToken)
-                                }
-                                currentToken = new Token(char)
+                                currentToken.type = char
                                 break
                             case '\n':
                                 if (commitEndline){
@@ -163,11 +160,7 @@ export class Markdown {
                             case '/':
                             case '&':
                             case '<':
-                                if (currentToken.content !== ""){
-                                    currentToken.type = "text"
-                                    tokenList.push(currentToken)
-                                }
-                                currentToken = new Token(char)
+                                currentToken.type = char
                                 break
                             case '[':
                             case ']':
@@ -206,6 +199,7 @@ export class Markdown {
                                 break
                             case '|':
                             case '~':
+                            case '/':
                                 tokenList.push(currentToken)
                                 currentToken = new Token(char)
                                 break
@@ -218,7 +212,11 @@ export class Markdown {
                     case '|':
                         switch (char){
                             case "|":
-                                currentToken.type="||"
+                                if (currentToken.content !== ""){
+                                    currentToken.type = "text"
+                                    tokenList.push(currentToken)
+                                }
+                                currentToken = new Token("||")
                                 tokenList.push(currentToken)
                                 currentToken = new Token("text")
                                 break
@@ -230,7 +228,11 @@ export class Markdown {
                     case '~':
                         switch (char){
                             case "~":
-                                currentToken.type="~~"
+                                if (currentToken.content !== ""){
+                                    currentToken.type = "text"
+                                    tokenList.push(currentToken)
+                                }
+                                currentToken = new Token("~~")
                                 tokenList.push(currentToken)
                                 currentToken = new Token("text")
                                 break
@@ -245,13 +247,13 @@ export class Markdown {
                                 if(!currentToken.props.level || currentToken.props.level<2){
                                     currentToken.props.level = currentToken.props.level ? currentToken.props.level+1 : 2
                                 }else{
-                                    currentToken.type = "'''"
+                                    currentToken = new Token("'''")
                                     currentToken.props.level=0
                                 }
                                 break
                             default:
                                 currentToken.type = "text"
-                                currentToken.content = currentToken.content.concat(char)
+                                currentToken.content = currentToken.content.concat("'",char)
                         }
                         break
                     case "'''":
@@ -286,14 +288,13 @@ export class Markdown {
                         }
                         break
                     case "<":
-                        if (currentToken.content !== ""){
-                            currentToken.type = "text"
-                            tokenList.push(currentToken)
-                        }
-                        currentToken = new Token("<")
                         switch (char){
                             case "$":
-                                currentToken.type = "color"
+                                if (currentToken.content !== ""){
+                                    currentToken.type = "text"
+                                    tokenList.push(currentToken)
+                                }
+                                currentToken = new Token("color")
                                 currentToken.props.color=""
                                 break
                             default:
@@ -307,6 +308,10 @@ export class Markdown {
                                 tokenList.push(currentToken)
                                 currentToken = new Token("text")
                                 break
+                            case "\n":
+                                tokenList.push(currentToken)
+                                currentToken = new Token("newline")
+                                break
                             default:
                                 currentToken.props.color = currentToken.props.color.concat(char)
                         }
@@ -314,7 +319,11 @@ export class Markdown {
                     case "/":
                         switch (char){
                             case '>':
-                                currentToken.type = "/>"
+                                if (currentToken.content !== ""){
+                                    currentToken.type = "text"
+                                    tokenList.push(currentToken)
+                                }
+                                currentToken = new Token("/>")
                                 tokenList.push(currentToken)
                                 currentToken = new Token("text")
                                 break
