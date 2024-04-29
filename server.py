@@ -72,7 +72,8 @@ class Disclone(Server):
                     members = self.db.getAll("accessconversation", data["conv"], "conversation")
 
                     for user in members:
-                        await self.sendNotificationAsync(user["account"], data)
+                        if user["account"] != data["uid"]:
+                            await self.sendNotificationAsync(user["account"], data)
                 case _:
                     print("unknown message received", message)
 

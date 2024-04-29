@@ -246,7 +246,7 @@ function initWebSockets(){
                         const currentDate = new Date()
                         const timestamp = currentDate.getTime()
                         message.content.content["timestamp"] = timestamp
-                        handleMessageGroup(message.content)
+                        handleMessageGroup(message.content.content)
                         pushElement('global.convs['.concat(message.content.content.place,'].messages'),message.content.content)
                         displayNotif(message.content)
                         break;
@@ -297,9 +297,10 @@ export function sendTyping(){
         global.settings.silent_typing = false
     }
 
-    if( !global.settings.silent_typing && (!global.state.lastTyping || global.state.lastTyping+5000 < new Date())){
+    console.log("send typing",global.state.lastTyping)
+    if( !global.settings.silent_typing && (!global.state.lastTyping || global.state.lastTyping+5000 < new Date().valueOf())){
         const message = {"type" : 'typing', "uid": global.user.id, "conv": global.state.activeConv};
-        global.state.lastTyping = new Date()
+        global.state.lastTyping = new Date().valueOf()
         global.state.socket.send(JSON.stringify(message))
     }
 }
