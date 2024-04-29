@@ -508,10 +508,7 @@ section{
 }
 
 #profile .icon{
-    height: 60%;
-    aspect-ratio: 1;
-    background: var(--text2);
-    border-radius: 50%;
+    height: 74%;
 }
 
 #profil{
