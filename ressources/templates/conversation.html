@@ -23,22 +23,22 @@
 </div>
 <div class="chat-input">
     <div class="icon-wrapper">
-        <div class="icon"></div>
+        <img class="icon" src="icons/material/add.svg"/>
     </div>
     <label style="flex: 1;height: fit-content;">
         <textarea rows="1" placeholder="Envoyer un message à @${getConvName(global.convs[global.state.activeConv])}" onkeydown="sendMessage(event)" oninput="resizeHeight(event)"></textarea>
     </label>
     <div class="icon-wrapper" onclick="silent_typing()">
-        <div class="icon" ></div>
+        <img class="icon" src="icons/material/keyboard.svg"/>
         <span class="tooltip bottom">Enable silent typing</span>
         <div class="line red medium"></div>
     </div>
     <div class="icon-wrapper">
-        <div class="icon"></div>
+        <img class="icon" src="icons/material/gif.svg"/>
 
     </div>
     <div class="icon-wrapper" onclick="toggleFM('emoji-board')">
-        <div class="icon"></div>
+        <img class="icon" src="icons/material/emoji.svg"/>
     </div>
 </div>
 <div id=typing-box>
