@@ -24,11 +24,16 @@ html{
     font-style: normal;
 }
 
+@font-face {
+    font-family: "Noto Emoji";
+    src: url("fonts/NotoColorEmoji-Regular.ttf");
+}
+
 body{
     display: flex;
     height: 100vh;
     margin: 0;
-    font-family: 'Open Sans', sans-serif;
+    font-family: 'Open Sans', "Noto Emoji", sans-serif;
     overflow: hidden;
     background: var(--bg2);
 }
@@ -874,8 +879,12 @@ section{
 }
 
 .chat-input textarea::placeholder{
-    font-family: 'Open Sans', sans-serif;
+    font-family: 'Open Sans', "Noto Emoji", sans-serif;
     color: #797979;
+}
+
+.chat-input textarea{
+    font-family: 'Open Sans', "Noto Emoji", sans-serif;
 }
 
 .chat-input .icon-wrapper {
@@ -1176,9 +1185,14 @@ section{
 }
 
 
-#emoji-board .cat{
+#emoji-board .menu .cat{
     padding: 0.1rem 0.5rem;
     cursor: pointer;
+}
+
+#emoji-board .selector .cat{
+    display: grid;
+    grid-template-columns: repeat(9, 1fr);
 }
 
 #emoji-board .selected{
@@ -1227,6 +1241,14 @@ section{
 
 #emoji-board .scrollable{
     width: calc(100% - 4rem);
+    height: 100%;
+    flex-direction: column;
+}
+
+#emoji-board h3 {
+    font-size: 0.9rem;
+    margin: 0;
+    margin-left: 0.3rem;
 }
 
 #settings{
@@ -1635,15 +1657,6 @@ section{
     background: #000000a8;
 }
 
-xmp{
-    display: inline;
-    margin: 0.2rem 0;
-    font-size: 0.9rem;
-    font-family: 'Open Sans', sans-serif;
-    white-space: pre-wrap;
-    user-select: text;
-}
-
 .message-group .first-message .message {
     padding-left: 0;
 }
@@ -1783,4 +1796,15 @@ xmp{
 img.icon{
     filter: invert(85%) sepia(5%) saturate(15%) hue-rotate(315deg) brightness(81%) contrast(81%);
     height: 1.8rem;
+}
+
+#emoji-board .item {
+    width: fit-content;
+    font-size: 2rem;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+#emoji-board .item:hover {
+    background: var(--text3);
 }

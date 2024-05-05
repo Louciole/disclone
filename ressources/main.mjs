@@ -1,7 +1,9 @@
 import {initNav, goTo} from "/navigation.mjs"
 import {xhr, loadServers, loadUser, loadConvs, loadUsers, handleMessageGroup, sendTyping} from "/crud.mjs"
 import global from "/global.mjs"
-import {MDToHTML} from "/markdown/utils.mjs";
+import {MDToHTML} from "/markdown/utils.mjs"; // DO NOT REMOVE
+import emojis from "/emojis.mjs";
+
 
 const dom = document.querySelector("body")
 global.state.currentTab = document.getElementById("logo")
@@ -59,7 +61,15 @@ export function addServer(name){
 }
 
 function loadEmojis(){
-    const board = document.getElementById('emoji-board')
+    let content = ""
+    for (let cat of emojis) {
+        content = content.concat(`<h3>${cat.name}</h3><div class="cat">`)
+        for (let emoji of cat.content) {
+            content = content.concat(`<div class="item" onclick="insertStandardEmoji(event,'currentInput')">${emoji.char}</div>`)
+        }
+        content = content.concat("</div>")
+    }
+    global.state.emojis = content
 }
 
 function logout(){

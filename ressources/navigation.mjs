@@ -150,3 +150,17 @@ function goToFriends(event){
     goTo('friends-block','main-friend')
 }
 window.goToFriends = goToFriends
+
+function insertStandardEmoji(event,target){
+    if (target === "currentInput"){
+        // bug ? this does not trigger the typing event, we could use a real event instead
+        // todo bug ! Handle cursor correctly
+        const input = document.querySelector("textarea.selected")
+        input.value = input.value.concat(event.currentTarget.innerHTML)
+        console.log("close")
+        toggleFM('emoji-board')
+    }else {
+        target.innerHTML = event.currentTarget.innerHTML
+    }
+}
+window.insertStandardEmoji = insertStandardEmoji
