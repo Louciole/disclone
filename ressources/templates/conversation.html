@@ -26,7 +26,7 @@
         <img class="icon" src="icons/material/add.svg"/>
     </div>
     <label style="flex: 1;height: fit-content;">
-        <textarea class="selected" rows="1" placeholder="Envoyer un message à @${getConvName(global.convs[global.state.activeConv])}" onkeydown="sendMessage(event)" oninput="resizeHeight(event)"></textarea>
+        <textarea class="selected" rows="1" placeholder="Envoyer un message à @${getConvName(global.convs[global.state.activeConv])}" onkeydown="sendMessage(event)" oninput="resizeHeight(event)" onblur="saveCursorPosition(event)"></textarea>
     </label>
     <div class="icon-wrapper" onclick="silent_typing()">
         <img class="icon" src="icons/material/keyboard.svg"/>
