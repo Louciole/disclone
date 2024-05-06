@@ -1,5 +1,5 @@
 let emojis = [
-    {name:"smileys and emotions", content:
+    {name:"smileys and emotions", icon:"emoji",content:
     [{"char":"😀"},
     {"char":"😃"},
     {"char":"😄"},
@@ -240,7 +240,7 @@ let emojis = [
     {"char":"🙏"},
     {"char":"💅"},
     {"char":"🤝"}
-    ]},{name:"peoples", content:
+    ]},{name:"peoples", icon:"person", content:
     [{"char":"🙇"},
     {"char":"🙋"},
     {"char":"💁"},
@@ -351,7 +351,7 @@ let emojis = [
     {"char":"🫄"},
     {"char":"🤱"},
     {"char":"🧑‍🍼"},
-    ]},{name:"animals and nature", content:[
+    ]},{name:"animals and nature", icon:"leaf", content:[
     {"char":"💐"},
     {"char":"🌹"},
     {"char":"🥀"},
@@ -574,7 +574,7 @@ let emojis = [
     {"char":"🪱"},
     {"char":"🦠"},
     {"char":"🐾"}
-    ]},{name:"food and beverage", content:[
+    ]},{name:"food and beverage", icon:"food", content:[
     {"char":"🍓"},
     {"char":"🍒"},
     {"char":"🍎"},
@@ -704,7 +704,7 @@ let emojis = [
     {"char":"🥄"},
     {"char":"🔪"},
     {"char":"🍽️"}
-    ]},{name:"places and vehicles",content: [
+    ]},{name:"places and vehicles", icon:"bike",content: [
     {"char":"🛑"},
     {"char":"🚧"},
     {"char":"🚨"},
@@ -827,7 +827,7 @@ let emojis = [
     {"char":"🌐"},
     {"char":"💺"},
     {"char":"🧳"}
-    ]},{name:"hobbies and events",content: [
+    ]},{name:"hobbies and events", icon:"trophy",content: [
     {"char":"🎉"},
     {"char":"🎊"},
     {"char":"🎈"},
@@ -943,7 +943,7 @@ let emojis = [
     {"char":"🎭"},
     {"char":"🎫"},
     {"char":"🎟"}
-    ]},{name:"objects",content: [
+    ]},{name:"objects", icon:"paperclip",content: [
     {"char":"📱"},
     {"char":"☎️"},
     {"char":"📞"},
@@ -1208,7 +1208,7 @@ let emojis = [
     {"char":"🔏"},
     {"char":"🔒"},
     {"char":"🔓"}
-    ]},{name:"symbols",content: [
+    ]},{name:"symbols", icon:"heart",content: [
     {"char":"🔴"},
     {"char":"🟠"},
     {"char":"🟡"},
@@ -1492,7 +1492,7 @@ let emojis = [
     {"char":"◽"},
     {"char":"▫️"},
     {"char":"👁️‍🗨️"},
-    ]},{name:"flags",content: [
+    ]},{name:"flags", icon:"flag",content: [
     {"char":"🏁󠁧󠁢󠁷󠁬󠁳󠁿"},
     {"char":"🚩"},
     {"char":"🎌"},

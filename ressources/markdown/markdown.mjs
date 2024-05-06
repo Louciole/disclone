@@ -6,7 +6,7 @@ export class Markdown {
 
     HTML_equiv = {
         "#":"<h${props.level}>${content}</h${props.level}>",
-        "text":"<p>${content}</p>",
+        "text":"${content}",
         "start li":"<li>${content}</li>",
         "*":"<i>${content}</i>",
         "**":"<b>${content}</b>",
@@ -427,9 +427,6 @@ export class Markdown {
                     token_id += 1
                     if(tokens[token_id].type === "/>"){
                         token.content = content
-                        if(tokens[token_id+1].type === "endline"){
-                            token_id+=1
-                        }
                         return [fillTemplate(this.HTML_equiv[token.type], token), token_id]
                     }
                     const render = this.renderToken(tokens[token_id], token_id, tokens)

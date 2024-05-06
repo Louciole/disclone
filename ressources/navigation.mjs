@@ -56,6 +56,9 @@ function toggleFM(id){
     const FM = document.getElementById(id)
     if(FM !== activeFM){
         openingFM = true
+        if(activeFM){
+            activeFM.classList.toggle("visible")
+        }
         activeFM = FM
     }
 }

@@ -61,15 +61,16 @@ export function addServer(name){
 }
 
 function loadEmojis(){
-    let content = ""
-    for (let cat of emojis) {
-        content = content.concat(`<h3>${cat.name}</h3><div class="cat">`)
-        for (let emoji of cat.content) {
-            content = content.concat(`<div class="item" onclick="insertStandardEmoji(event,'currentInput')">${emoji.char}</div>`)
+
+    global.state.emojis = []
+
+    for (let category of emojis) {
+        let cat = {name:category.name, icon:category.icon, content:""}
+        for (let emoji of category.content) {
+            cat.content = cat.content.concat(`<div class="item" onclick="insertStandardEmoji(event,'currentInput')">${emoji.char}</div>`)
         }
-        content = content.concat("</div>")
+        global.state.emojis.push(cat)
     }
-    global.state.emojis = content
 }
 
 function logout(){

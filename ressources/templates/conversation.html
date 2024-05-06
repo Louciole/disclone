@@ -67,9 +67,11 @@
         </div>
     </div>
     <div class="selector">
-        <div class="cat-selector"></div>
+        <div class="cat-selector">
+            ${fillWith('scroll-emoji',global.state.emojis)}
+        </div>
         <div class="scrollable">
-            ${global.state.emojis}
+            ${fillWith('emoji-cat',global.state.emojis)}
         </div>
     </div>
     <div class="descriptor">

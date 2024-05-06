@@ -31,7 +31,9 @@ html{
 
 body{
     display: flex;
-    height: 100vh;
+    position: fixed;
+    width: 100vw;
+    height: 100svh;
     margin: 0;
     font-family: 'Open Sans', "Noto Emoji", sans-serif;
     overflow: hidden;
@@ -668,7 +670,7 @@ section{
  }
 
 .group .title.closed ~ div{
-    visibility: hidden;
+    display: none !important;
     height: 0;
 }
 
@@ -676,10 +678,15 @@ section{
     color: var(--text);
 }
 
-.group .title .icon{
+.group .title div.icon{
     color: var(--text2);
     font-size: 0.8rem;
     transform: rotateZ(90deg) scaleY(1.5);
+    margin: 0 0.3rem;
+}
+
+.group .title img.icon{
+    height: 1.3rem;
     margin: 0 0.3rem;
 }
 
@@ -1147,8 +1154,8 @@ section{
 #emoji-board{
     display: flex;
     position: absolute;
-    bottom: 4.6rem;
-    right: calc(2.5% + 0.5rem);
+    bottom: 5rem;
+    right: 1.3rem;
     background: var(--bg2);
     box-shadow: -4px 6px 10px -3px #00000036;
     border: 1px solid var(--bg3);
@@ -1193,6 +1200,11 @@ section{
 #emoji-board .selector .cat{
     display: grid;
     grid-template-columns: repeat(9, 1fr);
+    justify-items: center;
+}
+
+#emoji-board .selector .group{
+    margin-bottom: 1.1rem;
 }
 
 #emoji-board .selected{
@@ -1235,20 +1247,30 @@ section{
 
 #emoji-board .cat-selector{
     height: 100%;
+    padding-top: 0.5rem;
     width: 3rem;
+    display: flex;
     background: var(--bg4);
+    flex-direction: column;
+    align-items: center;
 }
 
 #emoji-board .scrollable{
     width: calc(100% - 4rem);
-    height: 100%;
+    height: calc(100% - 0.8rem);
     flex-direction: column;
+    margin: 0.3rem 0.4rem;
 }
 
 #emoji-board h3 {
     font-size: 0.9rem;
     margin: 0;
+    font-weight: 500;
     margin-left: 0.3rem;
+}
+
+#emoji-board h3:hover {
+    color: var(--text);
 }
 
 #settings{
@@ -1739,6 +1761,7 @@ section{
 
 .message .content .color{
     display: flex;
+    white-space: pre;
 }
 
 .message .content .color p{
@@ -1807,4 +1830,17 @@ img.icon{
 
 #emoji-board .item:hover {
     background: var(--text3);
+}
+
+#emoji-board .icon-wrapper{
+    display: flex;
+    width: 2rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+#emoji-board .icon-wrapper:hover{
+    background-color: var(--bg2);
 }
