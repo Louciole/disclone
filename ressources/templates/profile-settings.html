@@ -6,6 +6,23 @@
         <label>
             <input type="text" id="display-name-input" value="${global.user.display}">
         </label>
+        <hr>
+        <h3>PRONOMS</h3>
+        <label>
+            <input type="text" id="pronouns-input" value="${global.user.pronouns ? global.user.pronouns : ''}">
+        </label>
+        <hr>
+        <h3>A PROPOS DE MOI</h3>
+        Si tu veux, tu peux utiliser la syntaxe Markdown et des liens.
+
+        <div class="chat-input">
+            <label style="flex: 1;height: fit-content;">
+                <textarea class="selected" rows="5" onkeydown="" oninput="resizeHeight(event)" onblur="saveCursorPosition(event)"></textarea>
+            </label>
+            <div class="icon-wrapper" onclick="toggleFM('emoji-board')">
+                <img class="icon" src="icons/material/emoji.svg">
+            </div>
+        </div>
     </div>
     <div class="half vertical">
         <h3>APERCU</h3>

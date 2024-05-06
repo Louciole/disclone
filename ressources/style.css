@@ -1267,7 +1267,7 @@ section{
     width: calc(100% - 4rem);
     height: calc(100% - 0.8rem);
     flex-direction: column;
-    margin: 0.3rem 0.4rem;
+    padding: 0.3rem 0.4rem;
 }
 
 #emoji-board h3 {
