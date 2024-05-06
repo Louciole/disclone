@@ -1,7 +1,10 @@
 create table disclone_account(
     id int NOT NULL PRIMARY KEY,
     display varchar(24) DEFAULT 'Disclone User',
-    username varchar(24) NOT NULL
+    username varchar(24) NOT NULL,
+    inscription TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    pronouns varchar(24),
+    description varchar(250)
 );
 
 create table if not exists server (

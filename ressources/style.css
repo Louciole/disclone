@@ -702,9 +702,10 @@ section{
 }
 
 #profil-menu {
-    height: 600px;
+    height: fit-content;
     width: 320px;
-    transform: translate(20px, calc(-50% - 2.5rem));    background: var(--bg3);
+    transform: translate(20px, calc(-50% - 2.5rem));
+    background: var(--bg3);
     border-radius: 8px;
     box-shadow: 5px 5px 19px -3px #00000045;
     overflow: clip;
@@ -713,7 +714,7 @@ section{
 
 #profil-menu .banner {
     background: wheat;
-    height: 10%;
+    height: 60px;
 }
 
 #profil-menu .profil-picture {
@@ -727,7 +728,7 @@ section{
 }
 
 .profil-badges {
-    height: 2rem;
+    height: 3rem;
 }
 
 .flying-menu{
@@ -736,19 +737,26 @@ section{
 }
 
 .profil-wrapper {
-    height: 90%;
+    height: fit-content;
 }
 
 .profil-infos {
     width: calc(100% - 4rem);
-    height: calc(100% - 6rem);
-    background: black;
+    height: fit-content;
+    background: #101010;
     margin: 1rem;
     display: flex;
     border-radius: 8px;
     padding: 1rem;
-    gap: 1.2rem;
     flex-direction: column;
+    font-size: 0.9rem;
+}
+
+.profil-infos hr{
+    width: 100%;
+    border: none;
+    margin: 0.6rem 0;
+    border-bottom: 1px solid var(--text3);
 }
 
 .selected-info .title {
@@ -1843,4 +1851,53 @@ img.icon{
 
 #emoji-board .icon-wrapper:hover{
     background-color: var(--bg2);
+}
+
+#profile .profil-infos .name {
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+#profile .profil-infos .username {
+    color: var(--text);
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+#profil-menu .action {
+    display: flex;
+    height: 2rem;
+    align-items: center;
+    border-radius: 3px;
+    cursor: pointer;
+    justify-content: space-between;
+    padding: 0 0.4rem;
+}
+
+#profil-menu .action:hover {
+    background: var(--bg2);
+}
+
+#profil-menu .action div{
+    display: flex;
+    flex-direction: row;
+    height: 100%;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+#profil-menu .action .status{
+    height: 0.8rem;
+    width: 1.4rem;
+    justify-content: center;
+}
+
+#profil-menu .action img.icon {
+    height: 1.4rem;
+}
+
+#profil-menu h3{
+    font-size: 0.7rem;
+    color: var(--text);
+    margin: 0.4rem 0;
 }

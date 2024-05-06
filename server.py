@@ -156,7 +156,7 @@ class Disclone(Server):
     def getUsersInfo(self, users):
         uid = self.getUser()
         users = self.db.getFilters("disclone_account", ["id", "in", json.loads(users)])
-        return json.dumps(users)
+        return json.dumps(users, default=str)
 
     @cherrypy.expose
     def getConvContent(self, convId):
@@ -171,7 +171,7 @@ class Disclone(Server):
     def getUserInfo(self):
         uid = self.getUser()
         user = self.db.getSomething("disclone_account", uid)
-        return json.dumps(user)
+        return json.dumps(user, default=str)
 
     @cherrypy.expose
     def sendMessage(self, conv, content):

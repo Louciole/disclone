@@ -276,7 +276,7 @@ function getTimeStr(timestamp, options = { locale: "fr-FR" }) {
     };
 
     const mergedOptions = { ...defaultOptions, ...options };
-
+    console.log("TIMESTR",date.toLocaleDateString(undefined, mergedOptions))
     return date.toLocaleDateString(undefined, mergedOptions);
 }
 window.getTimeStr = getTimeStr

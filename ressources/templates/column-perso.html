@@ -33,7 +33,35 @@
     <div class="profil-picture"></div>
     <div class="profil-wrapper">
       <div class="profil-badges"></div>
-      <div class="profil-infos">${Subscribe('global.user.display',()=>{return(global.user.display)})}</div>
+      <div class="profil-infos">
+        ${Subscribe('global.user.display',()=>{return(global.user.display)},"name")}
+        ${Subscribe('global.user.username',()=>{return(global.user.username)},"username")}
+        <hr>
+        <h3>DISCLONE MEMBER SINCE</h3>
+        ${Subscribe('global.user.inscription',()=>{return(getTimeStr(global.user.inscription,{ locale: "fr-FR",hour: undefined, minute: undefined}))})}
+        <hr>
+        <div class="action">
+          <div>
+            <div class="status"><div class="circle green"></div></div>
+            <p>Online</p>
+          </div>
+          <img class=icon src="icons/material/next.svg"/>
+        </div>
+        <div class="action">
+          <div>
+            <img class=icon src="icons/material/emoji.svg"/>
+            <p>Set Custom Status</p>
+          </div>
+        </div>
+        <hr>
+        <div class="action">
+          <div>
+            <img class=icon src="icons/material/switch.svg"/>
+            <p>Switch Accounts</p>
+          </div>
+          <img class=icon src="icons/material/next.svg"/>
+        </div>
+      </div>
     </div>
   </div>
 </div>
