@@ -2,6 +2,8 @@ import {loadTemplate} from "/main.mjs"
 import global from "/global.mjs"
 import {loadConv, loadServers, xhr} from "./crud.mjs";
 
+let emptyStr = ''
+
 export function initNav(){
     document.addEventListener('click', function (event) {
         if (activeFM && !activeFM.contains(event.target)) {
@@ -175,9 +177,55 @@ function saveCursorPosition(event){
 window.saveCursorPosition = saveCursorPosition
 
 function updatePreview(event, defaultValue){
-    if (event.currentTarget.value !== eval(defaultValue)){
-        global.state["currentForm"] = {}
+    const save_menu = document.querySelector(".save-settings")
+    if(global.state["currentForm"]){
+        if(!global.state["currentForm"][event.currentTarget.id] ){
+            global.state["currentForm"][event.currentTarget.id] = {value: "", modified :false, defaultValue: eval(defaultValue)}
+        }
+        if(event.currentTarget.value !== global.state["currentForm"][event.currentTarget.id].value){
+            if (event.currentTarget.value === eval(defaultValue)){
+                global.state["currentForm"][event.currentTarget.id].value = event.currentTarget.value
+                global.state["currentForm"].modified -= 1
+                global.state["currentForm"][event.currentTarget.id].modified = false
+                if(global.state["currentForm"].modified===0){
+                    save_menu.style.display="none"
+                }
+            }else if(!global.state["currentForm"][event.currentTarget.id].modified){
+                global.state["currentForm"][event.currentTarget.id]={value: event.currentTarget.value, modified :true,defaultValue: eval(defaultValue)}
+                if(global.state["currentForm"].modified===0){
+                    save_menu.style.display="flex"
+                }
+                global.state["currentForm"].modified += 1
+            }
+
+            updateDisplayedForm(event.currentTarget.id, event.currentTarget.value)
+        }
+    }else if (event.currentTarget.value !== eval(defaultValue)){
+        global.state["currentForm"] = { [event.currentTarget.id] : {value: event.currentTarget.value, modified :true, defaultValue: eval(defaultValue)}, modified: 1}
+        save_menu.style.display="flex"
+        updateDisplayedForm(event.currentTarget.id, event.currentTarget.value)
     }
-    console.log("update preview",eval(defaultValue))
 }
 window.updatePreview = updatePreview
+
+function updateDisplayedForm(id,value){
+    const subs = document.querySelectorAll(".form-".concat(id))
+    for (let sub of subs){
+        sub.innerText = value
+    }
+}
+
+function reset(){
+    for (let key in global.state["currentForm"]){
+        if (key !== "modified" && global.state["currentForm"][key].modified){
+            const element = document.getElementById(key)
+            element.value = global.state["currentForm"][key].defaultValue
+        }
+        updateDisplayedForm(key,global.state["currentForm"][key].defaultValue)
+    }
+    delete global.state["currentForm"]
+    const save_menu = document.querySelector(".save-settings")
+    save_menu.style.display="none"
+}
+window.reset = reset
+

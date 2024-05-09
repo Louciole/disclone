@@ -9,7 +9,7 @@
         <hr>
         <h3>PRONOMS</h3>
         <label>
-            <input type="text" id="pronouns-input" value="${global.user.pronouns ? global.user.pronouns : ''}">
+            <input type="text" id="pronouns-input" value="${global.user.pronouns ? global.user.pronouns : ''}"  oninput="updatePreview(event, 'global.user.pronouns ? global.user.pronouns : emptyStr')">
         </label>
         <hr>
         <h3>A PROPOS DE MOI</h3>
@@ -33,8 +33,9 @@
                 <div class="profil-badges">
                 </div>
                 <div class="profil-infos">
-                    <div class="name">${Subscribe('global.user.display',()=>{return(global.user.display)})}</div>
+                    <div class="name form-display-name-input">${global.user.display}</div>
                     <div class="">${Subscribe('global.user.username',()=>{return(global.user.username)})}</div>
+                    <div class="form-pronouns-input">${global.user.pronouns ? global.user.pronouns : ''}</div>
                 </div>
             </div>
         </div>
