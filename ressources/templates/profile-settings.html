@@ -4,7 +4,7 @@
     <div class="half vertical">
         <h3>NOM D'AFFICHAGE</h3>
         <label>
-            <input type="text" id="display-name-input" value="${global.user.display}">
+            <input type="text" id="display-name-input" value="${global.user.display}" oninput="updatePreview(event, 'global.user.display')">
         </label>
         <hr>
         <h3>PRONOMS</h3>
@@ -17,7 +17,7 @@
 
         <div class="chat-input">
             <label style="flex: 1;height: fit-content;">
-                <textarea class="selected" rows="5" onkeydown="" oninput="resizeHeight(event)" onblur="saveCursorPosition(event)"></textarea>
+                <textarea class="selected" rows="5" onblur="saveCursorPosition(event)"></textarea>
             </label>
             <div class="icon-wrapper" onclick="toggleFM('emoji-board')">
                 <img class="icon" src="icons/material/emoji.svg">
@@ -42,7 +42,7 @@
 </div>
 
 
-<div class="save-settings">
+<div class="save-settings" style="display: none">
     <p>Attention, il reste des modifications non enregistrées !</p>
     <div class="underlhover" onclick="reset()">Réinitialiser</div>
     <div class="btn green" onclick="Save('global.user.display')">Enregistrer les modifications</div>

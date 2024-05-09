@@ -3,6 +3,11 @@ import global from "/global.mjs"
 
 const WEBSOCKETS = "ws://localhost:9888"
 
+window.onbeforeunload = function() {
+    global.state.socket.onclose = function () {}; // disable onclose handler first
+    global.state.socket.close();
+};
+
 export function xhr(endpoint,effect,method="GET", async=true){
     let xhr= new XMLHttpRequest();
     xhr.open(method, endpoint, async);

@@ -173,3 +173,11 @@ function saveCursorPosition(event){
     global.state.previousCursor={start:event.srcElement.selectionStart, end:event.srcElement.selectionEnd}
 }
 window.saveCursorPosition = saveCursorPosition
+
+function updatePreview(event, defaultValue){
+    if (event.currentTarget.value !== eval(defaultValue)){
+        global.state["currentForm"] = {}
+    }
+    console.log("update preview",eval(defaultValue))
+}
+window.updatePreview = updatePreview
