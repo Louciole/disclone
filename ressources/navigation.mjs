@@ -176,7 +176,7 @@ function saveCursorPosition(event){
 }
 window.saveCursorPosition = saveCursorPosition
 
-function updatePreview(event, defaultValue){
+function updatePreview(event, defaultValue, evaluation=undefined){
     const save_menu = document.querySelector(".save-settings")
     if(global.state["currentForm"]){
         if(!global.state["currentForm"][event.currentTarget.id] ){
@@ -196,22 +196,35 @@ function updatePreview(event, defaultValue){
                     save_menu.style.display="flex"
                 }
                 global.state["currentForm"].modified += 1
+            }else{
+                global.state["currentForm"][event.currentTarget.id].value = event.currentTarget.value
             }
 
-            updateDisplayedForm(event.currentTarget.id, event.currentTarget.value)
+            if(evaluation){
+                const pre = evaluation.title && event.currentTarget.value!=="" ? evaluation.title : ""
+                updateDisplayedForm(event.currentTarget.id, pre.concat(eval(evaluation.value)))
+            }else{
+                updateDisplayedForm(event.currentTarget.id, event.currentTarget.value)
+            }
         }
     }else if (event.currentTarget.value !== eval(defaultValue)){
+        console.log(event.currentTarget.value)
         global.state["currentForm"] = { [event.currentTarget.id] : {value: event.currentTarget.value, modified :true, defaultValue: eval(defaultValue)}, modified: 1}
         save_menu.style.display="flex"
-        updateDisplayedForm(event.currentTarget.id, event.currentTarget.value)
+        if(evaluation){
+            const pre = evaluation.title && event.currentTarget.value!=="" ? evaluation.title : ""
+            updateDisplayedForm(event.currentTarget.id, pre.concat(eval(evaluation.value)))
+        }else{
+            updateDisplayedForm(event.currentTarget.id, event.currentTarget.value)
+        }
     }
 }
 window.updatePreview = updatePreview
 
-function updateDisplayedForm(id,value){
+export function updateDisplayedForm(id,value){
     const subs = document.querySelectorAll(".form-".concat(id))
     for (let sub of subs){
-        sub.innerText = value
+        sub.innerHTML = value
     }
 }
 

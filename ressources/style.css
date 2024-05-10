@@ -752,13 +752,6 @@ section{
     font-size: 0.9rem;
 }
 
-.profil-infos hr{
-    width: 100%;
-    border: none;
-    margin: 0.6rem 0;
-    border-bottom: 1px solid var(--text3);
-}
-
 .selected-info .title {
     height: 1.8rem;
     display: flex;
@@ -1159,7 +1152,7 @@ section{
     background: var(--text2bis);
 }
 
-#emoji-board{
+.emoji-board{
     display: flex;
     position: absolute;
     bottom: 5rem;
@@ -1174,60 +1167,51 @@ section{
     z-index: 2;
 }
 
-#emoji-board .menu{
+.emoji-board .menu{
     padding: 1rem 1rem;
     border-bottom: 1px solid var(--bg4);
 }
 
-#emoji-board .menu .gap{
+.emoji-board .menu .gap{
     margin-bottom: 0.6rem;
 }
-#emoji-board .search{
+.emoji-board .search{
     width: 100%;
 }
 
-#emoji-board input{
-    width: 100%;
-    background: var(--bg4);
-    border-radius: 5px 0 0 5px;
-    height: 1.2rem;
-    padding: 0.4rem;
-    border: none;
-}
-
-#emoji-board .gap{
+.emoji-board .gap{
     gap: 1rem;
 }
 
 
-#emoji-board .menu .cat{
+.emoji-board .menu .cat{
     padding: 0.1rem 0.5rem;
     cursor: pointer;
 }
 
-#emoji-board .selector .cat{
+.emoji-board .selector .cat{
     display: grid;
     grid-template-columns: repeat(9, 1fr);
     justify-items: center;
 }
 
-#emoji-board .selector .group{
+.emoji-board .selector .group{
     margin-bottom: 1.1rem;
 }
 
-#emoji-board .selected{
+.emoji-board .selected{
     background: var(--text2bis);
     color: var(--text);
     border-radius: 4px;
 }
 
-#emoji-board .descriptor{
+.emoji-board .descriptor{
     height: 2.8rem;
     width: 100%;
     background: var(--bg3);
 }
 
-#emoji-board .tp-button{
+.emoji-board .tp-button{
     height: 100%;
     width: 3rem;
     background: var(--bg4);
@@ -1237,23 +1221,23 @@ section{
     cursor: pointer;
 }
 
-#emoji-board .tp-button:hover {
+.emoji-board .tp-button:hover {
     color: var(--text);
 }
 
-#emoji-board .tp-button .pfp{
+.emoji-board .tp-button .pfp{
     margin: 0;
     height: 50%;
 }
 
-#emoji-board .selector{
+.emoji-board .selector{
     display: flex;
     width: 30rem;
     height: 22rem;
     flex-direction: row;
 }
 
-#emoji-board .cat-selector{
+.emoji-board .cat-selector{
     height: 100%;
     padding-top: 0.5rem;
     width: 3rem;
@@ -1263,21 +1247,21 @@ section{
     align-items: center;
 }
 
-#emoji-board .scrollable{
+.emoji-board .scrollable{
     width: calc(100% - 4rem);
     height: calc(100% - 0.8rem);
     flex-direction: column;
     padding: 0.3rem 0.4rem;
 }
 
-#emoji-board h3 {
+.emoji-board h3 {
     font-size: 0.9rem;
     margin: 0;
     font-weight: 500;
     margin-left: 0.3rem;
 }
 
-#emoji-board h3:hover {
+.emoji-board h3:hover {
     color: var(--text);
 }
 
@@ -1388,6 +1372,7 @@ section{
     margin-left: 3rem;
     display: flex;
     flex-direction: column;
+    font-size: 0.8rem;
 }
 
 #settings h1{
@@ -1555,7 +1540,7 @@ section{
     font-weight: 600;
 }
 
-#setting-content hr{
+.setting-content hr{
     width: 100%;
     margin: 2rem 0;
     border: 1px solid var(--text3);
@@ -1570,6 +1555,15 @@ section{
     font-size: 1rem;
     margin: 0;
     padding: 0.7rem 1.7rem;
+}
+
+.emoji-board input{
+    width: 100%;
+    background: var(--bg4);
+    border-radius: 5px 0 0 5px;
+    height: 1.2rem;
+    padding: 0.4rem;
+    border: none;
 }
 
 #setting-content input{
@@ -1607,6 +1601,9 @@ section{
     gap: 1rem;
     bottom: 2rem;
     padding: 0.3rem 1.2rem;
+    font-size: 0.9rem;
+    line-break: inherit;
+    white-space: pre;
 }
 
 .underlhover:hover{
@@ -1829,18 +1826,18 @@ img.icon{
     height: 1.8rem;
 }
 
-#emoji-board .item {
+.emoji-board .item {
     width: fit-content;
     font-size: 2rem;
     border-radius: 6px;
     cursor: pointer;
 }
 
-#emoji-board .item:hover {
+.emoji-board .item:hover {
     background: var(--text3);
 }
 
-#emoji-board .icon-wrapper{
+.emoji-board .icon-wrapper{
     display: flex;
     width: 2rem;
     align-items: center;
@@ -1849,19 +1846,28 @@ img.icon{
     cursor: pointer;
 }
 
-#emoji-board .icon-wrapper:hover{
+.emoji-board .icon-wrapper:hover{
     background-color: var(--bg2);
 }
 
-#profile .profil-infos .name {
-    font-size: 1.2rem;
+.profil-infos .name {
+    font-size: 1.2rem !important;
     font-weight: 600;
+    color: var(--text);
+    white-space: nowrap;
 }
 
-#profile .profil-infos .username {
+.profil-infos .username {
     color: var(--text);
     font-size: 0.8rem;
     font-weight: 600;
+    white-space: nowrap;
+}
+
+.profil-infos .pronouns {
+    font-size: 0.8rem;
+    font-weight: 300;
+    white-space: nowrap;
 }
 
 #profil-menu .action {
@@ -1896,8 +1902,31 @@ img.icon{
     height: 1.4rem;
 }
 
-#profil-menu h3{
+.profil-infos h3{
     font-size: 0.7rem;
     color: var(--text);
     margin: 0.4rem 0;
+}
+
+.profil-infos hr{
+    width: 100%;
+    border: none;
+    margin: 0.6rem 0;
+    border-bottom: 1px solid var(--text3);
+}
+
+#setting-content .chat-input{
+    width: calc(100% - 1rem);
+    background: var(--bg4);
+    margin-top: 1rem;
+}
+
+@media screen  and (max-aspect-ratio: 10/9){
+    #setting-content {
+        width: 54vw;
+        margin-left: 2rem;
+    }
+    #settings-list {
+        width: 30vw;
+    }
 }

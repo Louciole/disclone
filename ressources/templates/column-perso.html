@@ -36,7 +36,9 @@
       <div class="profil-infos">
         ${Subscribe('global.user.display',()=>{return(global.user.display)},"name")}
         ${Subscribe('global.user.username',()=>{return(global.user.username)},"username")}
+        ${Subscribe('global.user.pronouns',()=>{return(global.user.pronouns)},"pronouns")}
         <hr>
+        ${Subscribe('global.user.description',()=>{return(global.user.description ? "<h3>ABOUT ME</h3>".concat(MDToHTML(global.user.description)) : "")})}
         <h3>DISCLONE MEMBER SINCE</h3>
         ${Subscribe('global.user.inscription',()=>{return(getTimeStr(global.user.inscription,{ locale: "fr-FR",hour: undefined, minute: undefined}))})}
         <hr>

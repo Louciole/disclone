@@ -17,9 +17,9 @@
 
         <div class="chat-input">
             <label style="flex: 1;height: fit-content;">
-                <textarea class="selected" rows="5" onblur="saveCursorPosition(event)"></textarea>
+                <textarea id="description-input" class="selected" rows="5" maxlength="250" onblur="saveCursorPosition(event)" oninput="updatePreview(event, 'global.user.description ? global.user.description : emptyStr',{title: '<h3>ABOUT ME</h3>',value:'MDToHTML(event.currentTarget.value)'})">${global.user.description ? global.user.description : ''}</textarea>
             </label>
-            <div class="icon-wrapper" onclick="toggleFM('emoji-board')">
+            <div class="icon-wrapper" onclick="toggleFM('std-emoji-board')">
                 <img class="icon" src="icons/material/emoji.svg">
             </div>
         </div>
@@ -34,8 +34,10 @@
                 </div>
                 <div class="profil-infos">
                     <div class="name form-display-name-input">${global.user.display}</div>
-                    <div class="">${Subscribe('global.user.username',()=>{return(global.user.username)})}</div>
-                    <div class="form-pronouns-input">${global.user.pronouns ? global.user.pronouns : ''}</div>
+                    <div class="username">${Subscribe('global.user.username',()=>{return(global.user.username)})}</div>
+                    <div class="pronouns form-pronouns-input">${global.user.pronouns ? global.user.pronouns : ''}</div>
+                    <hr>
+                    <div class="form-description-input">${global.user.description ? "<h3>ABOUT ME</h3>".concat(MDToHTML(global.user.description)) : ''}</div>
                 </div>
             </div>
         </div>
@@ -46,5 +48,7 @@
 <div class="save-settings" style="display: none">
     <p>Attention, il reste des modifications non enregistrées !</p>
     <div class="underlhover" onclick="reset()">Réinitialiser</div>
-    <div class="btn green" onclick="Save('global.user.display')">Enregistrer les modifications</div>
+    <div class="btn green" onclick="Save()">Enregistrer les modifications</div>
 </div>
+
+${getTemplate("std_emojis-board")}

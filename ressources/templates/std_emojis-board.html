@@ -1,0 +1,28 @@
+<div id="std-emoji-board" class="emoji-board">
+    <div class="menu">
+        <div class="inline">
+            <div class="search">
+                <label style="width: 100%;">
+                    <input type="text" placeholder="Trouve l'émoji parfait">
+                </label>
+                <div class="icon">
+                    <div class="circle grey input-icon"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="selector">
+        <div class="cat-selector">
+            ${fillWith('scroll-emoji',global.state.emojis)}
+        </div>
+        <div class="scrollable">
+            ${fillWith('emoji-cat',global.state.emojis)}
+        </div>
+    </div>
+    <div class="descriptor">
+        <div class="inline">
+            <div id="hovered-emoji"></div>
+            <p></p>
+        </div>
+    </div>
+</div>

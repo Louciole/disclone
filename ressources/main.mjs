@@ -1,4 +1,4 @@
-import {initNav, goTo} from "/navigation.mjs"
+import {initNav, goTo, updateDisplayedForm} from "/navigation.mjs"
 import {xhr, loadServers, loadUser, loadConvs, loadUsers, handleMessageGroup, sendTyping} from "/crud.mjs"
 import global from "/global.mjs"
 import {MDToHTML} from "/markdown/utils.mjs"; // DO NOT REMOVE
@@ -205,14 +205,19 @@ export function deleteElement(element, id){
     }
 }
 
-function Save(element){
-    const input = document.getElementById("display-name-input")
-
-    const onSaved = function (){
+function Save(){
+    console.log("saving",global.state["currentForm"])
+    for (let key in global.state["currentForm"]){
+        if (key !== "modified" && global.state["currentForm"][key].modified){
+            const target = key.split("-")[0]
+            console.log("target is ",target)
+            xhr("change?element=".concat(target,"&value=",encodeURIComponent(global.state["currentForm"][key].value)), undefined,"POST",false)
+            setElement("global.user.".concat(target), global.state["currentForm"][key].value)
+        }
     }
-    //TODO make this correctly
-    xhr("change?element=display&value=".concat(input.value), onSaved,"POST",false)
-    setElement(element, input.value)
+    delete global.state["currentForm"]
+    const save_menu = document.querySelector(".save-settings")
+    save_menu.style.display="none"
 }
 window.Save = Save
 
