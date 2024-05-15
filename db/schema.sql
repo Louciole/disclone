@@ -26,7 +26,8 @@ create table if not exists conversationElement (
 );
 
 create table if not exists conversation (
-    name varchar(255) NOT NULL
+    name varchar(255) NOT NULL,
+    private bool default true
 ) inherits (conversationElement);
 
 create table if not exists accessConversation (

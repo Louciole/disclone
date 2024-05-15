@@ -287,21 +287,27 @@ function getTimeStr(timestamp, options = { locale: "fr-FR" }) {
 window.getTimeStr = getTimeStr
 
 function getConvName(conv){
-    if(conv.name){
-        return conv.name
-    }
-
-    let name = ""
-    loadUsers(conv.members)
-
-    for (let member in conv.members){
-        member = conv.members[member]
-        if(member !== global.user.id){
-            name = name.concat(global.users[member].display)
+    if (conv.private){
+        if(conv.name){
+            return conv.name
         }
+
+        let name = ""
+        loadUsers(conv.members)
+
+        for (let member in conv.members){
+            member = conv.members[member]
+            if(member !== global.user.id){
+                name = name.concat(global.users[member].display)
+            }
+        }
+        conv.name=name
+        return name
+    }else{
+        const input = document.createElement("input")
+        input.value = conv.name ? conv.name : ""
+        return input
     }
-    conv.name=name
-    return name
 }
 window.getConvName = getConvName
 
