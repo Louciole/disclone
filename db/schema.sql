@@ -4,7 +4,9 @@ create table disclone_account(
     username varchar(24) NOT NULL,
     inscription TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     pronouns varchar(24),
-    description varchar(250)
+    description varchar(250),
+    status text default '{status:0}',
+    faction integer
 );
 
 create table if not exists server (

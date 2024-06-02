@@ -275,7 +275,7 @@ section{
     opacity: 1;
 }
 
-#create-server .menu {
+.menu-wrapper .menu{
     width: 80vw;
     height: fit-content;
     max-width: 400px;
@@ -708,12 +708,12 @@ section{
     background: var(--bg3);
     border-radius: 8px;
     box-shadow: 5px 5px 19px -3px #00000045;
-    overflow: clip;
     z-index: 19;
 }
 
 #profil-menu .banner {
     background: wheat;
+    border-radius: 6px 6px 0 0;
     height: 60px;
 }
 
@@ -960,19 +960,19 @@ section{
     user-select: text;
 }
 
-.message .content div{
+.message .content div, .mdBlock div{
     user-select: text;
 }
 
-.message .content>p{
+.message .content>p, .mdBlock>p{
     white-space: pre-wrap;
 }
 
-.message .content a{
+.message .content a, .mdBlock a{
     color:#4f9eea;;
 }
 
-.message .content a:visited{
+.message .content a:visited, .mdBlock a:visited{
     color:#4f9eea;;
 }
 
@@ -1092,7 +1092,7 @@ section{
 
 .vertical{
     display: flex;
-    flex-direction: column;
+    flex-direction: column !important;
 }
 
 #content .scrollable{
@@ -1250,7 +1250,7 @@ section{
 .emoji-board .scrollable{
     width: calc(100% - 4rem);
     height: calc(100% - 0.8rem);
-    flex-direction: column;
+    flex-direction: column !important;
     padding: 0.3rem 0.4rem;
 }
 
@@ -1760,16 +1760,16 @@ section{
     display: block;
 }
 
-.message .content li>div, .message .content li p{
+.message .content li>div, .message .content li p, .mdBlock li p, .mdBlock li>div{
     display: inline;
 }
 
-.message .content .color{
+.message .content .color, .mdBlock .color{
     display: flex;
     white-space: pre;
 }
 
-.message .content .color p{
+.message .content .color p, .mdBlock .color p{
     white-space: pre;
 }
 
@@ -1929,4 +1929,115 @@ img.icon{
     #settings-list {
         width: 30vw;
     }
+}
+
+#profil-menu .action .hover-menu-hitbox {
+    display: none;
+    width: fit-content;
+    padding-left: 1.5rem;
+    position: fixed;
+    cursor: default;
+    height: fit-content;
+    transform: translate(15.5rem, calc(50% - 1rem));
+}
+
+#profil-menu .action .hover-menu {
+    display: flex;
+    background: var(--bg4);
+    height: fit-content;
+    border-radius: 4px;
+    padding: 0.5rem;
+    width: 19rem;
+    flex-direction: column;
+    gap: 0;
+}
+
+#profil-menu .action:hover .hover-menu-hitbox{
+    display: flex;
+}
+
+h4 {
+    margin: 0;
+}
+
+.hover-menu>div{
+    width: 100%;
+    gap: 0 !important;
+    cursor: pointer;
+    border-radius: 3px;
+}
+
+.hover-menu>div:hover{
+    background: var(--accent2);
+}
+
+.hover-menu>div .vertical{
+    gap: 0 !important;
+}
+
+.hover-menu>div h4{
+    width: 100%;
+}
+
+.hover-menu>div p{
+    font-size: 0.8rem;
+}
+
+.mdBlock {
+    white-space: pre-wrap;
+}
+
+.menu-wrapper .menu .option {
+    cursor: pointer;
+    background: #cfcfcf;
+    display: flex;
+    padding: 0.8rem 1rem;
+    text-align: start;
+    align-items: center;
+    border-radius: 4px;
+}
+
+.menu-wrapper .menu .option.selected {
+    background: var(--accent);
+    color: var(--text);
+}
+
+.netrunner, .fixeur {
+    background: #45DDC0;
+}
+
+.corpo, .psycho {
+    background: #F47B67;
+}
+
+.solo, .nomade {
+    background: #9C84EF;
+}
+
+.faction-block {
+    border-radius: 3px;
+    color: var(--bg4);
+    padding: 1.8rem;
+    font-size: 0.95rem;
+}
+
+.faction-block p{
+    white-space: pre-wrap;
+}
+
+#settings .faction-block h2{
+    margin-top:0;
+    font-size: 1rem;
+}
+
+#settings .faction-block h3{
+    margin:0.3rem 0;
+    font-size: 2rem;
+}
+
+.faction-block .btn{
+    color: var(--bg4);
+    font-size: 0.95rem;
+    font-weight: bold;
+    border: solid 1px var(--bg4);
 }

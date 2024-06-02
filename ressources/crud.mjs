@@ -79,7 +79,7 @@ function difference(arrKeys, dict) {
     const dictKeys = new Set(Object.keys(dict)); // Convert dict keys to a set for efficient lookup
 
     for (const key of arrKeys) {
-        if (!dictKeys.has(key)) {
+        if (!dictKeys.has(key.toString())) {
             result.push(key);
         }
     }
@@ -309,3 +309,8 @@ export function sendTyping(){
         global.state.socket.send(JSON.stringify(message))
     }
 }
+
+function changeStatus(status){
+    console.log(status)
+}
+window.changeStatus = changeStatus

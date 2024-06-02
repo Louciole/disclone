@@ -1,14 +1,12 @@
 <section id="settings" style="display:none">
   <div id="settings-list" class="scrollable">
-    <section id="user-settings">
+    <section id="general-settings">
       <h3>PARAMÈTRES UTILISATEURS</h3>
       <div class="item selected"  onclick="goTo('setting-content', 'account-settings',{'category':'currentSettingTab' ,'event': event})">Mon compte</div>
       <div class="item" id="profil-settings" onclick="goTo( 'setting-content', 'profile-settings',{'category':'currentSettingTab' ,'event': event})">Profils</div>
       <div class="item">Confidentialité & sécurité</div>
       <div class="item">Demandes d'amis</div>
       <hr>
-    </section>
-    <section id="app-settings">
       <h3>PARAMÈTRES DE L'APPLI</h3>
       <div class="item">Voix & Vidéo</div>
       <div class="item">Discuter</div>
@@ -17,8 +15,6 @@
       <div class="item">Langue</div>
       <div class="item">Mode streamer</div>
       <hr>
-    </section>
-    <section id="misc-settings">
       <div class="item" id="faction-test" onclick="goTo('setting-content', 'factions',{'category':'currentSettingTab' ,'event': event})">Test de faction</div>
       <hr>
     </section>

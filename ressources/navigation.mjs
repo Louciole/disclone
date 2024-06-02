@@ -73,13 +73,18 @@ window.toggleGroup = toggleGroup
 
 function gotoStep(step,stepsID){
     const menu = document.getElementById(stepsID)
-    console.log(step)
     menu.style.transform=`translateX(${-100*step/menu.childElementCount}%)`
 }
 window.gotoStep = gotoStep
 
-function closeMenu(cible = undefined){
-    //TODO generalize reset page count
+function resetSelected(id){
+    const selected = document.getElementById(id).querySelectorAll(".selected")
+    for(let el of selected){
+        el.classList.remove("selected")
+    }
+}
+
+function closeMenu(cible = undefined,id='createServerSteps'){
     if(!cible){
         if(event.target !== event.currentTarget){
             return
@@ -89,7 +94,8 @@ function closeMenu(cible = undefined){
         const cibleEl= document.querySelector(cible)
         cibleEl.style.display = "none";
     }
-    gotoStep(0,'createServerSteps')
+    gotoStep(0,id)
+    resetSelected(id)
 }
 window.closeMenu = closeMenu
 

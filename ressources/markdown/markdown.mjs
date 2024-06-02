@@ -47,6 +47,8 @@ export class Markdown {
                 while (char_id+look_id<str.length){
                     if(str[char_id+look_id]=== "\n"){
                         nextToken = new Token("newline")
+                        look_id++
+                        console.log("we're here")
                         break
                     }
                     if([" ",")","]"].includes(str[char_id+look_id])){
@@ -186,15 +188,11 @@ export class Markdown {
                                 currentToken.props.level = currentToken.props.level<3 ? currentToken.props.level+1 : 3
                                 break
                             case '\n':
-                                if (commitEndline){
+                                tokenList.push(currentToken)
+                                currentToken = new Token("newline")
+                                currentToken.content = "\n"
+                                if (commitEndline) {
                                     commitEndline = false
-                                    tokenList.push(currentToken)
-                                    tokenList.push(new Token("endline"))
-                                    currentToken = new Token("newline")
-                                }else{
-                                    currentToken.content = currentToken.content.concat(char)
-                                    currentToken.props.consuming="text"
-                                    currentToken.type="newline"
                                 }
                                 break
                             case '|':

@@ -1,88 +1,75 @@
-<section class="menu-wrapper" id="test-faction" style="display:none" onclick="closeMenu()">
+<section class="menu-wrapper" id="test-faction" style="display:none" onclick="closeMenu(undefined,'testFactionSteps')">
   <div class="menu">
-    <div class="close" onclick="closeMenu('#test-faction')">+</div>
+    <div class="close" onclick="closeMenu('#test-faction','testFactionSteps')">+</div>
     <div class="steps" id="testFactionSteps">
       <div class="step">
-        <h2>Question 1 sur 5</h2>
-        <p>Qu'est-ce qui vous motive le plus dans la vie ?</p>
-        <div class="option">La gloire et la reconnaissance</div>
-        <div class="option">La liberté et l'expression de soi</div>
-        <div class="option">Une vie simple et paisible</div>
-        <div class="option">Les relations et l'appartenance à une communauté</div>
-        <div class="option">L'honneur et la loyauté</div>
-        <div class="option">Le succès et le pouvoir</div>
+        <h2>Question 1 sur 6</h2>
+        <p>Vous venez de trouver une puce de données cachée contenant des informations classifiées. Que faites-vous ?</p>
+        <div class="option" onclick="selectAnswer(event)" data-id="0">Cracker le code et vendre l'information au plus offrant.</div>
+        <div class="option" onclick="selectAnswer(event)" data-id="1">Contacter un groupe de hackers et vous partagez l'information anonymement.</div>
+        <div class="option" onclick="selectAnswer(event)" data-id="2">La remettre aux autorités.</div>
         <div class="inline space-between">
-          <div class="btn grey" onclick="closeMenu('#test-faction')">Annuler</div>
+          <div class="btn grey" onclick="closeMenu('#test-faction','testFactionSteps')">Annuler</div>
           <div class="btn blue" onclick="gotoStep(1,'testFactionSteps')">Question suivante</div>
         </div>
       </div>
 
       <div class="step">
-        <h2>Question 2 sur 5</h2>
-        <p>Comment vous décririez-vous ?</p>
-        <div class="option">Pratique et indépendant</div>
-        <div class="option">Créatif et idéaliste</div>
-        <div class="option">Charismatique et persuasif</div>
-        <div class="option">Ambitieux et autoritaire</div>
-        <div class="option">Fiable et déterminé</div>
-        <div class="option">Analytique et logique</div>
+        <h2>Question 2 sur 6</h2>
+        <p>Votre meilleur ami est endetté auprès de quelqu'un de dangereux. Quelle-est la meilleure solution ?</p>
+        <div class="option" onclick="selectAnswer(event)" data-id="2">Convaincre votre ami de travailler dur afin de se remettre sur pied.</div>
+        <div class="option" onclick="selectAnswer(event)" data-id="0">Défier l'usurier en duel ou en compétition.</div>
+        <div class="option" onclick="selectAnswer(event)" data-id="1">Mobiliser votre réseau et mettre en commun les ressources pour le rembourser.</div>
         <div class="inline space-between">
-          <div class="btn grey" onclick="closeMenu('#test-faction')">Annuler</div>
+          <div class="btn grey" onclick="closeMenu('#test-faction','testFactionSteps')">Annuler</div>
           <div class="btn blue" onclick="gotoStep(2,'testFactionSteps')">Question suivante</div>
         </div>
       </div>
 
       <div class="step">
-        <h2>Question 3 sur 5</h2>
-        <p>Quelles sont vos compétences et vos talents ?</p>
-        <div class="option">Pratique et indépendant</div>
-        <div class="option">Créatif et idéaliste</div>
-        <div class="option">Charismatique et persuasif</div>
-        <div class="option">Ambitieux et autoritaire</div>
-        <div class="option">Fiable et déterminé</div>
-        <div class="option">Analytique et logique</div>
+        <h2>Question 3 sur 6</h2>
+        <p>Vous vivez dans une ville dangereuse, Le réseau électrique local tombe en panne, plongeant la ville dans le noir. Quel est votre premier geste ?</p>
+        <div class="option" onclick="selectAnswer(event)" data-id="0">Se diriger vers le marché noir pour trouver des sources d'énergie alternatives.</div>
+        <div class="option" onclick="selectAnswer(event)" data-id="2">Organiser une surveillance de quartier pour maintenir l'ordre jusqu'au rétablissement du courant.</div>
+        <div class="option" onclick="selectAnswer(event)" data-id="1">Fortifier votre appartement et attendre la suite des événements.</div>
         <div class="inline space-between">
-          <div class="btn grey" onclick="closeMenu('#test-faction')">Annuler</div>
+          <div class="btn grey" onclick="closeMenu('#test-faction','testFactionSteps')">Annuler</div>
           <div class="btn blue" onclick="gotoStep(3,'testFactionSteps')">Question suivante</div>
         </div>
       </div>
 
       <div class="step">
-        <h2>Question 4 sur 5</h2>
-        <p> Quel est votre rêve pour l'avenir ?</p>
-        <div class="option">Pratique et indépendant</div>
-        <div class="option">Créatif et idéaliste</div>
-        <div class="option">Charismatique et persuasif</div>
-        <div class="option">Ambitieux et autoritaire</div>
-        <div class="option">Fiable et déterminé</div>
-        <div class="option">Analytique et logique</div>
+        <h2>Question 4 sur 6</h2>
+        <p> Vous assistez à une scène où un groupe intimide une personne seule. Que faites-vous ?</p>
+        <div class="option" onclick="selectAnswer(event)" data-id="3">Vous intervenez directement pour défendre la personne, quel que soit le risque.</div>
+        <div class="option" onclick="selectAnswer(event)" data-id="4">Vous appelez discrètement la sécurité ou la police pour régler la situation.</div>
         <div class="inline space-between">
-          <div class="btn grey" onclick="closeMenu('#test-faction')">Annuler</div>
-          <div class="btn blue" onclick="gotoStep(2,'testFactionSteps')">Question suivante</div>
+          <div class="btn grey" onclick="closeMenu('#test-faction','testFactionSteps')">Annuler</div>
+          <div class="btn blue" onclick="gotoStep(4,'testFactionSteps')">Question suivante</div>
         </div>
       </div>
 
       <div class="step">
-        <h2>Question 5 sur 5</h2>
-        <p> Vous êtes confronté à un obstacle qui semble difficile à surmonter</p>
-        <div class="option">Pratique et indépendant</div>
-        <div class="option">Créatif et idéaliste</div>
-        <div class="option">Charismatique et persuasif</div>
-        <div class="option">Ambitieux et autoritaire</div>
-        <div class="option">Fiable et déterminé</div>
-        <div class="option">Analytique et logique</div>
+        <h2>Question 5 sur 6</h2>
+        <p>Un ami proche vous demande de l'aider à dissimuler un délit qu'il a commis. </p>
+        <div class="option" onclick="selectAnswer(event)" data-id="4">Vous refusez catégoriquement de mentir pour lui, même si cela risque de blesser votre amitié.</div>
+        <div class="option" onclick="selectAnswer(event)" data-id="3"> Vous essayez de trouver une solution alternative pour l'aider à éviter les conséquences, même si cela implique une certaine ruse.</div>
         <div class="inline space-between">
-          <div class="btn grey" onclick="closeMenu('#test-faction')">Annuler</div>
-          <div class="btn blue" onclick="gotoStep(2,'testFactionSteps')">Question suivante</div>
+          <div class="btn grey" onclick="closeMenu('#test-faction','testFactionSteps')">Annuler</div>
+          <div class="btn blue" onclick="gotoStep(5,'testFactionSteps')">Question suivante</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <h2>Question 6 sur 6</h2>
+        <p>Vous découvrez un implant cérébral interdit qui permet d'accéder gratuitement à des implants médicaux onéreux.</p>
+        <div class="option" onclick="selectAnswer(event)" data-id="3">Vous l'installez et en profitez pour améliorer votre propre santé.</div>
+        <div class="option" onclick="selectAnswer(event)" data-id="4">Vous refusez de l'utiliser, craignant les virus et les risques pour votre santé (paralysie, psychose, mort).</div>
+        <div class="inline space-between">
+          <div class="btn grey" onclick="closeMenu('#test-faction','testFactionSteps')">Annuler</div>
+          <div class="btn blue" onclick="finishQuizzz()">Question suivante</div>
         </div>
       </div>
     </div>
   </div>
 </section>
-
-Les Technos: Vous abordez le problème de manière méthodique et analytique, en recherchant des solutions rationnelles et basées sur des faits.
-Les Netrunners: Vous explorez différentes sources d'informations et de perspectives, en cherchant des idées innovantes et des solutions alternatives.
-Les Nomades: Vous comptez sur votre réseau de soutien et votre communauté pour obtenir de l'aide et des encouragements.
-Les Fixeurs: Vous cherchez des solutions collaboratives et des partenariats pour surmonter l'obstacle ensemble.
-Les Solos: Vous faites preuve de persévérance et de détermination, en ne vous laissant pas décourager par les échecs et en continuant à avancer malgré les difficultés.
-Les Corporatistes: Vous utilisez vos ressources et votre influence pour mobiliser des personnes et des moyens afin de surmonter l'obstacle et atteindre vos objectifs.

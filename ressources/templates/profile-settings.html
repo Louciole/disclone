@@ -37,7 +37,7 @@
                     <div class="username">${Subscribe('global.user.username',()=>{return(global.user.username)})}</div>
                     <div class="pronouns form-pronouns-input">${global.user.pronouns ? global.user.pronouns : ''}</div>
                     <hr>
-                    <div class="form-description-input">${global.user.description ? "<h3>ABOUT ME</h3>".concat(MDToHTML(global.user.description)) : ''}</div>
+                    <div class="form-description-input mdBlock">${global.user.description ? "<h3>ABOUT ME</h3>".concat(MDToHTML(global.user.description)) : ''}</div>
                 </div>
             </div>
         </div>
