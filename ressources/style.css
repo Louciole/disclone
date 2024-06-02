@@ -696,9 +696,9 @@ section{
     color: var(--text);
     display: flex;
     border-bottom: 1px solid var(--bg4);
-    margin-bottom: 1rem;
     align-items: center;
     justify-content: space-between;
+    height: 2rem;
 }
 
 #profil-menu {
@@ -820,6 +820,7 @@ section{
 
 #friends-block{
     width: 92%;
+    margin-top: 1rem;
 }
 
 #friends-block input{
