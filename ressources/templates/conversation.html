@@ -1,7 +1,12 @@
 <div class="selected-info">
     <div class="title">
         <div class="circle red"></div>
-        ${getConvName(global.convs[global.state.activeConv])}
+        ${getConvName(global.convs[global.state.activeConv], true)}
+    </div>
+    <div>
+        <div class="icon-wrapper" onclick="toggleFM('add-users')">
+            <img class="icon" src="icons/material/groupadd.svg"/>
+        </div>
     </div>
 </div>
 <div class="scrollable bottom-margin">
@@ -82,5 +87,19 @@
             <div id="hovered-emoji"></div>
             <p></p>
         </div>
+    </div>
+</div>
+<div id="add-users" style="visibility: hidden">
+    <h1>Sélectionne des amis</h1>
+    <div class="inline">
+        <p>Tu peux encore ajouter </p>
+        ${Subscribe("global.convs[global.state.activeConv].members",()=>{return 10 - global.convs[global.state.activeConv].members.length})}
+        <p> autres amis</p>
+    </div>
+    <label>
+        <input type="text" placeholder="Entre le nom d'utilisateur d'un ami">
+    </label>
+    <div class="scrollable">
+        ${fillWith("add-user-elt",global.user.friends)}
     </div>
 </div>

@@ -286,8 +286,8 @@ function getTimeStr(timestamp, options = { locale: "fr-FR" }) {
 }
 window.getTimeStr = getTimeStr
 
-function getConvName(conv){
-    if (conv.private){
+function getConvName(conv,inputable = false){
+    if (conv.private || !inputable){
         if(conv.name){
             return conv.name
         }
