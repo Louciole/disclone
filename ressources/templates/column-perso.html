@@ -2,7 +2,9 @@
 <div id="profile">
   <div id="profil" onclick="toggleFM('profil-menu')">
     <div class="pfp red">
-      <div class="activity green"></div>
+      <div class="activity-wrapper">
+        <div class="activity green"></div>
+      </div>
     </div>
     <div>
       <div class="name">${Subscribe('global.user.display',()=>{return(global.user.display)})}</div>
@@ -51,25 +53,42 @@
           <div class="hover-menu-hitbox">
             <div class="hover-menu">
               <div onclick="changeStatus('online')">
-                <div class="status"><div class="circle green"></div></div>
-                <h4>Online</h4>
+                <div class="inline">
+                  <div class="smol activity-wrapper">
+                    <div class="activity green"></div>
+                  </div>
+                  <h4>Online</h4>
+                </div>
               </div>
               <hr>
               <div onclick="changeStatus('idle')">
-                <div class="status"><div class="circle green"></div></div>
-                <h4>Idle</h4>
+                <div class="inline">
+                  <div class="smol activity-wrapper">
+                    <div class="activity orange"></div>
+                  </div>
+                  <h4>Idle</h4>
+                </div>
               </div>
               <div onclick="changeStatus('not disturb')">
-                <div class="status"><div class="circle green"></div></div>
                 <div class="vertical">
-                  <h4>Do Not Disturb</h4>
+                  <div class="inline">
+                    <div class="smol activity-wrapper">
+                      <div class="activity RED"></div>
+                    </div>
+                    <h4>Do Not Disturb</h4>
+                  </div>
                   <p>You will not receive any desktop notifications.</p>
                 </div>
               </div>
               <div onclick="changeStatus('invisible')">
-                <div class="status"><div class="circle green"></div></div>
+
                 <div class="vertical">
-                  <h4>Invisible</h4>
+                  <div class="inline">
+                    <div class="smol activity-wrapper">
+                      <div class="activity spymode"></div>
+                    </div>
+                    <h4>Invisible</h4>
+                  </div>
                   <p>You will not appear online, but you will have full access to all of Disclone.</p>
                 </div>
               </div>

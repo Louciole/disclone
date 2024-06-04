@@ -568,37 +568,80 @@ section{
 }
 
 .activity{
-    height: 11px;
-    width: 11px;
+    height: 100%;
+    aspect-ratio: 1;
     border-radius: 50%;
+    display: block !important;
     border: 3px solid var(--bg2);
-    position: relative;
-    left: 10%;
-    bottom: -10%;
+    --offset-border:0px;
 }
 
-.activity.grey::after{
+.activity.spymode{
+    background: var(--text2);
+}
+
+.activity.RED{
+    background: var(--red);
+}
+
+.activity.RED::after{
     content: "";
-    height: 5px;
-    width: 5px;
+    display: block;
+    background: var(--bg2);
+    width: 50%;
+    height: 15%;
+    position: relative;
+    z-index: 10;
+    left: 25%;
+    top: 43%;
+}
+
+.activity.spymode::after{
+    content: "";
+    display: block;
+    height: calc(var(--size) * 0.5);
+    aspect-ratio: 1;
     background: var(--bg2);
     z-index: 10;
     border-radius: 50%;
-    position: absolute;
-    left: 3px;
-    top: 3px;
+    position: relative;
+    left: calc(var(--size) / 4);
+    top: calc(var(--size) / 4);
 }
 
 .activity.orange::after{
     content: "";
-    height: 7px;
-    width: 7px;
+    display: block;
+    height: calc(var(--size) * 0.71);
+    aspect-ratio: 1;
     background: var(--bg2);
     z-index: 10;
     border-radius: 50%;
-    position: absolute;
+    position: relative;
     left: 0px;
     top: 0px;
+}
+
+.action .activity{
+    --bg2: var(--bg4);
+    border: 0;
+}
+
+.pfp .activity-wrapper{
+    --size : 11px;
+    position: relative;
+    left: -5%;
+    bottom: 5%;
+}
+
+.activity-wrapper{
+    --size : 1rem;
+    height: var(--size) !important;
+    width: var(--size) !important;
+}
+
+.activity-wrapper.smol{
+    --size : 0.7rem;
 }
 
 .info-wrapper{
@@ -1893,7 +1936,7 @@ img.icon{
     background: var(--bg2);
 }
 
-#profil-menu .action div{
+#profil-menu .action div {
     display: flex;
     flex-direction: row;
     height: 100%;
@@ -1969,11 +2012,20 @@ h4 {
     margin: 0;
 }
 
-.hover-menu>div{
+.hover-menu div {
+    align-items: flex-start !important;
     width: 100%;
-    gap: 0 !important;
+}
+
+.hover-menu .inline{
+    align-items: baseline !important;
+}
+
+.hover-menu>div{
+    width: calc(100% - 0.8rem);
     cursor: pointer;
     border-radius: 3px;
+    padding: 0.25rem 0.4rem;
 }
 
 .hover-menu>div:hover{
@@ -1985,11 +2037,13 @@ h4 {
 }
 
 .hover-menu>div h4{
+    font-size: 0.8rem;
     width: 100%;
 }
 
 .hover-menu>div p{
-    font-size: 0.8rem;
+    font-size: 0.7rem;
+    margin-left: 1.5rem;
 }
 
 .mdBlock {
