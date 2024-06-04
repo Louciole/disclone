@@ -1006,7 +1006,7 @@ section{
     justify-content: space-between;
 }
 
-.search .icon{
+.search .icon-wrapper{
     background: var(--bg4);
     border-radius: 0 5px 5px 0;
     height: 1.2rem;
@@ -1015,6 +1015,14 @@ section{
     width: 1.4rem;
     justify-content: center;
     cursor: text;
+}
+
+.search .icon{
+    height: 1.2rem;
+}
+
+.icon.medium{
+    height: 1.2rem;
 }
 
 .backdrop-bidule{

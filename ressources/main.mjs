@@ -24,6 +24,7 @@ console.log("Client ready", global)
 
 export function loadTemplate(template, target=undefined, flex= undefined, async){
     const effect = function() {
+        console.log("xhr sent received",target,document.getElementById(target))
         if (target){
             //maybe not using eval
             document.getElementById(target).innerHTML = eval('`' + this.responseText + '`');

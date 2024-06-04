@@ -30,10 +30,13 @@ window.openMenu = openMenu
 export function goTo(id, target, selected=undefined, async=true){
     loadTemplate(target.concat(".html"), id, undefined, async)
     if(selected){
+        console.log("yes ? and ?",selected)
         let targetElt;
         if(global.state[selected.category]){
+            console.log("??? (1)")
             global.state[selected.category].classList.remove("selected")
         }else if(selected.event){
+            console.log("trying to remove previously selected thingys",selected.event.currentTarget.parentElement.querySelector('.selected'))
             selected.event.currentTarget.parentElement.querySelector('.selected').classList.remove("selected")
         }else if(selected.id){
             targetElt = document.getElementById(selected.id)
@@ -157,7 +160,7 @@ function goToFriends(event){
     global.state.activeConv = undefined
     event.currentTarget.classList.add("selected")
 
-    goTo('content',"friends")
+    goTo('content',"friends",undefined,false)
     goTo('friends-block','main-friend')
 }
 window.goToFriends = goToFriends
