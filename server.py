@@ -36,6 +36,8 @@ class Disclone(Server):
     def onLogin(self, uid):
         if not self.db.getSomething("disclone_account", uid):
             self.db.insertDict("disclone_account", {"id": uid, "username": '#' + str(uid)})
+        if not self.db.getSomething("status", uid):
+            self.db.insertDict("status", {"id": uid})
 
     def getUserConnection(self, id):
         return self.db.getSomething("active_client", id, "userid")
@@ -156,6 +158,7 @@ class Disclone(Server):
     def getUsersInfo(self, users):
         uid = self.getUser()
         users = self.db.getFilters("disclone_account", ["id", "in", json.loads(users)])
+        self.getUsersStatus(users)
         return json.dumps(users, default=str)
 
     @cherrypy.expose
@@ -171,6 +174,7 @@ class Disclone(Server):
     def getUserInfo(self):
         uid = self.getUser()
         user = self.db.getSomething("disclone_account", uid)
+        self.getUsersStatus([user])
         return json.dumps(user, default=str)
 
     @cherrypy.expose
@@ -258,6 +262,36 @@ class Disclone(Server):
             return "invalid username "
         else:
             self.db.edit("disclone_account", uid, element, value)
+
+    def getUsersStatus(self, users):
+        #these requests could be batched
+        for user in users:
+            params = self.db.getSomething('status', user['id'])
+            if not params:
+                self.db.insertDict("status", {"id": user['id']})
+                params = {"mode": 0}
+            print (params)
+            if params['mode'] == 0:
+                clients = self.db.getAll('active_client', user['id'], "userid")
+                print("user is in 0 mode id:",user['id'],clients)
+                idle = True
+                if not len(clients):
+                    user['status'] = {'icon': 'spymode', 'text': 'Offline'}
+                    continue
+                for client in clients:
+                    if not client['idle']:
+                        idle = False
+                if idle:
+                    user['status'] = {'icon': 'orange', 'text': 'Inactive'}
+                else:
+                    user['status'] = {'icon': 'green', 'text': 'Online'}
+            elif params['mode'] == 3:
+                user['status'] = {'icon': 'spymode', 'text': 'Offline'}
+            elif params['mode'] == 2:
+                user['status'] = {'icon': 'RED', 'text': 'Do not Disturb'}
+            elif params['mode'] == 1:
+                user['status'] = {'icon': 'orange', 'text': 'Inactive'}
+
 
 
 REGEX_USERNAME = re.compile('^(?=.{3,}$)[a-zA-Z0-9_\-\.]*$')

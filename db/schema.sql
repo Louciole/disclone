@@ -5,8 +5,15 @@ create table disclone_account(
     inscription TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     pronouns varchar(24),
     description varchar(250),
-    status text default '{status:0}',
     faction integer
+);
+
+create table status(
+   id int NOT NULL PRIMARY KEY,
+   mode numeric not null default 0,
+   emoji varchar,
+   text varchar(40),
+   expiration timestamp
 );
 
 create table if not exists server (
@@ -57,5 +64,6 @@ create table if not exists boatakopin (
 create table if not exists active_client (
     id bigserial NOT NULL PRIMARY KEY,
     userid integer not null,
-    server integer not null
+    server integer not null,
+    idle bool default false
 );

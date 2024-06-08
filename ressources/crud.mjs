@@ -204,6 +204,7 @@ function friend(action, element, event = undefined){
         // doing some magic here to update the local state
         const invitationNumber = Array.prototype.indexOf.call(event.currentTarget.parentElement.children, event.currentTarget) - 1
         global.user.friends.push(global.user.invitations[invitationNumber])
+        global.user.friends[global.user.friends.length-1].private = true
         deleteElement("global.user.invitations",invitationNumber)
     }else{
         xhr("friends?action=".concat(action,"&arg=",element),effect)
