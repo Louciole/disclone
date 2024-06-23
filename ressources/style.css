@@ -2107,21 +2107,37 @@ h4 {
 
 #add-users {
     position: absolute;
+    right: 0.4rem;
+    top: 2.5rem;
     visibility: hidden;
     background: var(--bg);
     box-shadow: -4px 6px 10px -3px #00000036;
     border: 1px solid var(--bg3);
     border-radius: 0.5rem;
     height: fit-content;
-    width: 30rem;
+    width: 27rem;
+    color: var(--text);
     padding: 1rem;
     z-index: 2;
 }
 
+#add-users>.inline{
+    white-space: break-spaces;
+    font-size: 0.8rem;
+    color: var(--text);
+    opacity: 0.8;
+}
+
+#add-users h1{
+    margin: 0;
+    font-size: 1.3rem;
+}
+
 #add-users .scrollable{
     height: 15rem;
+    width: 100%;
     flex-direction: column;
-    gap: 1rem;
+    border-bottom: 1px solid var(--text3);
 }
 
 #add-users .scrollable>.inline{
@@ -2161,4 +2177,28 @@ input[type="checkbox"] {
 input[type="checkbox"]:checked + .checkbox {
     background-color: var(--accent);
     border: 1px solid var(--accent);
+}
+
+input[type="text"]{
+    border-radius: 4px;
+    background: var(--bg4);
+    border: none;
+    width: calc(100% - 1rem);
+    font-size: 0.85rem;
+    padding: 0.4rem;
+    height: 1.1rem;
+}
+
+.btn.disabled{
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+#add-users .btn{
+    display: flex;
+    height: 2rem;
+    margin: 0.5rem;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1.5rem;
 }
