@@ -3,12 +3,12 @@
         <div class="inline">
             <div class="pfp green">
                 <div class="activity-wrapper">
-                    <div class="activity spymode"></div>
+                    <div class="activity ${global.users[getRelevantUser(element)].status.icon}"></div>
                 </div>
             </div>
             <div class="vertical">
                 <h5>${global.users[getRelevantUser(element)].display}</h5>
-                <p>Hors ligne</p>
+                <p>${global.users[getRelevantUser(element)].status.text}</p>
             </div>
         </div>
         <div class="inline reverse">
