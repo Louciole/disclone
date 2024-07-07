@@ -1,4 +1,4 @@
-import global from "/global.mjs"
+import global from "/framework/global.mjs"
 
 function deafen(){
     event.currentTarget.lastElementChild.classList.toggle("visible")

@@ -1,4 +1,4 @@
-import {setElement} from "./main.mjs";
+import {setElement} from "/framework/sakura.mjs";
 
 function getQuizResult(answersCount){
     let metric1 = 0

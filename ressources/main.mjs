@@ -1,14 +1,14 @@
-import {initNav, goTo, updateDisplayedForm} from "/navigation.mjs"
+import {initNav, goTo} from "/framework/navigation.mjs"
 import {xhr, loadServers, loadUser, loadConvs, loadUsers, handleMessageGroup, sendTyping} from "/crud.mjs"
-import global from "/global.mjs"
+import global from "/framework/global.mjs"
 import {MDToHTML} from "/markdown/utils.mjs"; // DO NOT REMOVE
 import emojis from "/emojis.mjs";
+import {pushElement, setElement} from "./framework/sakura.mjs";
 
-
-const dom = document.querySelector("body")
+window.global = global
+global.state.dom = document.querySelector("body")
 global.state.currentTab = document.getElementById("logo")
 const notifElt = document.getElementById("notif")
-let templates = {}
 
 initNav()
 loadUser()
@@ -21,22 +21,12 @@ loadEmojis()
 goTo('friends-block','main-friend')
 console.log("Client ready", global)
 
+global.state.dom.addEventListener("mouseover", (event) => resetIdle());
 
-export function loadTemplate(template, target=undefined, flex= undefined, async){
-    const effect = function() {
-        console.log("xhr sent received",target,document.getElementById(target))
-        if (target){
-            //maybe not using eval
-            document.getElementById(target).innerHTML = eval('`' + this.responseText + '`');
-        }else{
-            dom.insertAdjacentHTML('beforeend',eval('`' + this.responseText + '`'))
-        }
-        if (flex){
-            document.getElementById(flex).style.display = "flex"
-        }
-    };
 
-    xhr( '/templates/'.concat(template), effect,"GET", async)
+function resetIdle(){
+    console.log("reset idle")
+    global.state.idle = new Date()
 }
 
 function getSlug(name){
@@ -74,54 +64,6 @@ function loadEmojis(){
     }
 }
 
-function logout(){
-    const url = "/logout";
-    let request = new XMLHttpRequest();
-    request.open('POST', url, true);
-    request.onload = function() { // request successful
-        console.log("logged out",request.responseText)
-
-        if (request.responseText === "ok"){
-            window.location.href = "/auth";
-        }
-    };
-
-    request.onerror = function() {
-        console.log("request failed")
-    };
-
-    request.send();
-}
-window.logout = logout
-
-function fillWith(template, list){
-    console.log("fillWith",template,list,typeof list)
-
-    let request
-    if(templates[template]){
-        request={"responseText":templates[template]}
-    }else{
-        request = xhr( '/templates/'.concat(template,".html"), undefined, "GET", false)
-        console.log("adding to cache",templates, template)
-        templates[template] = request.responseText
-    }
-
-    let content = ""
-    if (typeof list == 'object'){
-        for (let elementId in list){
-            const element = list[elementId]
-            content += eval('`' + request.responseText + '`')
-        }
-    }else{
-        for (let element of list){
-            content += eval('`' + request.responseText + '`')
-        }
-    }
-
-    return content
-}
-window.fillWith = fillWith
-
 function repaintConv(sub, value){
     console.log("repainting conv", sub, value)
 
@@ -139,72 +81,6 @@ function repaintConv(sub, value){
     // pour un nouveau groupe on l'ajoute a la conv active
 }
 window.repaintConv = repaintConv
-
-function Subscribe(element, content, className=undefined, repaint=undefined){
-    //subscribe content to element, content will be reevaluated on element change
-    const domElement = document.createElement('div')
-    domElement.className = element.replaceAll('.','-').replaceAll('[','🪟').replaceAll(']','🥹')
-    if (className){
-        domElement.classList.add(className)
-    }
-    domElement.innerHTML = content()
-    if(repaint){
-        domElement.dataset.repaint = repaint
-    }else{
-        domElement.dataset.content = content
-    }
-    return domElement.outerHTML
-}
-window.Subscribe = Subscribe
-
-export function setElement(element, value){
-    console.log(element,'has been updated to:', value);
-    eval(`${element} = value`);
-    const subscriptions = document.querySelectorAll(`[class^="${element.replaceAll('.','-').replaceAll('[','🪟').replaceAll(']','🥹')}"]`)
-    for (let sub of subscriptions){
-        const content = eval(sub.dataset.content)
-        sub.innerHTML = content()
-    }
-}
-
-export function pushElement(element, value){
-    console.log(element,'has been added:', value);
-    eval(`${element}.push(value)`);
-    const subscriptions = document.querySelectorAll(`[class^="${element.replaceAll('.','-').replaceAll('[','🪟').replaceAll(']','🥹')}"]`)
-    for (let sub of subscriptions){
-        console.log("we need to evaluate",sub)
-
-        if(sub.dataset.repaint){
-            const fn = eval(sub.dataset.repaint)
-            fn()
-        }else{
-            const content = eval(sub.dataset.content)
-            sub.innerHTML = content()
-        }
-    }
-}
-
-export function addElement(element, value){
-    console.log(element,'has been added:', value);
-    eval(`${element}[value.id] = value`);
-    const subscriptions = document.querySelectorAll(`[class^="${element.replaceAll('.','-').replaceAll('[','🪟').replaceAll(']','🥹')}"]`)
-    for (let sub of subscriptions){
-        console.log("we need to evaluate",sub)
-        const content = eval(sub.dataset.content)
-        sub.innerHTML = content()
-    }
-}
-
-export function deleteElement(element, id){
-    console.log(element,'has been removed:', element[id]);
-    eval(`${element}.splice(id,1)`);
-    const subscriptions = document.querySelectorAll(`[class^="${element.replaceAll('.','-').replaceAll('[','🪟').replaceAll(']','🥹')}"]`)
-    for (let sub of subscriptions){
-        console.log("we need to evaluate",sub)
-        const content = eval(sub.dataset.content)
-        sub.innerHTML = content()
-    }
-}
 
 function Save(){
     console.log("saving",global.state["currentForm"])
@@ -232,6 +108,17 @@ export function getRelevantUser(element){
 }
 window.getRelevantUser = getRelevantUser
 
+export function getPrivateConvUser(element){
+    for (let user of element.members){
+        if (global.user.id !== user) {
+            loadUsers([user])
+            return global.users[user]
+        }
+    }
+
+}
+window.getPrivateConvUser = getPrivateConvUser
+
 function sendMessage(event){
     if (event.key === "Enter" && !event.shiftKey){
         const onload = () => {
@@ -254,38 +141,11 @@ function sendMessage(event){
 }
 window.sendMessage = sendMessage
 
-
-function checkEnter(event, effect){
-    if (event.key === "Enter"){
-        console.log("enter pressed")
-        effect()
-    }
-}
-window.checkEnter = checkEnter
-
 function resizeHeight(event){
     const lines = 1 + (event.currentTarget.value.match(/\n/g) || []).length;
     event.currentTarget.rows = lines > 25 ? 25 : lines;
 }
 window.resizeHeight = resizeHeight
-
-function getTimeStr(timestamp, options = { locale: "fr-FR" }) {
-    const date = new Date(timestamp);
-
-    const defaultOptions = {
-        year: "numeric",
-        month: "numeric",
-        day: "numeric",
-        hour: "numeric",
-        minute: "numeric",
-        hour12: false,
-    };
-
-    const mergedOptions = { ...defaultOptions, ...options };
-    console.log("TIMESTR",date.toLocaleDateString(undefined, mergedOptions))
-    return date.toLocaleDateString(undefined, mergedOptions);
-}
-window.getTimeStr = getTimeStr
 
 function getConvName(conv,inputable = false){
     if (conv.private || !inputable){
