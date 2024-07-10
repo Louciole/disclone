@@ -4,6 +4,7 @@ from sakura import Server
 import cherrypy
 import json
 import re
+import signal
 
 # websockets imports
 import asyncio
@@ -30,6 +31,7 @@ class Disclone(Server):
         self.pool = {}
         self.wating_clients = {}
         self.currentWaiting = 0
+        self.stop_event = asyncio.Event()
         websocket_thread = threading.Thread(target=self.startWebSockets)
         websocket_thread.start()
 
@@ -56,7 +58,18 @@ class Disclone(Server):
     async def runWebsockets(self):
         async with websockets.serve(self.handle_message, self.config.get("server", "IP"),
                                     int(self.config.get("NOTIFICATION", "PORT"))):
-            await asyncio.Future()  # Run the server forever
+            stop_event_task = asyncio.create_task(self.stop_event.wait())
+            await asyncio.wait([stop_event_task], return_when=asyncio.FIRST_COMPLETED)
+
+    def closeWebSockets(self):
+        self.stop_event.set()
+        print("[INFO] WS server closed")
+
+    def stop(self):
+        for client, ws in self.pool.items():
+            self.db.deleteSomething("active_client",client)
+        print("[INFO] cleaned database")
+        cherrypy.engine.exit()
 
     # --------------------------------WEBSOCKETS--------------------------------
 
@@ -76,6 +89,10 @@ class Disclone(Server):
                     for user in members:
                         if user["account"] != data["uid"]:
                             await self.sendNotificationAsync(user["account"], data)
+                case "changeActivity":
+                    if self.checkWSAuth(websocket,data["clientID"]):
+                        self.db.edit("active_client", data["clientID"], "idle", data["idle"])
+                        #TODO send notif to every friends ?
                 case _:
                     print("unknown message received", message)
 
@@ -88,6 +105,7 @@ class Disclone(Server):
         connection = self.db.insertDict("active_client", {"userid": account_id, "server": self.id}, True)
         self.pool[connection] = self.wating_clients[int(connectionId)]["connection"]
         del self.wating_clients[int(connectionId)]
+        return str(connection)
 
     async def sendNotificationAsync(self, account, content):
         message = {"type": "notif", "content": content}
@@ -105,6 +123,11 @@ class Disclone(Server):
                     self.db.deleteSomething("active_client", client["id"])
             else:
                 self.db.deleteSomething("active_client", client["id"])
+
+    def checkWSAuth(self, ws, clientID):
+        if self.pool.get(clientID) == ws:
+            return True
+        return False
 
     def sendNotification(self, account, content):
         message = {"type": "notif", "content": content}
@@ -292,7 +315,19 @@ class Disclone(Server):
             elif params['mode'] == 1:
                 user['status'] = {'icon': 'orange', 'text': 'Inactive'}
 
+def clean(signal, frame):
+    print("[INFO] SIGTERM/SIGINT received")
+    server.closeWebSockets()
+    server.stop()
+    print("[INFO] SERVER STOPPED")
+    exit()
+
+signal.signal(signal.SIGTERM, clean)
+signal.signal(signal.SIGINT, clean)
 
 
 REGEX_USERNAME = re.compile('^(?=.{3,}$)[a-zA-Z0-9_\-\.]*$')
-Disclone(path=PATH, configFile="/server.ini")
+server = Disclone(path=PATH, configFile="/server.ini", noStart = True)
+# we dont start it directly to allocate server
+server.onStart()
+server.start()

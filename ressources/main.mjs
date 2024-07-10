@@ -21,12 +21,30 @@ loadEmojis()
 goTo('friends-block','main-friend')
 console.log("Client ready", global)
 
-global.state.dom.addEventListener("mouseover", (event) => resetIdle());
-
+global.state.dom.addEventListener("mousemove", (event) => resetIdle());
+setInterval(checkIdle,60000)
 
 function resetIdle(){
-    console.log("reset idle")
-    global.state.idle = new Date()
+    if (global.state.idle && global.state.idle.state){
+        const message = {"type" : 'changeActivity', "idle": false, "clientID":global.state.clientID};
+        self.state.socket.send(JSON.stringify(message))
+    }
+    global.state.idle = {state: false, time:new Date().valueOf()}
+}
+
+function checkIdle(){
+    if(global.state.idle.state){
+        return
+    }
+    //TODO CHANGE ME TO 15 MINUTES
+    const mins = 1 //FIXME
+    //TODO HELP PLEASE
+    if(global.state.idle.time + (mins*60000) < new Date().valueOf()){
+        global.state.idle.state = true
+        const message = {"type" : 'changeActivity', "idle": true, "clientID":global.state.clientID};
+        global.state.socket.send(JSON.stringify(message))
+        console.log("client is idle")
+    }
 }
 
 function getSlug(name){

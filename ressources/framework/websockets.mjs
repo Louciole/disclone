@@ -26,7 +26,12 @@ export function initWebSockets(){
         switch (message.type){
             case "register_request":
                 //TODO handle multiserver xhr with the received servID
-                xhr("authWS?connectionId=".concat(message.connectionId),undefined)
+
+                const effect = function (){
+                    global.state.clientID = JSON.parse(this.responseText)
+                }
+
+                xhr("authWS?connectionId=".concat(message.connectionId),effect)
                 break
             case "notif":
                 switch (message.content.type){
