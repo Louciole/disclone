@@ -1,0 +1,81 @@
+@font-face {
+    font-family: 'Caprasimo';
+    font-style: normal;
+    font-weight: 400;
+    src: url('./fonts/Caprasimo-Regular.ttf') format("truetype-variations");
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Arimo';
+    font-style: normal;
+    font-weight: 400;
+    src: url('./fonts/Arimo-VariableFont_wght.ttf') format("truetype-variations");
+    font-display: swap;
+}
+
+body {
+    margin: 0;
+    height: 265vh;
+    overflow: hidden;
+    background: radial-gradient(circle, #857137 -18%, #c8ffca 100%);
+}
+h1 {
+    font-size: 12rem;
+    margin: 1rem;
+    font-family: 'Caprasimo', 'sans-serif';
+    line-height: 8rem;
+}
+
+h2{
+    margin: 0;
+    color: #427d51;
+    font-size: 2.5rem;
+}
+
+.wrapper{
+    font-family: 'Arimo', 'sans-serif';
+    height: 100vh;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    color: #386b45;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+.leaf{
+    position: absolute;
+    top:-20px;
+    width: 20px;
+    height: 20px;
+    border-radius: 0 20px;
+    background-color: #386b45;
+    transform: rotate(0deg);
+}
+
+#layer{
+    position: fixed;
+    top: 0;
+    height: 100%;
+    width: 100%;
+    pointer-events: none;
+}
+
+.btn {
+    padding: 2rem 0;
+    cursor: pointer;
+    font-size: 1.6rem;
+}
+
+@keyframes falling {
+    0% {
+        transform: translate3d(0,0,0) rotate(0deg);
+    }
+
+    100% {
+        transform: translate3d(-20vw,102vh,0) rotate(90deg);
+
+    }
+}

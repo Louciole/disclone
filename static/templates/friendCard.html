@@ -1,0 +1,25 @@
+<div class="item">
+    <div class="container">
+        <div class="inline">
+            <div class="pfp green">
+                <div class="activity-wrapper">
+                    <div class="activity ${global.users[getRelevantUser(element)].status.icon}"></div>
+                </div>
+            </div>
+            <div class="vertical">
+                <h5>${global.users[getRelevantUser(element)].display}</h5>
+                <p>${global.users[getRelevantUser(element)].status.text}</p>
+            </div>
+        </div>
+        <div class="inline reverse">
+            <div class="action">
+                <span class="tooltip bottom">More</span>
+                <img class="icon medium" src="/static/icons/material/more.svg">
+            </div>
+            <div class="action" onclick="goToConv(${element.conv})">
+                <span class="tooltip bottom">Message</span>
+                <img class="icon medium" src="/static/icons/material/message.svg">
+            </div>
+        </div>
+    </div>
+</div>

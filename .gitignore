@@ -1,7 +1,8 @@
 /.idea/
 *.iml
 /dist/
-/ressources/public/
+/static/public/
 /mailing/dkim.txt
 /venv/
 /.venv/
+/static/*_filled

@@ -1,4 +1,5 @@
 echo --------------------------INSTALLING PYTHON DEPENDENCIES------------------------
+sudo apt install postgresql postgresql-contrib -y
 sudo apt install build-essential -y
 sudo add-apt-repository ppa:deadsnakes/ppa
 sudo apt install python3.11
@@ -11,21 +12,6 @@ source venv/bin/activate
 pip install "psycopg[c]"
 pip install git+https://gitlab.com/Louciole/sakura.git/
 pip install -r requirements.txt
-echo --------------------------------CREATING A DATABASE-----------------------------
-echo Please enter a db name :
-read dbName
-sudo -u postgres createdb $dbName
-echo -----------------------------------CREATING A USER------------------------------
-echo Please enter a username :
-read username
-sudo -u postgres createuser $username -s --pwprompt
-echo ----------------------------CREATING TABLES AND TESTING-------------------------
-echo 'do you want to create a uniauth database? (y/n)'
-read uniauth
-if [ $uniauth == 'y' ] || [ $uniauth == 'Y' ]
-then
-  echo Please enter a db name :
-  read uniauthName
-  sudo -u postgres createdb $uniauthName
-fi
-python3 ./db/initDB.py $uniauth
+sudo apt install nginx -y
+sudo apt install systemd -y
+python3 ./misc/install.py all

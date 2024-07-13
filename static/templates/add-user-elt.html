@@ -1,0 +1,13 @@
+<div class="inline space-between">
+    <div class="inline">
+        <div class="circle red"></div>
+        <div class="name">${global.users[getRelevantUser(element)].display}</div>
+        <div class="username">${global.users[getRelevantUser(element)].username}</div>
+    </div>
+    <div class="inline">
+        <label>
+            <input type="checkbox" ${global.convs[global.state.activeConv].members.includes(getRelevantUser(element))?'checked':''} name="check" />
+            <span class="checkbox"></span>
+        </label>
+    </div>
+</div>

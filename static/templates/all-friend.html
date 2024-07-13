@@ -1,0 +1,12 @@
+<div class="search">
+    <label style="width: 100%;">
+        <input type="text" placeholder="Rechercher">
+    </label>
+    <div class="icon-wrapper">
+        <img class="icon" src="/static/icons/material/search.svg"/>
+    </div>
+</div>
+<div class="h2">TOUS LES AMIS ─ ${Subscribe("global.user.friends", () => {return global.user.friends.length})}</div>
+<div id="" class="scrollable">
+    ${Subscribe("global.user.friends", () => fillWith("friendCard", global.user.friends), 'column')}
+</div>

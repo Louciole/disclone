@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <title> Disclone | Login 🧮</title>
+    <meta name="referrer" content="always">
+    <meta name="viewport" id="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=10.0,minimal-ui">
+    <meta name="referrer" content="always">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Disclone">
+    <meta content="website" property="og:type">
+    <meta content="https://disclone.carbonlab.dev" property="og:url">
+    <meta name="description" content="The better discord, tracker free and open source">
+    <meta name="keywords" content="disclone">
+    <meta content="Disclone" property="og:site_name">
+    <meta content="The better discord, tracker free and open source" property="og:title">
+    <meta content="/static/logo.png" property="og:image">
+
+    <link href="/static/home/auth.css" rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <script src="/static/home/auth.js"></script>
+</head>
+<body onload="attachFormSubmitEvent('logForm',loginSubmit)">
+<p id="messageframe"></p>
+<form id="logForm" >
+
+    <h6 class="login">Login or Create your account</h6>
+    <p class="login">We take your privacy seriously. You control your information and won't be spammed.</p>
+
+    <input class="input login" name="email" id="email" type="email" placeholder="Email address *" required>
+    <input class="input login" name="password" id="password" type="password" placeholder="Password *" minlength="8" required>
+
+    <button type="submit" name="action" class="submit login">Continue</button>
+</form>
+</body>
+</html>

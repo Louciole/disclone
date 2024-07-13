@@ -1,0 +1,17 @@
+<div id="search">
+    <label>
+        <input type="text" placeholder="Rechercher/lancer une conversation">
+    </label>
+</div>
+<div class="scrollable">
+    <div id="friendCat" class="item selected" onclick="goToFriends(event)">
+        <img class="icon" src="/static/icons/material/group.svg" style="margin-right:1rem">
+        <p>Amis</p>
+    </div>
+    <div id="message-menu">
+        <h2>MESSAGES PRIVÉS</h2>
+        <div class="icon">+</div>
+        <span class="tooltip bottom">Créer un MP</span>
+    </div>
+    ${Subscribe('global.convs',()=>fillWith('conversation_element',global.convs))}
+</div>

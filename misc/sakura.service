@@ -1,0 +1,11 @@
+[Unit]
+Description=[NAME] : a shitty Discord clone by Lou !
+After=multi-user.target
+[Service]
+Type=simple
+Restart=always
+ExecStart=[PATH]/venv/bin/python [PATH]/server.py
+KillSignal=SIGINT
+ExecStopPost=killPort [SERV-PORT]
+[Install]
+WantedBy=multi-user.target

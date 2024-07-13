@@ -17,23 +17,16 @@ PATH = dirname(abspath(__file__))
 
 
 class Disclone(Server):
-    @cherrypy.expose
-    def index(self):
-        return open(PATH + "/ressources/home/home.html")
+    features = {"websockets": True, "errors": {404: "/static/404.html"}}
 
-    @cherrypy.expose
+    @Server.expose
+    def index(self):
+        return open(PATH + "/static/home/home.html").read()
+
+    @Server.expose
     def channels(self, uid="me"):
         self.checkJwt()
-        return open(PATH + "/ressources/main.html")
-
-    def onStart(self):
-        self.id = 1  # TODO give a different id to each server to allow them to contact eachother
-        self.pool = {}
-        self.wating_clients = {}
-        self.currentWaiting = 0
-        self.stop_event = asyncio.Event()
-        websocket_thread = threading.Thread(target=self.startWebSockets)
-        websocket_thread.start()
+        return open(PATH + "/static/main.html").read()
 
     def onLogin(self, uid):
         if not self.db.getSomething("disclone_account", uid):
@@ -52,24 +45,9 @@ class Disclone(Server):
             self.db.insertDict('accessconversation', {'account': members[i], 'conversation': conv_id})
         return conv_id
 
-    def startWebSockets(self):
-        asyncio.run(self.runWebsockets())
-
-    async def runWebsockets(self):
-        async with websockets.serve(self.handle_message, self.config.get("server", "IP"),
-                                    int(self.config.get("NOTIFICATION", "PORT"))):
-            stop_event_task = asyncio.create_task(self.stop_event.wait())
-            await asyncio.wait([stop_event_task], return_when=asyncio.FIRST_COMPLETED)
-
-    def closeWebSockets(self):
-        self.stop_event.set()
-        print("[INFO] WS server closed")
-
-    def stop(self):
+    def clean(self):
         for client, ws in self.pool.items():
             self.db.deleteSomething("active_client",client)
-        print("[INFO] cleaned database")
-        cherrypy.engine.exit()
 
     # --------------------------------WEBSOCKETS--------------------------------
 
@@ -96,77 +74,25 @@ class Disclone(Server):
                 case _:
                     print("unknown message received", message)
 
-    @cherrypy.expose
-    def authWS(self, connectionId):
-        account_id = self.getUser()
-        if self.wating_clients[int(connectionId)]["uid"] != account_id:
-            return "forbidden"
-
-        connection = self.db.insertDict("active_client", {"userid": account_id, "server": self.id}, True)
-        self.pool[connection] = self.wating_clients[int(connectionId)]["connection"]
-        del self.wating_clients[int(connectionId)]
-        return str(connection)
-
-    async def sendNotificationAsync(self, account, content):
-        message = {"type": "notif", "content": content}
-
-        clients = self.db.getAll("active_client", account, "userid")
-        for client in clients:
-            #TODO handle multi server
-            if self.pool.get(client["id"]):
-                websocket = self.pool[client["id"]]
-                try:
-                    await websocket.send(json.dumps(message))
-                except Exception as e:
-                    print("exception sending a message on a ws", e)
-                    del self.pool[client["id"]]
-                    self.db.deleteSomething("active_client", client["id"])
-            else:
-                self.db.deleteSomething("active_client", client["id"])
-
-    def checkWSAuth(self, ws, clientID):
-        if self.pool.get(clientID) == ws:
-            return True
-        return False
-
-    def sendNotification(self, account, content):
-        message = {"type": "notif", "content": content}
-        async def ws_send(message):
-            await websocket.send(message)
-
-        clients = self.db.getAll("active_client", account, "userid")
-        for client in clients:
-            #TODO handle multi server
-            if self.pool.get(client["id"]):
-                websocket = self.pool[client["id"]]
-                try:
-                    asyncio.run(ws_send(json.dumps(message)))
-                except Exception as e:
-                    print("exception sending a message on a ws", e)
-                    del self.pool[client["id"]]
-                    self.db.deleteSomething("active_client", client["id"])
-            else:
-                self.db.deleteSomething("active_client", client["id"])
-
     # -----------------------------------API-------------------------------------
 
-    @cherrypy.expose
+    @Server.expose
     def createServer(self):
         account_id = self.getUser()
         server_id = self.db.insertDict('server', {'name': "New Server", "owner": account_id}, getId=True)
         self.db.insertDict('accessserver', {'account': account_id, 'server': server_id})
 
-    @cherrypy.expose
+    @Server.expose
     def getUserServers(self):
         uid = self.getUser()
         servers = self.db.getSomethingProxied("server", "accessserver", "account", uid)
         return json.dumps(servers)
 
-    @cherrypy.expose
+    @Server.expose
     def createConv(self, name, members):
         self.newConv(name, members)
 
-    @cherrypy.expose
+    @Server.expose
     def getUserConvs(self):
         uid = self.getUser()
         convs = self.db.getSomethingProxied("conversation", "accessconversation", "account", uid)
@@ -177,14 +103,14 @@ class Disclone(Server):
                 convs[j]["members"][i] = convs[j]["members"][i]["account"]
         return json.dumps(convs)
 
-    @cherrypy.expose
+    @Server.expose
     def getUsersInfo(self, users):
         uid = self.getUser()
         users = self.db.getFilters("disclone_account", ["id", "in", json.loads(users)])
         self.getUsersStatus(users)
         return json.dumps(users, default=str)
 
-    @cherrypy.expose
+    @Server.expose
     def getConvContent(self, convId):
         uid = self.getUser()
         conv = self.db.getFilters("accessconversation", ["conversation", "=", convId, "and", "account", "=", uid])
@@ -193,14 +119,14 @@ class Disclone(Server):
             content["messages"] = self.db.getFilters("message", ["place", "=", convId])
             return json.dumps(content, default=str)
 
-    @cherrypy.expose
+    @Server.expose
     def getUserInfo(self):
         uid = self.getUser()
         user = self.db.getSomething("disclone_account", uid)
         self.getUsersStatus([user])
         return json.dumps(user, default=str)
 
-    @cherrypy.expose
+    @Server.expose
     def sendMessage(self, conv, content):
         uid = self.getUser()
         conv = json.loads(conv)
@@ -217,12 +143,12 @@ class Disclone(Server):
                 self.sendNotification(user["account"], {"type": "message", "content": message})
         return
 
-    @cherrypy.expose
+    @Server.expose
     def registerActivity(self, SDP):
         uid = self.getUser()
         self.db.insertDict("active_client", {"userid": uid, "SDP": SDP})
 
-    @cherrypy.expose
+    @Server.expose
     def friends(self, action, arg=""):
         uid = self.getUser()
         if action == "add":
@@ -270,7 +196,7 @@ class Disclone(Server):
                                               "kopinsecondaire", "=", uid, ")"])
             return json.dumps(invitations)
 
-    @cherrypy.expose
+    @Server.expose
     def change(self, element, value):
         uid = self.getUser()
         if element == "id":
@@ -315,19 +241,5 @@ class Disclone(Server):
             elif params['mode'] == 1:
                 user['status'] = {'icon': 'orange', 'text': 'Inactive'}
 
-def clean(signal, frame):
-    print("[INFO] SIGTERM/SIGINT received")
-    server.closeWebSockets()
-    server.stop()
-    print("[INFO] SERVER STOPPED")
-    exit()
-
-signal.signal(signal.SIGTERM, clean)
-signal.signal(signal.SIGINT, clean)
-
-
 REGEX_USERNAME = re.compile('^(?=.{3,}$)[a-zA-Z0-9_\-\.]*$')
-server = Disclone(path=PATH, configFile="/server.ini", noStart = True)
-# we dont start it directly to allocate server
-server.onStart()
-server.start()
+server = Disclone(path=PATH, configFile="/server.ini")
