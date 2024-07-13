@@ -19,9 +19,7 @@ Deployment :
 
 ### install :
 
-0. install postgresql
 
-       apt install postgresql postgresql-contrib -y
 1. edit `server.ini` with your parameters
 
 
