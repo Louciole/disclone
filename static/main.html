@@ -24,6 +24,7 @@
         <div class="container">
             <div id="logo" class="item selected" onclick="goTo('sec-selector','privateMessage',{'category':'currentTab' ,'event': event})">
                 <div class="text circle"></div>
+                <div style="display: none" class="outlined notifIndicator">1</div>
             </div>
             <div class="indicator"></div>
             <span class="tooltip left">Messages privés</span>
@@ -63,6 +64,36 @@
                         <div class="btn grey" onclick="gotoStep(0,'createServerSteps')">Retour</div>
                         <div class="btn blue" onclick="newServer()">Créer</div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <section class="menu-wrapper" id="custom-status" style="display:none" onclick="closeMenu()">
+        <div class="menu">
+            <div class="close" onclick="closeMenu('#create-server')">+</div>
+            <div>
+                <h2>Set custom status</h2>
+                <input type="text" placeholder="I'd like to move it move it">
+
+                <h3>DELETE LATER</h3>
+                <select>
+                    <option value="today">Today</option>
+                    <option value="240">4 hours</option>
+                    <option value="60">1 hour</option>
+                    <option value="30">30 minutes</option>
+                    <option value="never">Never</option>
+                </select>
+                <hr>
+                <h3>STATUS</h3>
+                <select>
+                    <option value="online">Online</option>
+                    <option value="idle">Idle</option>
+                    <option value="dnd">Do not disturb</option>
+                    <option value="offline">Invisible</option>
+                </select>
+                <div class="inline space-between">
+                    <div class="btn grey" onclick="closeMenu()">Cancel</div>
+                    <div class="btn blue" onclick="setCustomStatus()">Save</div>
                 </div>
             </div>
         </div>

@@ -1,7 +1,6 @@
 import urllib.parse
 
 from sakura import Server
-import cherrypy
 import json
 import re
 import signal
@@ -54,13 +53,20 @@ class Disclone(Server):
     async def handle_message(self, websocket):
         async for message in websocket:
             data = json.loads(message)
-
+            print("WS message received :",message)
             match data["type"]:
                 case "register":
                     self.wating_clients[self.currentWaiting] = {"connection": websocket, "uid": data["uid"]}
                     self.currentWaiting += 1
                     answer = {"type": "register_request", "servId": self.id, "connectionId": self.currentWaiting - 1}
                     await websocket.send(json.dumps(answer))
+                case "unregister":
+                    print("unregister received")
+                    if self.checkWSAuth(websocket,data["clientID"]):
+                        self.db.deleteSomething("active_client",data["clientID"])
+                        self.pool.pop(data["clientID"])
+                    else:
+                        self.wainting_clients.pop(data["clientID"])
                 case "typing":
                     members = self.db.getAll("accessconversation", data["conv"], "conversation")
 
@@ -128,6 +134,7 @@ class Disclone(Server):
 
     @Server.expose
     def sendMessage(self, conv, content):
+        print("sending message", conv, content)
         uid = self.getUser()
         conv = json.loads(conv)
         print(conv)

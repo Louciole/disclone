@@ -3,14 +3,14 @@
   <div id="profil" onclick="toggleFM('profil-menu')">
     <div class="pfp red">
       <div class="activity-wrapper">
-        <div class="activity green"></div>
+        ${Subscribe('global.user.status.icon',()=>{return "<div class='activity " + (global.user?.status?.icon ?? "green") + "'></div>"}, "grow")}
       </div>
     </div>
     <div>
       <div class="name">${Subscribe('global.user.display',()=>{return(global.user.display)})}</div>
       <div class="info-wrapper">
         <div class="info-chariot">
-          <p>En ligne</p>
+          ${Subscribe('global.user.status.text',()=>{return global.user?.status?.text ?? "Online"}, "p")}
           <div>${Subscribe('global.user.username',()=>{return(global.user.username)})}</div>
         </div>
       </div>
@@ -99,7 +99,7 @@
         <div class="action">
           <div>
             <img class=icon src="/static/icons/material/emoji.svg"/>
-            <p>Set Custom Status</p>
+            <p onclick="openMenu('custom-status')">Set Custom Status</p>
           </div>
         </div>
         <hr>

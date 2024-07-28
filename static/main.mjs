@@ -28,6 +28,7 @@ setInterval(checkIdle,60000)
 function resetIdle(){
     if (global.state.idle && global.state.idle.state){
         const message = {"type" : 'changeActivity', "idle": false, "clientID":global.state.clientID};
+        setElement("global.user.status", {icon: "green", text:"Online"})
         self.state.socket.send(JSON.stringify(message))
     }
     global.state.idle = {state: false, time:new Date().valueOf()}
@@ -42,6 +43,7 @@ function checkIdle(){
     //TODO HELP PLEASE
     if(global.state.idle.time + (mins*60000) < new Date().valueOf()){
         global.state.idle.state = true
+        setElement("global.user.status", {icon: "orange", text:"Idle"})
         const message = {"type" : 'changeActivity', "idle": true, "clientID":global.state.clientID};
         global.state.socket.send(JSON.stringify(message))
         console.log("client is idle")

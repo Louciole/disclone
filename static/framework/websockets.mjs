@@ -6,12 +6,6 @@ import {xhr} from "./templating.mjs";
 
 const WEBSOCKETS = "ws://localhost:9888"
 
-window.onbeforeunload = function() {
-    global.state.socket.onclose = function () {}; // disable onclose handler first
-    global.state.socket.close();
-};
-
-
 export function initWebSockets(){
     global.state.socket = new WebSocket(WEBSOCKETS);
 

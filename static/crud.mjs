@@ -219,3 +219,8 @@ function changeStatus(status){
     console.log(status)
 }
 window.changeStatus = changeStatus
+
+function setCustomStatus(){
+
+}
+window.setCustomStatus = setCustomStatus

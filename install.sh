@@ -14,4 +14,4 @@ pip install git+https://gitlab.com/Louciole/sakura.git/
 pip install -r requirements.txt
 sudo apt install nginx -y
 sudo apt install systemd -y
-python3 ./misc/install.py all
+python3 ./install.py all
