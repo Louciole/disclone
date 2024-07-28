@@ -823,6 +823,8 @@ section{
     font-size: 0.9rem;
     cursor: pointer;
     white-space: nowrap;
+    display: flex;
+    align-items: baseline;
 }
 
 .selected-info .group{
@@ -2241,12 +2243,8 @@ select {
     height: fit-content;
 }
 
-.outlined{
-    --border-width: 4px
-}
-
 .notifIndicator{
-    position: absolute;
+    position: relative;
     display: flex;
     font-size: 12px;
     font-weight: 700;
@@ -2258,6 +2256,10 @@ select {
     align-items: baseline;
     justify-content: center;
     border: solid var(--border-width,0) var(--bg4);
+}
+.outlined{
+    position: absolute;
+    --border-width: 4px;
     transform: translate(18px, 16px);
 }
 

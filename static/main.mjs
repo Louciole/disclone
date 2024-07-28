@@ -3,7 +3,7 @@ import {loadServers, loadUser, loadConvs, loadUsers, handleMessageGroup, sendTyp
 import global from "/static/framework/global.mjs"
 import {MDToHTML} from "/static/markdown/utils.mjs"; // DO NOT REMOVE
 import emojis from "/static/emojis.mjs";
-import {addElement, pushElement, setElement} from "/static/framework/sakura.mjs";
+import {pushElement, setElement} from "/static/framework/sakura.mjs";
 import {xhr} from "./framework/templating.mjs";
 
 window.global = global

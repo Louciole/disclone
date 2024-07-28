@@ -44,6 +44,7 @@ export function initWebSockets(){
                     case "friend_request":
                         loadUsers([message.content.content["kopinprincipal"]])
                         pushElement('global.user.invitations', message.content.content)
+                        displayNotif(message.content)
                         break;
                     case "accepted_request":
                         loadUsers([message.content.content["kopinsecondaire"]])

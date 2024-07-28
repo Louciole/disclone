@@ -2,21 +2,23 @@
     <div class="container">
         <div class="inline">
             <div class="pfp green">
-                <div class="activity grey"></div>
+                <div class="activity-wrapper">
+                    <div class="activity ${global.users[getRelevantUser(element)].status.icon}"></div>
+                </div>
             </div>
             <div class="vertical">
                 <h5>${global.users[getRelevantUser(element)].display}</h5>
-                <p>Hors ligne</p>
+                <p>${global.users[getRelevantUser(element)].status.text}</p>
             </div>
         </div>
         <div class="inline reverse">
             <div class="action">
                 <span class="tooltip bottom">Discard</span>
-                <img class="icon medium" src=/static/icons/material/close.svg">
+                <img class="icon medium" src="/static/icons/material/close.svg">
             </div>
             <div class="action" onclick="friend('accept',${element.id},event)">
                 <span class="tooltip bottom">Accept</span>
-                <img class="icon medium" src=/static/icons/material/check.svg">
+                <img class="icon medium" src="/static/icons/material/check.svg">
             </div>
         </div>
     </div>
