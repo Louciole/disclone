@@ -3,7 +3,7 @@ import {loadServers, loadUser, loadConvs, loadUsers, handleMessageGroup, sendTyp
 import global from "/static/framework/global.mjs"
 import {MDToHTML} from "/static/markdown/utils.mjs"; // DO NOT REMOVE
 import emojis from "/static/emojis.mjs";
-import {pushElement, setElement} from "/static/framework/sakura.mjs";
+import {addElement, pushElement, setElement} from "/static/framework/sakura.mjs";
 import {xhr} from "./framework/templating.mjs";
 
 window.global = global
@@ -29,7 +29,7 @@ function resetIdle(){
     if (global.state.idle && global.state.idle.state){
         const message = {"type" : 'changeActivity', "idle": false, "clientID":global.state.clientID};
         setElement("global.user.status", {icon: "green", text:"Online"})
-        self.state.socket.send(JSON.stringify(message))
+        global.state.socket.send(JSON.stringify(message))
     }
     global.state.idle = {state: false, time:new Date().valueOf()}
 }
@@ -38,9 +38,7 @@ function checkIdle(){
     if(global.state.idle.state){
         return
     }
-    //TODO CHANGE ME TO 15 MINUTES
-    const mins = 1 //FIXME
-    //TODO HELP PLEASE
+    const mins = 15
     if(global.state.idle.time + (mins*60000) < new Date().valueOf()){
         global.state.idle.state = true
         setElement("global.user.status", {icon: "orange", text:"Idle"})
@@ -210,8 +208,26 @@ function getSeparator(element){
 window.getSeparator = getSeparator
 
 export function displayNotif(notif){
-    const notifSound = new Audio('sounds/notification.mp3');
+    const notifSound = new Audio('static/sounds/notification.mp3');
     notifSound.play();
+    const bubbles = document.getElementsByClassName("notifIndicator")
+    if(notif.content.place){
+        const conv_elt = document.getElementById("conv"+notif.content?.place.toString())
+        if (conv_elt){
+            conv_elt.style.setProperty("color", "var(--text)")
+        }
+        if(!global.state.notifs){
+            global.state.notifs = {}
+        }
+        if(!global.state.notifs.convs){
+            global.state.notifs.convs = []
+        }
+        pushElement("global.state.notifs.convs",{n: 1, conv:global.convs[notif.content.place]})
+    }else{
+        for(let bubble of bubbles){
+            bubble.style.display="flex"
+        }
+    }
     //notifElt.style.display = "flex"
     //notifElt.innerText = notif.body
     //setTimeout(() => notifElt.style.display="none", 1500)

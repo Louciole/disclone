@@ -203,6 +203,12 @@ class Disclone(Server):
                                               "kopinsecondaire", "=", uid, ")"])
             return json.dumps(invitations)
 
+        elif action == "remove":
+            friendship = self.db.getSomething("boatakopin",arg)
+            if friendship and friendship["accepted"] and (friendship["kopinprincipal"] == uid or friendship["kopinsecondaire"] == uid):
+                self.db.deleteSomething("boatakopin", arg)
+            raise HTTPError(403, "forbidden")
+
     @Server.expose
     def change(self, element, value):
         uid = self.getUser()

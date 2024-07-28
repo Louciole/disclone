@@ -34,9 +34,12 @@ export function initWebSockets(){
                         const currentDate = new Date()
                         const timestamp = currentDate.getTime()
                         message.content.content["timestamp"] = timestamp
-                        handleMessageGroup(message.content.content)
-                        pushElement('global.convs['.concat(message.content.content.place,'].messages'),message.content.content)
-                        displayNotif(message.content)
+                        if(message.content.content.place === global.state.activeConv){
+                            handleMessageGroup(message.content.content)
+                            pushElement('global.convs['.concat(message.content.content.place,'].messages'),message.content.content)
+                        }else{
+                            displayNotif(message.content)
+                        }
                         break;
                     case "friend_request":
                         loadUsers([message.content.content["kopinprincipal"]])

@@ -3,6 +3,7 @@ import {addElement, deleteElement, setElement, difference} from "./framework/sak
 import {initWebSockets} from "./framework/websockets.mjs"
 import global from "./framework/global.mjs"
 import {xhr} from "./framework/templating.mjs";
+import {closeFM} from "./framework/navigation.mjs";
 
 function changeUsername(){
     const input = document.getElementById("username-input")
@@ -179,11 +180,29 @@ function friend(action, element, event = undefined){
         global.user.friends.push(global.user.invitations[invitationNumber])
         global.user.friends[global.user.friends.length-1].private = true
         deleteElement("global.user.invitations",invitationNumber)
-    }else{
+    }else if(action === "remove"){
+        element = lookFor(element.getAttribute("data-id"),global.user.friends)
+        if (confirm("Do you really want to remove ".concat(global.users[getRelevantUser(element)].display," from your friends ?"))){
+            const remEffect = function(){
+                deleteElement("global.user.friends",element)
+            }
+            xhr("friends?action=".concat(action,"&arg=",element.id),remEffect)
+            closeFM()
+        }
+    } else{
         xhr("friends?action=".concat(action,"&arg=",element),effect)
     }
 }
 window.friend = friend
+
+// this function should be used only in non performance critical cases
+export function lookFor(element, array){
+    for(let i in array){
+        if(array[i].id.toString() === element){
+            return array[i]
+        }
+    }
+}
 
 function newMessageGroup(conv, message){
     global.convs[conv].messageGroups.push({"date": getTimeStr(message.timestamp, { locale: "fr-FR",hour: undefined, minute: undefined}), "messages":[message], "id":global.convs[conv].messageGroups.length})

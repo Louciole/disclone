@@ -66,6 +66,28 @@ function toggleFM(id){
 }
 window.toggleFM = toggleFM
 
+export function closeFM(){
+    if(activeFM){
+        activeFM.classList.toggle("visible")
+    }
+}
+
+function toggleModale(id, event){
+    const FM = document.getElementById(id)
+    if(FM !== activeFM){
+        openingFM = true
+        global.state.modaltarget = event.currentTarget
+        if(activeFM){
+            activeFM.classList.toggle("visible")
+        }
+        console.log(event.currentTarget,global.state.modaltarget)
+        FM.style.top = event.clientY.toString().concat("px")
+        FM.style.left = event.clientX.toString().concat("px")
+        activeFM = FM
+    }
+}
+window.toggleModale = toggleModale
+
 function toggleGroup(){
     event.currentTarget.classList.toggle("closed")
 }

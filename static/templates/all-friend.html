@@ -10,3 +10,6 @@
 <div id="" class="scrollable">
     ${Subscribe("global.user.friends", () => fillWith("friendCard", global.user.friends), 'column')}
 </div>
+<div class="modale" id="more-friends">
+    <div class="item crit" onclick="friend('remove', global.state.modaltarget)">Retirer l'ami</div>
+</div>

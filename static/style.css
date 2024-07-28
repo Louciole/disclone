@@ -262,6 +262,7 @@ section{
 
 .indicator.smol{
     height: 12px;
+    opacity: 1;
 }
 
 .item:hover ~ .indicator{
@@ -2245,7 +2246,6 @@ select {
 }
 
 .notifIndicator{
-
     position: absolute;
     display: flex;
     font-size: 12px;
@@ -2261,3 +2261,31 @@ select {
     transform: translate(18px, 16px);
 }
 
+.serveur ~ .notifIndicator{
+    transform: translate(28px, 16px);
+}
+
+.modale .item {
+    width: fit-content !important;
+    border-radius: 3px !important;
+}
+.crit {
+    color: var(--red);
+}
+
+.crit:hover {
+    color: var(--text);
+    background: var(--red) !important;
+}
+
+.modale {
+    visibility: hidden;
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    background: var(--bg4);
+    border-radius: 7px;
+    padding: 0.3rem;
+    width: fit-content;
+    top: 43vh;
+}
