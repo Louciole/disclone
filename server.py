@@ -222,6 +222,15 @@ class Disclone(Server):
                 else:
                     return "this " + element + " already exists"
             return "invalid username "
+        elif element == "status":
+            status = json.loads(value)
+            self.db.edit("status", uid, "mode", status["mode"])
+            self.db.edit("status", uid, "text", status["text"])
+            self.db.edit("status", uid, "emoji", status["emoji"])
+            if status["expiration"]:
+                self.db.edit("status", uid, "expiration", status["expiration"])
+            else:
+                self.db.edit("status", uid, "expiration", None)
         else:
             self.db.edit("disclone_account", uid, element, value)
 
@@ -246,13 +255,19 @@ class Disclone(Server):
                 if idle:
                     user['status'] = {'icon': 'orange', 'text': 'Inactive'}
                 else:
-                    user['status'] = {'icon': 'green', 'text': 'Online'}
+                    if not params['text']:
+                        params['text'] = "Online"
+                    user['status'] = {'icon': 'green', 'text': params['text']}
             elif params['mode'] == 3:
                 user['status'] = {'icon': 'spymode', 'text': 'Offline'}
             elif params['mode'] == 2:
-                user['status'] = {'icon': 'RED', 'text': 'Do not Disturb'}
+                if not params['text']:
+                    params['text'] = 'Do not Disturb'
+                user['status'] = {'icon': 'RED', 'text': params['text']}
             elif params['mode'] == 1:
-                user['status'] = {'icon': 'orange', 'text': 'Inactive'}
+                if not params['text']:
+                    params['text'] = 'Inactive'
+                user['status'] = {'icon': 'orange', 'text': params['text']}
 
 REGEX_USERNAME = re.compile('^(?=.{3,}$)[a-zA-Z0-9_\-\.]*$')
 server = Disclone(path=PATH, configFile="/server.ini")

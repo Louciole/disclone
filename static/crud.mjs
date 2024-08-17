@@ -240,6 +240,35 @@ function changeStatus(status){
 window.changeStatus = changeStatus
 
 function setCustomStatus(){
+    const input = document.getElementById("input-status")
+    const modeDrop = document.getElementById("drop-status-mode").querySelector(".selected")
+    const expDrop = document.getElementById("drop-status-exp").querySelector(".selected")
 
+    const now = new Date()
+    const brusselsOffset = -now.getTimezoneOffset() * 60 * 1000; // Negative offset for CET/CEST
+
+    const hour = new Date(now.getTime() + brusselsOffset)
+    hour.setHours(hour.getHours() + 1)
+
+    const hours = new Date(now.getTime() + brusselsOffset)
+    hours.setHours(hours.getHours() + 4)
+
+    const half = new Date(now.getTime() + brusselsOffset)
+    half.setMinutes(half.getMinutes() + 30)
+
+    const tomorrow = new Date(now.getTime() + brusselsOffset)
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    tomorrow.setHours(0, 0, 0, 0)
+
+    const exps = [tomorrow,hours,hour,half]
+    const exp = expDrop.getAttribute("data-value") != 4 ? exps[expDrop.getAttribute("data-value")] : null
+
+    const status = {"mode":modeDrop.getAttribute("data-value"),"text": input.value, "emoji":"","expiration":exp}
+
+    const onload = function() { // request successful
+        setElement('global.user.status', status)
+        closeMenu('#custom-status')
+    };
+    xhr("/change?element=status&value=".concat(JSON.stringify(status)),onload,"POST")
 }
 window.setCustomStatus = setCustomStatus

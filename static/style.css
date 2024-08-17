@@ -663,6 +663,7 @@ section{
 
 .info-wrapper .p{
     margin:0;
+    white-space: nowrap;
 }
 
 #profile .name{
@@ -1534,6 +1535,16 @@ section{
    margin: 0;
 }
 
+input[type="text"]{
+    border-radius: 4px;
+    background: var(--bg4);
+    border: none;
+    width: calc(100% - 1rem);
+    font-size: 0.85rem;
+    padding: 0.4rem;
+    height: 1.1rem;
+}
+
 .item .action {
     height: 100%;
     aspect-ratio: 1;
@@ -2184,16 +2195,6 @@ input[type="checkbox"]:checked + .checkbox {
     border: 1px solid var(--accent);
 }
 
-input[type="text"]{
-    border-radius: 4px;
-    background: var(--bg4);
-    border: none;
-    width: calc(100% - 1rem);
-    font-size: 0.85rem;
-    padding: 0.4rem;
-    height: 1.1rem;
-}
-
 .btn.disabled{
     opacity: 0.7;
     cursor: not-allowed;
@@ -2297,6 +2298,7 @@ select {
     position: relative;
     width: 100%;
     height: fit-content;
+    margin-bottom: 1rem;
 }
 
 .dropdown-button {
@@ -2340,6 +2342,7 @@ select {
     padding: 0.5rem 0.6rem;
     font-size: 0.9rem;
     cursor: pointer;
+    gap: 0.6rem;
     color: var(--text);
 }
 
@@ -2360,4 +2363,23 @@ select {
 }
 .dropdown.show .down {
     display: none;
+}
+
+.menu h3{
+    font-size: 0.7rem;
+    margin: 0.2rem;
+    text-align: left;
+}
+
+.menu input[type="text"].dark {
+    border-radius: 7px;
+    background: var(--bg4);
+    color: var(--text);
+    border: none;
+    height: 2.5rem;
+    box-sizing: border-box;
+    width: 100%;
+    font-size: 1rem;
+    margin: 1rem 0;
+    padding: 0.7rem 0.7rem;
 }

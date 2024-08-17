@@ -30,6 +30,8 @@ class Installer:
             self.resetDB()
         elif arg == "service":
             self.installService()
+        elif arg == "cron":
+            self.setupCrons()
 
     def ex(self, command):
         subprocess.run(command, shell=True, check=True)
@@ -81,6 +83,16 @@ class Installer:
             return
 
         self.ex("sudo ln -s /etc/nginx/sites-available/" + self.name + " /etc/nginx/sites-enabled/")
+
+    def setupCrons(self):
+        try:
+            self.ex("crontab -l > crontab")
+        except Exception:
+            pass
+        self.ex("echo '*/15 * * * * " + PATH + "/venv/bin/python3 " + PATH + "/crons/15mins.py' >> crontab")
+        self.ex("echo '0 * * * * " + PATH + "/venv/bin/python3 " + PATH + "/crons/1h.py' >> crontab")
+        self.ex("echo '0 0 * * * " + PATH + "/venv/bin/python3 " + PATH + "/crons/1day.py' >> crontab")
+        self.ex("crontab crontab")
 
     def editFile(self, file, templates):
         with open(file, "r+") as f:

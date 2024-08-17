@@ -74,7 +74,7 @@
             <div class="close" onclick="closeMenu('#custom-status')">+</div>
             <div style="width: 100%">
                 <h2>Set custom status</h2>
-                <input type="text" placeholder="I'd like to move it move it">
+                <input type="text" id=input-status class="dark" placeholder="I'd like to move it move it">
 
                 <h3>DELETE LATER</h3>
                 <div class="dropdown">
@@ -85,12 +85,12 @@
                             <img class="icon up" src="/static/icons/material/up.svg"/>
                         </div>
                     </div>
-                    <ul class="dropdown-menu">
-                        <li class="selected" onclick="changeDropdown(event)">Today</li>
-                        <li onclick="changeDropdown(event)">4 hours</li>
-                        <li onclick="changeDropdown(event)">1 hour</li>
-                        <li onclick="changeDropdown(event)">30 minutes</li>
-                        <li onclick="changeDropdown(event)">Never</li>
+                    <ul class="dropdown-menu" id="drop-status-exp">
+                        <li class="selected" onclick="changeDropdown(event)" data-value=0>Today</li>
+                        <li onclick="changeDropdown(event)" data-value=1>4 hours</li>
+                        <li onclick="changeDropdown(event)" data-value=2>1 hour</li>
+                        <li onclick="changeDropdown(event)" data-value=3>30 minutes</li>
+                        <li onclick="changeDropdown(event)" data-value=4>Never</li>
                     </ul>
                 </div>
                 <hr>
@@ -103,15 +103,35 @@
                             <img class="icon up" src="/static/icons/material/up.svg"/>
                         </div>
                     </div>
-                    <ul class="dropdown-menu">
-                        <li class="selected" onclick="changeDropdown(event)">Online</li>
-                        <li onclick="changeDropdown(event)">Idle</li>
-                        <li onclick="changeDropdown(event)">Do not disturb</li>
-                        <li onclick="changeDropdown(event)">Invisible</li>
+                    <ul class="dropdown-menu" id="drop-status-mode">
+                        <li class="selected" onclick="changeDropdown(event)" data-value=0>
+                            <div class="smol activity-wrapper">
+                                <div class="activity green"></div>
+                            </div>
+                            Online
+                        </li>
+                        <li onclick="changeDropdown(event)" data-value=1>
+                            <div class="smol activity-wrapper">
+                                <div class="activity orange"></div>
+                            </div>
+                            Idle
+                        </li>
+                        <li onclick="changeDropdown(event)" data-value=2>
+                            <div class="smol activity-wrapper">
+                                <div class="activity RED"></div>
+                            </div>
+                            Do not disturb
+                        </li>
+                        <li onclick="changeDropdown(event)" data-value=3>
+                            <div class="smol activity-wrapper">
+                                <div class="activity spymode"></div>
+                            </div>
+                            Invisible
+                        </li>
                     </ul>
                 </div>
                 <div class="inline space-between">
-                    <div class="btn grey" onclick="closeMenu()">Cancel</div>
+                    <div class="btn grey" onclick="closeMenu('#custom-status')">Cancel</div>
                     <div class="btn blue" onclick="setCustomStatus()">Save</div>
                 </div>
             </div>
