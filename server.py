@@ -114,7 +114,11 @@ class Disclone(Server):
         uid = self.getUser()
         users = self.db.getFilters("disclone_account", ["id", "in", json.loads(users)])
         self.getUsersStatus(users)
-        return json.dumps(users, default=str)
+        return (json.dumps(users, default=str))
+
+    @Server.expose
+    def test(self):
+        return open(PATH + "/.idea/test.html").read()
 
     @Server.expose
     def getConvContent(self, convId):

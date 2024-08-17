@@ -1,4 +1,3 @@
-import {loadTemplate} from "./templating.mjs";
 import global from "./global.mjs";
 
 export function initNav(){

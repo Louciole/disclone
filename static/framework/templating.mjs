@@ -12,7 +12,7 @@ export function xhr(endpoint,effect,method="GET", async=true){
 }
 
 
-export function loadTemplate(template, target=undefined, flex= undefined, async){
+function loadTemplate(template, target=undefined, flex= undefined, async){
     const effect = function() {
         if (target){
             //maybe not using eval
@@ -27,6 +27,7 @@ export function loadTemplate(template, target=undefined, flex= undefined, async)
 
     xhr( '/static/templates/'.concat(template), effect,"GET", async)
 }
+window.loadTemplate = loadTemplate
 
 function fillWith(template, list){
     console.log("fillWith",template,list,typeof list)

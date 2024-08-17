@@ -52,7 +52,7 @@
           <img class=icon src="/static/icons/material/next.svg"/>
           <div class="hover-menu-hitbox">
             <div class="hover-menu">
-              <div onclick="changeStatus('online')">
+              <div onclick="changeStatus(0)">
                 <div class="inline">
                   <div class="smol activity-wrapper">
                     <div class="activity green"></div>
@@ -61,7 +61,7 @@
                 </div>
               </div>
               <hr>
-              <div onclick="changeStatus('idle')">
+              <div onclick="changeStatus(1)">
                 <div class="inline">
                   <div class="smol activity-wrapper">
                     <div class="activity orange"></div>
@@ -69,7 +69,7 @@
                   <h4>Idle</h4>
                 </div>
               </div>
-              <div onclick="changeStatus('not disturb')">
+              <div onclick="changeStatus(2)">
                 <div class="vertical">
                   <div class="inline">
                     <div class="smol activity-wrapper">
@@ -80,7 +80,7 @@
                   <p>You will not receive any desktop notifications.</p>
                 </div>
               </div>
-              <div onclick="changeStatus('invisible')">
+              <div onclick="changeStatus(3)">
 
                 <div class="vertical">
                   <div class="inline">
@@ -114,3 +114,4 @@
     </div>
   </div>
 </div>
+${loadTemplate('menu-custom-status.html')}

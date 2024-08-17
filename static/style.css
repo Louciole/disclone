@@ -2383,3 +2383,35 @@ select {
     margin: 1rem 0;
     padding: 0.7rem 0.7rem;
 }
+
+.menu .input-wrapper {
+    display: flex;
+    background: var(--bg4);
+    height: fit-content;
+    flex-direction: row;
+    align-items: center;
+    margin: 1rem 0;
+    border-radius: 7px;
+    overflow: hidden;
+}
+
+.menu .input-wrapper .icon-wrapper {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+.menu .input-wrapper input[type="text"].dark {
+    background: var(--bg4);
+    height: fit-content;
+    flex-direction: row;
+    align-items: center;
+    margin: 0;
+    border-radius: 0px;
+    padding: 0.7rem 0;
+}
+
+
+.menu .input-wrapper input[type="text"].dark:focus {
+    outline: none;
+}

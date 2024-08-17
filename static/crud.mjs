@@ -234,8 +234,14 @@ export function sendTyping(){
     }
 }
 
-function changeStatus(status){
-    console.log(status)
+function changeStatus(mode){
+    const status = {"mode":mode,"text": global.user.status.text, "emoji": global.user.status.text, "expiration":global.user.status.expiration?global.user.status.expiration:null}
+
+    const onload = function() { // request successful
+        setElement('global.user.status', status)
+        closeMenu('#custom-status')
+    };
+    xhr("/change?element=status&value=".concat(JSON.stringify(status)),onload,"POST")
 }
 window.changeStatus = changeStatus
 
