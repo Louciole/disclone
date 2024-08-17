@@ -71,27 +71,45 @@
     </section>
     <section class="menu-wrapper" id="custom-status" style="display:none" onclick="closeMenu()">
         <div class="menu">
-            <div class="close" onclick="closeMenu('#create-server')">+</div>
-            <div>
+            <div class="close" onclick="closeMenu('#custom-status')">+</div>
+            <div style="width: 100%">
                 <h2>Set custom status</h2>
                 <input type="text" placeholder="I'd like to move it move it">
 
                 <h3>DELETE LATER</h3>
-                <select>
-                    <option value="today">Today</option>
-                    <option value="240">4 hours</option>
-                    <option value="60">1 hour</option>
-                    <option value="30">30 minutes</option>
-                    <option value="never">Never</option>
-                </select>
+                <div class="dropdown">
+                    <div class="dropdown-button" onclick="toggleDropdown(event)">
+                        <div class="dropdown-text">Today</div>
+                        <div class="icon-wrapper">
+                            <img class="icon down" src="/static/icons/material/down.svg"/>
+                            <img class="icon up" src="/static/icons/material/up.svg"/>
+                        </div>
+                    </div>
+                    <ul class="dropdown-menu">
+                        <li class="selected" onclick="changeDropdown(event)">Today</li>
+                        <li onclick="changeDropdown(event)">4 hours</li>
+                        <li onclick="changeDropdown(event)">1 hour</li>
+                        <li onclick="changeDropdown(event)">30 minutes</li>
+                        <li onclick="changeDropdown(event)">Never</li>
+                    </ul>
+                </div>
                 <hr>
                 <h3>STATUS</h3>
-                <select>
-                    <option value="online">Online</option>
-                    <option value="idle">Idle</option>
-                    <option value="dnd">Do not disturb</option>
-                    <option value="offline">Invisible</option>
-                </select>
+                <div class="dropdown">
+                    <div class="dropdown-button" onclick="toggleDropdown(event)">
+                        <div class="dropdown-text">Online</div>
+                        <div class="icon-wrapper">
+                            <img class="icon down" src="/static/icons/material/down.svg"/>
+                            <img class="icon up" src="/static/icons/material/up.svg"/>
+                        </div>
+                    </div>
+                    <ul class="dropdown-menu">
+                        <li class="selected" onclick="changeDropdown(event)">Online</li>
+                        <li onclick="changeDropdown(event)">Idle</li>
+                        <li onclick="changeDropdown(event)">Do not disturb</li>
+                        <li onclick="changeDropdown(event)">Invisible</li>
+                    </ul>
+                </div>
                 <div class="inline space-between">
                     <div class="btn grey" onclick="closeMenu()">Cancel</div>
                     <div class="btn blue" onclick="setCustomStatus()">Save</div>

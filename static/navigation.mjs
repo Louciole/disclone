@@ -117,3 +117,27 @@ function reset(){
 }
 window.reset = reset
 
+
+function toggleDropdown(event) {
+    if (event.currentTarget.parentElement.classList.contains("show")){
+        event.currentTarget.parentElement.classList.remove("show");
+        global.state.activeDropdown = undefined
+    }else{
+        if(global.state.activeDropdown){
+            global.state.activeDropdown.classList.remove("show");
+        }
+        event.currentTarget.parentElement.classList.add("show");
+        global.state.activeDropdown = event.currentTarget.parentElement
+    }
+
+}
+window.toggleDropdown = toggleDropdown
+
+function changeDropdown(event) {
+    const dropdown = event.currentTarget.parentElement.parentElement;
+    dropdown.querySelector(".dropdown-text").innerText = event.currentTarget.innerText;
+    dropdown.querySelector(".selected").classList.remove("selected")
+    event.currentTarget.classList.add("selected")
+    dropdown.classList.remove("show");
+}
+window.changeDropdown = changeDropdown

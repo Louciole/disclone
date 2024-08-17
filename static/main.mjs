@@ -11,6 +11,41 @@ global.state.dom = document.querySelector("body")
 global.state.currentTab = document.getElementById("logo")
 const notifElt = document.getElementById("notif")
 
+function print(...args){
+    const green ="#68f66e"
+    const blue ="#4284f5"
+    const yellow ="#fef972"
+    const red ="#ee6966"
+    const pink ="#fb7bfa"
+    const purple ="#6a76fa"
+
+    const colors = [green,blue,green,"white",green,blue,"white",yellow,blue,"white",yellow,"white",yellow,red,pink,purple];
+    console.log(`%c${args.join(' ')}`, ...colors.map(c => `color: ${c};`));
+    // console.log(colors.map(c => `%c${c}`).join(''), ...colors.map(c => `background: ${c};`));
+}
+
+print("          _____                        %c Disclone@Carbonlab.dev\n" +
+    "%c         /\\    \\                  %c -----------------------------------\n" +
+    "%c        /::\\    \\                %c  Credits%c: Lou !  \n" +
+    "%c       /::::\\    \\                 %cGithub%c: https://github.com/Louciole/disclone \n" +
+    "%c      /::::::\\    \\       \n" +
+    "     /:::/\\:::\\    \\               %cPowered by Sakura ! \n" +
+    "%c    /:::/  \\:::\\    \\    \n" +
+    "%c   /:::/    \\:::\\    \\   \n" +
+    "  /:::/    / \\:::\\    \\  \n" +
+    " /:::/    /   \\:::\\    \\ \n" +
+    "/:::/____/     \\:::\\____\\\n" +
+    "\\:::\\    \\      \\::/    /\n" +
+    "%c \\:::\\    \\      \\/____/ \n" +
+    "  \\:::\\    \\             \n" +
+    "   \\:::\\    \\            \n" +
+    "    \\:::\\    \\           \n" +
+    "%c     \\:::\\    \\          \n" +
+    "      \\:::\\    \\         \n" +
+    "       \\:::\\____\\        \n" +
+    "        \\::/    /        \n" +
+    "         \\/____/         \n" +
+    "                         ")
 initNav()
 loadUser()
 loadConvs()

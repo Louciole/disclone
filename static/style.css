@@ -288,7 +288,8 @@ section{
     padding: 2rem;
     text-align: center;
     z-index: 20;
-    overflow: hidden;
+    overflow-x: clip;
+    overflow-y: visible;
 }
 
 .steps{
@@ -2290,4 +2291,73 @@ select {
     padding: 0.3rem;
     width: fit-content;
     top: 43vh;
+}
+
+.dropdown {
+    position: relative;
+    width: 100%;
+    height: fit-content;
+}
+
+.dropdown-button {
+    width: 100%;
+    background-color: var(--bg4);
+    color: var(--text);
+    padding: 0.3rem 0.6rem;
+    font-size: 0.9rem;
+    display: flex;
+    border: none;
+    box-sizing: border-box;
+    cursor: pointer;
+    flex-direction: row;
+    border-radius: 7px;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.dropdown.show .dropdown-button {
+    border-radius: 7px 7px 0 0;
+
+}
+
+.dropdown-menu {
+    display: none;
+    background-color: var(--bg2);
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    position: absolute;
+    box-sizing: border-box;
+    z-index: 100;
+    width: 100%;
+    overflow: hidden;
+    border-radius: 0 0 7px 7px;
+    border: solid 1px var(--bg4);
+}
+
+.dropdown-menu li {
+    display: flex;
+    padding: 0.5rem 0.6rem;
+    font-size: 0.9rem;
+    cursor: pointer;
+    color: var(--text);
+}
+
+.dropdown-menu li:hover {
+    background-color: var(--text3);
+}
+
+.dropdown-menu li.selected {
+    background-color: var(--text2bis);
+}
+
+.dropdown.show .dropdown-menu {
+    display: flex;
+}
+
+.dropdown:not(.show) .up {
+    display: none;
+}
+.dropdown.show .down {
+    display: none;
 }
