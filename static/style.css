@@ -1531,7 +1531,7 @@ section{
     transform: translateY(-0.5px);
 }
 
-#friends-block .item h5,p{
+#friends-block .item h5,p,.p{
    margin: 0;
 }
 

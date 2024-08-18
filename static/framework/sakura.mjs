@@ -31,7 +31,7 @@ export function setElement(element, value){
 }
 
 export function pushElement(element, value){
-    console.log(element,'has been added:', value);
+    // console.log(element,'has been added:', value);
     eval(`${element}.push(value)`);
     const subscriptions = document.querySelectorAll(`[class^="${element.replaceAll('.','-').replaceAll('[','🪟').replaceAll(']','🥹')}"]`)
     for (let sub of subscriptions){
@@ -48,7 +48,7 @@ export function pushElement(element, value){
 }
 
 export function addElement(element, value){
-    console.log(element,'has been added:', value);
+    // console.log(element,'has been added:', value);
     eval(`${element}[value.id] = value`);
     const subscriptions = document.querySelectorAll(`[class^="${element.replaceAll('.','-').replaceAll('[','🪟').replaceAll(']','🥹')}"]`)
     for (let sub of subscriptions){
@@ -90,7 +90,7 @@ function getTimeStr(timestamp, options = { locale: "fr-FR" }) {
     };
 
     const mergedOptions = { ...defaultOptions, ...options };
-    console.log("TIMESTR",date.toLocaleDateString(undefined, mergedOptions))
+    // console.log("TIMESTR",date.toLocaleDateString(undefined, mergedOptions))
     return date.toLocaleDateString(undefined, mergedOptions);
 }
 window.getTimeStr = getTimeStr

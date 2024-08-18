@@ -47,7 +47,7 @@
         <div class="action">
           <div>
             <div class="status"><div class="circle green"></div></div>
-            <p>Online</p>
+            ${Subscribe('global.user.status.mode',()=>{return global.user?.status?.mode ? getDefaultMessage(global.user?.status?.mode) : "Online"}, "p")}
           </div>
           <img class=icon src="/static/icons/material/next.svg"/>
           <div class="hover-menu-hitbox">

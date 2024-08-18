@@ -59,8 +59,13 @@ console.log("Client ready", global)
 
 global.state.dom.addEventListener("mousemove", (event) => resetIdle());
 setInterval(checkIdle,60000)
+setInterval(checkStatus,60000)
 
 function resetIdle(){
+    if (global.user.status.mode !== 0){
+        return
+    }
+
     if (global.state.idle && global.state.idle.state){
         const message = {"type" : 'changeActivity', "idle": false, "clientID":global.state.clientID};
         setElement("global.user.status", {icon: "green", text:"Online"})
@@ -69,10 +74,23 @@ function resetIdle(){
     global.state.idle = {state: false, time:new Date().valueOf()}
 }
 
-function checkIdle(){
-    if(global.state.idle.state){
+function checkStatus(){
+    if (!global.user.status.expiration){
         return
     }
+    if (new Date(global.user.status.expiration) < new Date().valueOf()){
+        global.user.status.emoji = null
+        global.user.status.text = getDefaultMessage(global.user.status.mode)
+        global.user.status.expiration = null
+        changeStatus(global.user.status.mode)
+    }
+}
+
+function checkIdle(){
+    if (global.user.status.mode !== 0 || global.state.idle.state){
+        return
+    }
+
     const mins = 15
     if(global.state.idle.time + (mins*60000) < new Date().valueOf()){
         global.state.idle.state = true

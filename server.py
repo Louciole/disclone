@@ -133,7 +133,7 @@ class Disclone(Server):
     def getUserInfo(self):
         uid = self.getUser()
         user = self.db.getSomething("disclone_account", uid)
-        self.getUsersStatus([user])
+        self.getUsersStatus([user],detailed=True)
         return json.dumps(user, default=str)
 
     @Server.expose
@@ -238,40 +238,64 @@ class Disclone(Server):
         else:
             self.db.edit("disclone_account", uid, element, value)
 
-    def getUsersStatus(self, users):
+    def getUsersStatus(self, users,detailed=False):
         #these requests could be batched
         for user in users:
             params = self.db.getSomething('status', user['id'])
+
             if not params:
                 self.db.insertDict("status", {"id": user['id']})
                 params = {"mode": 0}
-            print (params)
+
             if params['mode'] == 0:
                 clients = self.db.getAll('active_client', user['id'], "userid")
-                print("user is in 0 mode id:",user['id'],clients)
                 idle = True
                 if not len(clients):
-                    user['status'] = {'icon': 'spymode', 'text': 'Offline'}
+                    if not params['text']:
+                        params['text'] = "Offline"
+                    if detailed:
+                        user['status'] = {'icon': 'spymode', 'text': params['text'], 'expiration': params['expiration'], 'mode': params['mode']}
+                    else:
+                        user['status'] = {'icon': 'spymode', 'text': params['text']}
                     continue
                 for client in clients:
                     if not client['idle']:
                         idle = False
                 if idle:
-                    user['status'] = {'icon': 'orange', 'text': 'Inactive'}
+                    if not params['text']:
+                        params['text'] = "Inactive"
+                    if detailed:
+                        user['status'] = {'icon': 'orange', 'text': params['text'], 'expiration': params['expiration'], 'mode': params['mode']}
+                    else:
+                        user['status'] = {'icon': 'orange', 'text': params['text']}
                 else:
                     if not params['text']:
                         params['text'] = "Online"
-                    user['status'] = {'icon': 'green', 'text': params['text']}
+                    if detailed:
+                        user['status'] = {'icon': 'green', 'text': params['text'], 'expiration': params['expiration'], 'mode': params['mode']}
+                    else:
+                        user['status'] = {'icon': 'green', 'text': params['text']}
             elif params['mode'] == 3:
-                user['status'] = {'icon': 'spymode', 'text': 'Offline'}
+                if not params['text']:
+                    params['text'] = "Offline"
+                if detailed:
+                    user['status'] = {'icon': 'spymode', 'text': params['text'], 'expiration': params['expiration'], 'mode': params['mode']}
+                else:
+                    user['status'] = {'icon': 'spymode', 'text': params['text']}
             elif params['mode'] == 2:
                 if not params['text']:
                     params['text'] = 'Do not Disturb'
-                user['status'] = {'icon': 'RED', 'text': params['text']}
+                if detailed:
+                    user['status'] = {'icon': 'RED', 'text': params['text'], 'expiration': params['expiration'], 'mode': params['mode']}
+                else:
+                    user['status'] = {'icon': 'RED', 'text': params['text']}
             elif params['mode'] == 1:
                 if not params['text']:
                     params['text'] = 'Inactive'
-                user['status'] = {'icon': 'orange', 'text': params['text']}
+                if detailed:
+                    user['status'] = {'icon': 'orange', 'text': params['text'], 'expiration': params['expiration'], 'mode': params['mode']}
+                else:
+                    user['status'] = {'icon': 'orange', 'text': params['text']}
 
 REGEX_USERNAME = re.compile('^(?=.{3,}$)[a-zA-Z0-9_\-\.]*$')
 server = Disclone(path=PATH, configFile="/server.ini")

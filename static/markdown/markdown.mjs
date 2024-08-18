@@ -48,7 +48,6 @@ export class Markdown {
                     if(str[char_id+look_id]=== "\n"){
                         nextToken = new Token("newline")
                         look_id++
-                        console.log("we're here")
                         break
                     }
                     if([" ",")","]"].includes(str[char_id+look_id])){

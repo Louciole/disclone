@@ -235,9 +235,14 @@ export function sendTyping(){
 }
 
 function changeStatus(mode){
-    const status = {"mode":mode,"text": global.user.status.text, "emoji": global.user.status.text, "expiration":global.user.status.expiration?global.user.status.expiration:null}
+    const default_msg = {"0":"Online","1":"Inactive","2":"Do not Disturb","3":"Offline"}
+    const status = {"mode":mode,"text": global.user.status.text !== default_msg[global.user.status.mode]?global.user.status.text:null, "emoji": global.user.status.emoji?global.user.status.expiration:null, "expiration":global.user.status.expiration?global.user.status.expiration:null}
 
     const onload = function() { // request successful
+        const default_icons = {"0":"green","1":"orange","2":"RED","3":"spymode"}
+
+        status.text = status.text?status.text:default_msg[status.mode]
+        status.icon = status.icon?status.icon:default_icons[status.mode]
         setElement('global.user.status', status)
         closeMenu('#custom-status')
     };
@@ -272,9 +277,19 @@ function setCustomStatus(){
     const status = {"mode":modeDrop.getAttribute("data-value"),"text": input.value, "emoji":"","expiration":exp}
 
     const onload = function() { // request successful
+        const default_icons = {"0":"green","1":"orange","2":"RED","3":"spymode"}
+
+        status.text = status.text?status.text:getDefaultMessage(status.mode)
+        status.icon = status.icon?status.icon:default_icons[status.mode]
         setElement('global.user.status', status)
         closeMenu('#custom-status')
     };
     xhr("/change?element=status&value=".concat(JSON.stringify(status)),onload,"POST")
 }
 window.setCustomStatus = setCustomStatus
+
+function getDefaultMessage(mode){
+    const default_msg = {"0":"Online","1":"Inactive","2":"Do not Disturb","3":"Offline"}
+    return default_msg[mode]
+}
+window.getDefaultMessage = getDefaultMessage
