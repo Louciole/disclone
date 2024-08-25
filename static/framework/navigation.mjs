@@ -23,16 +23,19 @@ function openMenu(id){
 }
 window.openMenu = openMenu
 
-export function goTo(id, target, selected=undefined, async=true){
-    loadTemplate(target.concat(".html"), id, undefined, async)
+export function goTo(id, target, selected=undefined, async=true, postInsert=undefined){
+    if (postInsert){
+        loadTemplate(target.concat(".html"), id, undefined, false)
+        postInsert()
+    }else{
+        loadTemplate(target.concat(".html"), id, undefined, async)
+    }
+    
     if(selected){
-        console.log("yes ? and ?",selected)
         let targetElt;
         if(global.state[selected.category]){
-            console.log("??? (1)")
             global.state[selected.category].classList.remove("selected")
         }else if(selected.event){
-            console.log("trying to remove previously selected thingys",selected.event.currentTarget.parentElement.querySelector('.selected'))
             selected.event.currentTarget.parentElement.querySelector('.selected').classList.remove("selected")
         }else if(selected.id){
             targetElt = document.getElementById(selected.id)

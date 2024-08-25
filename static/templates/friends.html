@@ -1,14 +1,14 @@
 <div class="selected-info">
     <div class="group">
         <div class="inline-thingy">
-            <div class="title"><img class="icon" src="/static/icons/material/group.svg" style="margin-right: 0.5rem;height: 1.6rem">Amis</div>
+            <div class="title"><img class="icon" src="/static/icons/material/group.svg" style="margin-right: 0.5rem;height: 1.6rem">${_t("Amis")}</div>
             <hr>
-            <div class="cat selected" onclick="goTo('friends-block','main-friend',{'category':'currentFriendTab' ,'event': event})">En ligne</div>
-            <div class="cat" onclick="goTo('friends-block','all-friend',{'category':'currentFriendTab' ,'event': event})">Tous</div>
-            <div class="cat" onclick="goTo('friends-block','waiting-friend',{'category':'currentFriendTab' ,'event': event})">En attente
+            <div class="cat selected" onclick="goTo('friends-block','main-friend',{'category':'currentFriendTab' ,'event': event})">${_t("En ligne")}</div>
+            <div class="cat" onclick="goTo('friends-block','all-friend',{'category':'currentFriendTab' ,'event': event})">${_t("Tous")}</div>
+            <div class="cat" onclick="goTo('friends-block','waiting-friend',{'category':'currentFriendTab' ,'event': event})">${_t("En attente")}
                 <div style="display: none" class="notifIndicator">1</div></div>
-            <div class="cat" onclick="goTo('friends-block','blocked',{'category':'currentFriendTab' ,'event': event})">Bloqué</div>
-            <div class="green btn" onclick="goTo('friends-block','add-friend',{'category':'currentFriendTab' ,'event': event})">Ajouter</div>
+            <div class="cat" onclick="goTo('friends-block','blocked',{'category':'currentFriendTab' ,'event': event})">${_t("Bloqué")}</div>
+            <div class="green btn" onclick="goTo('friends-block','add-friend',{'category':'currentFriendTab' ,'event': event})">${_t("Ajouter")}</div>
         </div>
     </div>
     <div class="group">

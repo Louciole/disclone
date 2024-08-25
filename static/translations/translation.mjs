@@ -4,8 +4,11 @@ export async function initTranslations(){
     }else{
         global.settings.lang = navigator.language.split("-")[0]
     }
-    const pack = await import("/static/translations/" + global.settings.lang + ".mjs")
-    console.log("pack",pack.lang)
+    let pack = await import("/static/translations/" + global.settings.lang + ".mjs")
+    if (!pack.lang) {
+        global.settings.lang = "en"
+        pack = await import("/static/translations/" + global.settings.lang + ".mjs")
+    }
     global.i18n = pack.lang
 }
 
@@ -30,4 +33,15 @@ function _t(key){
     return key;
 }
 window._t = _t
+
+function setLangDropdownText() {
+    if(global.settings.lang !== 'fr') {
+        let elt = document.querySelector('#lang-dropdown .selected')
+        elt.classList.remove("selected")
+        elt = document.querySelector('#lang-dropdown .lang-'.concat(global.settings.lang))
+        elt.classList.add("selected")
+        document.querySelector('#lang-dropdown .dropdown-text').innerText = elt.innerText
+    }
+}
+window.setLangDropdownText = setLangDropdownText
 
