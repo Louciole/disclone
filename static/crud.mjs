@@ -1,5 +1,5 @@
 import {addServer, getRelevantUser} from "./main.mjs"
-import {addElement, deleteElement, setElement, difference} from "./framework/sakura.mjs"
+import {addElement, deleteElement, setElement, difference, pushElement} from "./framework/sakura.mjs"
 import {initWebSockets} from "./framework/websockets.mjs"
 import global from "./framework/global.mjs"
 import {xhr} from "./framework/templating.mjs";
@@ -134,6 +134,19 @@ export function loadUser(){
         }
 
         xhr("friends?action=invitations", onInvitationsLoaded)
+
+        const onBlockedLoaded = function(){
+            global.user.blocked = {}
+            let usersToload = []
+
+            for(let blockship of JSON.parse(this.responseText)){
+                usersToload.push(blockship.blocked)
+                global.user.blocked[blockship.id] = blockship
+            }
+            loadUsers(usersToload)
+        }
+
+        xhr("friends?action=getBlocked", onBlockedLoaded)
     };
 
     request.onerror = function() {
@@ -189,7 +202,24 @@ function friend(action, element, event = undefined){
             xhr("friends?action=".concat(action,"&arg=",element.id),remEffect)
             closeFM()
         }
-    } else{
+    }else if(action === "removeYES"){
+        if (element.confirm){
+            if (! confirm("Do you really want to remove ".concat(global.users[element.id].display," from your friends ?"))){
+                return
+            }
+        }
+
+        for (let friendship in global.user.friends) {
+            if (getRelevantUser(friend) === element.id) {
+                const remEffect = function () {
+                    deleteElement("global.user.friends", element.id)
+                }
+                xhr("friends?action=".concat(action, "&arg=", element.id), remEffect)
+                break
+            }
+        }
+    }
+    else{
         xhr("friends?action=".concat(action,"&arg=",element),effect)
     }
 }
@@ -293,3 +323,16 @@ function getDefaultMessage(mode){
     return default_msg[mode]
 }
 window.getDefaultMessage = getDefaultMessage
+
+function blockUser(id){
+    const effect = function() {
+        const response = this.responseText.split(" ")
+        if(response[0] ==="ok"){
+            friend('removeYES', {"id":id})
+            addElement("global.user.blocked",{"id":parseInt(response[1]), "blocked":id})
+        }
+    };
+
+    xhr("block?user=".concat(id),effect)
+}
+window.blockUser = blockUser

@@ -21,8 +21,8 @@
             <div class="pfp blue"></div>
             <p>1 ${_t("serveur en commun")}</p>
             <div class="point"></div>
-            <div class="btn gray2">${_t("Retirer l'ami")}</div>
-            <div class="btn gray2">${_t("Bloquer")}</div>
+            <div class="btn gray2" onclick="friend('removeYes',{'id':${notMe(global.convs[global.state.activeConv].members)},'confirm':true})">${_t("Retirer l'ami")}</div>
+            <div class="btn gray2" onclick="blockUser(${notMe(global.convs[global.state.activeConv].members)})">${_t("Bloquer")}</div>
         </div>
     </div>
 </div>

@@ -53,6 +53,12 @@ create table if not exists message (
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+create table if not exists blockship (
+    id bigserial NOT NULL PRIMARY KEY,
+    blocker integer not null,
+    blocked integer not null
+);
+
 create table if not exists boatakopin (
     id bigserial NOT NULL PRIMARY KEY,
     kopinPrincipal integer not null,

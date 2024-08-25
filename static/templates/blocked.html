@@ -6,6 +6,7 @@
         <img class="icon" src="/static/icons/material/search.svg"/>
     </div>
 </div>
-<div class="h2">${_t("BLOCKED")} ─ 0</div>
+<div class="h2">${_t("BLOCKED")} ─ ${Subscribe("global.user.blocked", () => {return Object.keys(global.user.blocked).length})}</div>
 <div class="scrollable">
+    ${Subscribe("global.user.blocked", () => fillWith("blockedCard", global.user.blocked), 'column')}
 </div>

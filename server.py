@@ -159,6 +159,16 @@ class Disclone(Server):
         uid = self.getUser()
         self.db.insertDict("active_client", {"userid": uid, "SDP": SDP})
 
+
+    @Server.expose
+    def block(self, user):
+        uid = self.getUser()
+        if self.db.getFilters("blockship", ["blocker", "=", uid, "and", "blocked", "=", user]):
+            return "already blocked"
+        id = self.db.insertDict("blockship", {"blocker": uid, "blocked": user}, getId=True)
+        return "ok "+str(id)
+
+
     @Server.expose
     def friends(self, action, arg=""):
         uid = self.getUser()
@@ -200,6 +210,10 @@ class Disclone(Server):
                                          ["accepted", "=", True, "and (", "kopinprincipal", "=", uid, "or",
                                           "kopinsecondaire", "=", uid, ")"])
             return json.dumps(friends)
+
+        elif action == "getBlocked":
+            enemies = self.db.getAll("blockship", uid, "blocker")
+            return json.dumps(enemies)
 
         elif action == "invitations":
             invitations = self.db.getFilters("boatakopin",

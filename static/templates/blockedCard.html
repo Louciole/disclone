@@ -1,0 +1,21 @@
+<div class="item">
+    <div class="container">
+        <div class="inline">
+            <div class="pfp green">
+                <div class="activity-wrapper">
+                    <div class="activity ${global.users[element.blocked].status.icon}"></div>
+                </div>
+            </div>
+            <div class="vertical">
+                <h5>${global.users[element.blocked].display}</h5>
+                <p>${global.users[element.blocked].status.text}</p>
+            </div>
+        </div>
+        <div class="inline reverse">
+            <div class="action">
+                <span class="tooltip bottom" >${_t("Unblock")}</span>
+                <img class="icon medium" src="/static/icons/material/groupadd.svg">
+            </div>
+        </div>
+    </div>
+</div>
