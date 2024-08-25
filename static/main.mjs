@@ -1,5 +1,5 @@
 import {initNav, goTo} from "/static/framework/navigation.mjs"
-import {loadServers, loadUser, loadConvs, loadUsers, handleMessageGroup, sendTyping} from "/static/crud.mjs"
+import {loadServers, loadUser, loadConvs, loadUsers, handleMessageGroup, sendTyping, lookFor} from "/static/crud.mjs"
 import global from "/static/framework/global.mjs"
 import {MDToHTML} from "/static/markdown/utils.mjs"; // DO NOT REMOVE
 import emojis from "/static/emojis.mjs";
@@ -45,17 +45,7 @@ await initTranslations()
 initNav()
 loadUser()
 loadConvs()
-goTo('sec-column',"column-perso",undefined, false)
-goTo('content',"friends")
-loadServers()
-goTo('sec-selector',"privateMessage")
-loadEmojis()
-goTo('friends-block','main-friend')
-console.log("Client ready", global)
 
-global.state.dom.addEventListener("mousemove", (event) => resetIdle());
-setInterval(checkIdle,60000)
-setInterval(checkStatus,60000)
 
 function resetIdle(){
     if (global.user.status.mode !== 0){
@@ -97,6 +87,25 @@ function checkIdle(){
     }
 }
 
+function statusText(){
+    if(global.user?.status?.text){
+
+        const default_msg = ["Online","Idle","Do not Disturb","Offline"]
+        if(global.user.status.text in default_msg){
+            global.user.status.text = _t(global.user.status.text)
+        }
+
+        if(global.user?.status?.emoji){
+            return global.user.status.emoji.concat(" ",global.user.status.text)
+        }else{
+            return global.user.status.text
+        }
+    }else{
+        return _t("Online")
+    }
+}
+window.statusText = statusText
+
 function getSlug(name){
     const words = name.split(' ')
     let i = 0
@@ -124,9 +133,10 @@ function loadEmojis(){
     global.state.emojis = []
 
     for (let category of emojis) {
-        let cat = {name:category.name, icon:category.icon, content:""}
+        let cat = {name:category.name, icon:category.icon, content:"",status:""}
         for (let emoji of category.content) {
             cat.content = cat.content.concat(`<div class="item" onclick="insertStandardEmoji(event,'currentInput')">${emoji.char}</div>`)
+            cat.status = cat.status.concat(`<div class="item" onclick="insertStandardEmoji(event,'status')">${emoji.char}</div>`)
         }
         global.state.emojis.push(cat)
     }
@@ -290,3 +300,15 @@ function notMe(userList){
     }
 }
 window.notMe = notMe
+
+goTo('sec-column',"column-perso",undefined, false)
+goTo('content',"friends")
+loadServers()
+goTo('sec-selector',"privateMessage")
+loadEmojis()
+goTo('friends-block','main-friend')
+console.log("Client ready", global)
+
+global.state.dom.addEventListener("mousemove", (event) => resetIdle());
+setInterval(checkIdle,60000)
+setInterval(checkStatus,60000)

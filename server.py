@@ -268,7 +268,7 @@ class Disclone(Server):
                     if not params['text']:
                         params['text'] = "Offline"
                     if detailed:
-                        user['status'] = {'icon': 'spymode', 'text': params['text'], 'expiration': params['expiration'], 'mode': params['mode']}
+                        user['status'] = {'icon': 'spymode', 'text': params['text'], 'emoji': params['emoji'], 'expiration': params['expiration'], 'mode': params['mode']}
                     else:
                         user['status'] = {'icon': 'spymode', 'text': params['text']}
                     continue
@@ -277,18 +277,18 @@ class Disclone(Server):
                         idle = False
                 if idle:
                     if not params['text']:
-                        params['text'] = "Inactive"
+                        params['text'] = "Idle"
                     if detailed:
-                        user['status'] = {'icon': 'orange', 'text': params['text'], 'expiration': params['expiration'], 'mode': params['mode']}
+                        user['status'] = {'icon': 'orange', 'text': params['text'], 'emoji': params['emoji'], 'expiration': params['expiration'], 'mode': params['mode']}
                     else:
-                        user['status'] = {'icon': 'orange', 'text': params['text']}
+                        user['status'] = {'icon': 'orange', 'text': params['text'], 'emoji': params['emoji']}
                 else:
                     if not params['text']:
                         params['text'] = "Online"
                     if detailed:
-                        user['status'] = {'icon': 'green', 'text': params['text'], 'expiration': params['expiration'], 'mode': params['mode']}
+                        user['status'] = {'icon': 'green', 'text': params['text'], 'emoji': params['emoji'], 'expiration': params['expiration'], 'mode': params['mode']}
                     else:
-                        user['status'] = {'icon': 'green', 'text': params['text']}
+                        user['status'] = {'icon': 'green', 'text': params['text'], 'emoji': params['emoji']}
             elif params['mode'] == 3:
                 if not params['text']:
                     params['text'] = "Offline"
@@ -300,16 +300,16 @@ class Disclone(Server):
                 if not params['text']:
                     params['text'] = 'Do not Disturb'
                 if detailed:
-                    user['status'] = {'icon': 'RED', 'text': params['text'], 'expiration': params['expiration'], 'mode': params['mode']}
+                    user['status'] = {'icon': 'RED', 'text': params['text'], 'emoji': params['emoji'], 'expiration': params['expiration'], 'mode': params['mode']}
                 else:
-                    user['status'] = {'icon': 'RED', 'text': params['text']}
+                    user['status'] = {'icon': 'RED', 'text': params['text'], 'emoji': params['emoji']}
             elif params['mode'] == 1:
                 if not params['text']:
-                    params['text'] = 'Inactive'
+                    params['text'] = 'Idle'
                 if detailed:
-                    user['status'] = {'icon': 'orange', 'text': params['text'], 'expiration': params['expiration'], 'mode': params['mode']}
+                    user['status'] = {'icon': 'orange', 'text': params['text'], 'emoji': params['emoji'], 'expiration': params['expiration'], 'mode': params['mode']}
                 else:
-                    user['status'] = {'icon': 'orange', 'text': params['text']}
+                    user['status'] = {'icon': 'orange', 'text': params['text'], 'emoji': params['emoji']}
 
 REGEX_USERNAME = re.compile('^(?=.{3,}$)[a-zA-Z0-9_\-\.]*$')
 server = Disclone(path=PATH, configFile="/server.ini")

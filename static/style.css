@@ -624,6 +624,56 @@ section{
     top: 0px;
 }
 
+.circle.orange::after{
+    content: "";
+    --size: 0.8rem;
+    display: block;
+    height: calc(var(--size)* 0.71);
+    aspect-ratio: 1;
+    background: #101010;
+    z-index: 10;
+    border-radius: 50%;
+    position: relative;
+    left: 0px;
+    transform: translateY(-10%);
+    top: 0px;
+}
+
+.circle.RED{
+    background: var(--red);
+}
+
+.circle.RED::after{
+    content: "";
+    display: block;
+    background: var(--bg2);
+    width: 50%;
+    height: 15%;
+    position: relative;
+    z-index: 10;
+    left: 25%;
+    top: 0;
+    transform: translate(0, 50%);
+}
+
+.circle.spymode{
+    background: var(--text2);
+}
+
+.circle.spymode::after{
+    content: "";
+    --size: 0.8rem;
+    display: block;
+    height: calc(var(--size) * 0.5);
+    aspect-ratio: 1;
+    background: var(--bg4);
+    z-index: 10;
+    border-radius: 50%;
+    position: relative;
+    left: calc(var(--size) / 4);
+    top: 0;
+}
+
 .action .activity{
     --bg2: var(--bg4);
     border: 0;
@@ -1221,7 +1271,7 @@ section{
     visibility: hidden;
     flex-direction: column;
     overflow: clip;
-    z-index: 2;
+    z-index: 21;
 }
 
 .emoji-board .menu{
@@ -2414,4 +2464,13 @@ select {
 
 .menu .input-wrapper input[type="text"].dark:focus {
     outline: none;
+}
+
+.emoji-board.menu{
+    position: absolute;
+    top: 30%;
+    bottom: auto;
+    left: 50%;
+    transform: translate(-32%, 21%);
+    right: auto;
 }

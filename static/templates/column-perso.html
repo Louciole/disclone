@@ -10,7 +10,7 @@
       <div class="name">${Subscribe('global.user.display',()=>{return(global.user.display)})}</div>
       <div class="info-wrapper">
         <div class="info-chariot">
-          ${Subscribe('global.user.status.text',()=>{return global.user?.status?.text ?? "Online"}, "p")}
+          ${Subscribe('global.user.status.text',()=>{return(statusText())}, "p")}
           <div>${Subscribe('global.user.username',()=>{return(global.user.username)})}</div>
         </div>
       </div>
@@ -46,8 +46,10 @@
         <hr>
         <div class="action">
           <div>
-            <div class="status"><div class="circle green"></div></div>
-            ${Subscribe('global.user.status.mode',()=>{return global.user?.status?.mode ? getDefaultMessage(global.user?.status?.mode) : "Online"}, "p")}
+            <div class="status">
+                ${Subscribe('global.user.status.icon',()=>{return "<div class='circle " + (global.user?.status?.icon ?? "green") + "'></div>"})}
+            </div>
+            ${Subscribe('global.user.status.mode',()=>{return global.user?.status?.mode ? _t(getDefaultMessage(global.user?.status?.mode)) : _t("Online")}, "p")}
           </div>
           <img class=icon src="/static/icons/material/next.svg"/>
           <div class="hover-menu-hitbox">

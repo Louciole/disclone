@@ -1,5 +1,7 @@
 import global from "./framework/global.mjs"
 import {loadConv} from "./crud.mjs";
+import {setElement} from "./framework/sakura.mjs";
+import {closeFM} from "./framework/navigation.mjs";
 
 let emptyStr = '' //DO NOT REMOVE
 
@@ -45,7 +47,10 @@ function insertStandardEmoji(event,target){
         }
         input.value = input.value.slice(0,global.state.previousCursor.start).concat(event.currentTarget.innerHTML,input.value.slice(global.state.previousCursor.end))
         global.state.previousCursor = {start: global.state.previousCursor.start+event.currentTarget.innerHTML.length, end:global.state.previousCursor.start+event.currentTarget.innerHTML.length}
-    }else {
+    }else if(target === "status"){
+        setElement("global.user.status.emoji",event.currentTarget.innerHTML)
+        closeFM('emoji-board')
+    } else {
         target.innerHTML = event.currentTarget.innerHTML
     }
 }

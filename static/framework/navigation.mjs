@@ -71,6 +71,7 @@ window.toggleFM = toggleFM
 export function closeFM(){
     if(activeFM){
         activeFM.classList.toggle("visible")
+        activeFM = undefined
     }
 }
 

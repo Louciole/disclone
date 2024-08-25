@@ -265,7 +265,7 @@ export function sendTyping(){
 }
 
 function changeStatus(mode){
-    const default_msg = {"0":"Online","1":"Inactive","2":"Do not Disturb","3":"Offline"}
+    const default_msg = {"0":"Online","1":"Idle","2":"Do not Disturb","3":"Offline"}
     const status = {"mode":mode,"text": global.user.status.text !== default_msg[global.user.status.mode]?global.user.status.text:null, "emoji": global.user.status.emoji?global.user.status.expiration:null, "expiration":global.user.status.expiration?global.user.status.expiration:null}
 
     const onload = function() { // request successful
@@ -304,7 +304,7 @@ function setCustomStatus(){
     const exps = [tomorrow,hours,hour,half]
     const exp = expDrop.getAttribute("data-value") != 4 ? exps[expDrop.getAttribute("data-value")] : null
 
-    const status = {"mode":modeDrop.getAttribute("data-value"),"text": input.value, "emoji":"","expiration":exp}
+    const status = {"mode":modeDrop.getAttribute("data-value"),"text": input.value, "emoji":global.user.status.emoji,"expiration":exp}
 
     const onload = function() { // request successful
         const default_icons = {"0":"green","1":"orange","2":"RED","3":"spymode"}
@@ -319,7 +319,7 @@ function setCustomStatus(){
 window.setCustomStatus = setCustomStatus
 
 function getDefaultMessage(mode){
-    const default_msg = {"0":"Online","1":"Inactive","2":"Do not Disturb","3":"Offline"}
+    const default_msg = {"0":"Online","1":"Idle","2":"Do not Disturb","3":"Offline"}
     return default_msg[mode]
 }
 window.getDefaultMessage = getDefaultMessage
