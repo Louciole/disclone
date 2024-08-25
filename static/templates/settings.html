@@ -1,25 +1,25 @@
 <section id="settings" style="display:none">
   <div id="settings-list" class="scrollable">
     <section id="general-settings">
-      <h3>PARAMÈTRES UTILISATEURS</h3>
-      <div class="item selected"  onclick="goTo('setting-content', 'account-settings',{'category':'currentSettingTab' ,'event': event})">Mon compte</div>
-      <div class="item" id="profil-settings" onclick="goTo( 'setting-content', 'profile-settings',{'category':'currentSettingTab' ,'event': event})">Profils</div>
-      <div class="item">Confidentialité & sécurité</div>
-      <div class="item">Demandes d'amis</div>
+      <h3>${_t("PARAMÈTRES UTILISATEURS")}</h3>
+      <div class="item selected"  onclick="goTo('setting-content', 'account-settings',{'category':'currentSettingTab' ,'event': event})">${_t("Mon compte")}</div>
+      <div class="item" id="profil-settings" onclick="goTo( 'setting-content', 'profile-settings',{'category':'currentSettingTab' ,'event': event})">${_t("Profils")}</div>
+      <div class="item">${_t("Confidentialité & sécurité")}</div>
+      <div class="item">${_t("Demandes d'amis")}</div>
       <hr>
-      <h3>PARAMÈTRES DE L'APPLI</h3>
-      <div class="item">Voix & Vidéo</div>
-      <div class="item">Discuter</div>
-      <div class="item">Notifications</div>
-      <div class="item">Raccourcis clavier</div>
-      <div class="item">Langue</div>
-      <div class="item">Mode streamer</div>
+      <h3>${_t("PARAMÈTRES DE L'APPLI")}</h3>
+      <div class="item">${_t("Voix & Vidéo")}</div>
+      <div class="item">${_t("Discuter")}</div>
+      <div class="item">${_t("Notifications")}</div>
+      <div class="item">${_t("Raccourcis clavier")}</div>
+      <div class="item" onclick="goTo( 'setting-content', 'lang-settings',{'category':'currentSettingTab' ,'event': event})">${_t("Langue")}</div>
+      <div class="item">${_t("Mode streamer")}</div>
       <hr>
-      <div class="item" id="faction-test" onclick="goTo('setting-content', 'factions',{'category':'currentSettingTab' ,'event': event})">Test de faction</div>
+      <div class="item" id="faction-test" onclick="goTo('setting-content', 'factions',{'category':'currentSettingTab' ,'event': event})">${_t("Test de faction")}</div>
       <hr>
     </section>
     <section id="account-actions" onclick="logout()">
-      <div class="item">Déconnexion
+      <div class="item">${_t("Déconnexion")}
         <div class="grey circle"></div>
       </div>
       <hr>

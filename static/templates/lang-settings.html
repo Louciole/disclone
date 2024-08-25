@@ -1,0 +1,16 @@
+<h1>${_t("Langue")}</h1>
+<h3>${_t("SÉLECTIONNE UNE LANGUE")}</h3>
+
+<div class="dropdown">
+    <div class="dropdown-button" onclick="toggleDropdown(event)">
+        <div class="dropdown-text">🇫🇷 Français</div>
+        <div class="icon-wrapper">
+            <img class="icon down" src="/static/icons/material/down.svg"/>
+            <img class="icon up" src="/static/icons/material/up.svg"/>
+        </div>
+    </div>
+    <ul class="dropdown-menu" id="drop-status-exp">
+        <li class="selected" onclick="setLang('fr')">🇫🇷 Français</li>
+        <li onclick="setLang('en')">🇬🇧 English</li>
+    </ul>
+</div>

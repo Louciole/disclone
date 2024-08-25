@@ -7,6 +7,8 @@ let global = {
     },
     "convs":{
     },
+    "i18n":{
+    },
     "settings":{
 
     }

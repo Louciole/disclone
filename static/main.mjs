@@ -5,6 +5,7 @@ import {MDToHTML} from "/static/markdown/utils.mjs"; // DO NOT REMOVE
 import emojis from "/static/emojis.mjs";
 import {pushElement, setElement} from "/static/framework/sakura.mjs";
 import {xhr} from "./framework/templating.mjs";
+import {initTranslations} from "./translations/translation.mjs";
 
 window.global = global
 global.state.dom = document.querySelector("body")
@@ -24,28 +25,23 @@ function print(...args){
     // console.log(colors.map(c => `%c${c}`).join(''), ...colors.map(c => `background: ${c};`));
 }
 
-print("          _____                        %c Disclone@Carbonlab.dev\n" +
-    "%c         /\\    \\                  %c -----------------------------------\n" +
-    "%c        /::\\    \\                %c  Credits%c: Lou !  \n" +
-    "%c       /::::\\    \\                 %cGithub%c: https://github.com/Louciole/disclone \n" +
-    "%c      /::::::\\    \\       \n" +
-    "     /:::/\\:::\\    \\               %cPowered by Sakura ! \n" +
-    "%c    /:::/  \\:::\\    \\    \n" +
-    "%c   /:::/    \\:::\\    \\   \n" +
-    "  /:::/    / \\:::\\    \\  \n" +
-    " /:::/    /   \\:::\\    \\ \n" +
-    "/:::/____/     \\:::\\____\\\n" +
-    "\\:::\\    \\      \\::/    /\n" +
-    "%c \\:::\\    \\      \\/____/ \n" +
-    "  \\:::\\    \\             \n" +
-    "   \\:::\\    \\            \n" +
-    "    \\:::\\    \\           \n" +
-    "%c     \\:::\\    \\          \n" +
-    "      \\:::\\    \\         \n" +
-    "       \\:::\\____\\        \n" +
-    "        \\::/    /        \n" +
-    "         \\/____/         \n" +
-    "                         ")
+print("                                            %c Disclone@Carbonlab.dev\n" +
+    "%c⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀        %c -----------------------------------\n" +
+    "%c⠀⠀⠀⠀⠀⠀⠀⢠⠀⠀⠀⠀⠀⠀⠀⠀⢰⣿⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀       %c  Credits%c: Lou !  \n" +
+    "%c⠀⠀⠀⠀⠀⠀⠀⠸⣷⣦⣀⠀⠀⠀⠀⠀⣿⣿⡇⠀⠀⠀⠀⠀⠀⠀⡀⠀⠀        %c Github%c: https://github.com/Louciole/disclone \n" +
+    "%c⠀⠀⠀⠀⠀⠀⠀⠀⠙⣿⣿⣿⣦⠀⠠⠾⠿⣿⣷⠀⠀⠀⠀⠀⣠⣤⣄⠀⠀⠀\n" +
+    "⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⠟⢉⣠⣤⣶⡆⠀⣠⣈⠀⢀⣠⣴⣿⣿⠋⠀⠀⠀⠀      %c Powered by Sakura ! \n" +
+    "%c⠀⢀⡀⢀⣀⣀⣠⣤⡄⢀⣀⡘⣿⣿⣿⣷⣼⣿⣿⣷⡄⠹⣿⡿⠁⠀⠀⠀⠀⠀\n" +
+    "%c⠀⠀⠻⠿⢿⣿⣿⣿⠁⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣟⣁⠀⠋⠀⠀⠀⠀⠀⠀⠀ \n" +
+    "⠀⠀⠀⠀⠀⠀⠈⠻⠀⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⢰⣄⣀⠀⠀⠀⠀⠀\n" +
+    "%c⠀⠀ ⠀⠀⠀⠀⣠⡀⠀⣴⣿⣿⣿⣿⣿⣿⣿⡿⢿⡿⠀⣾⣿⣿⣿⣿⣶⡄⠀ \n" +
+    "⠀⠀⠀⠀⠀⢀⣾⣿⣷⡀⠻⣿⣿⡿⠻⣿⣿⣿⣿⠀⠀⠈⠉⠉⠉⠀⠀⠀⠀⠀\n" +
+    "⠀⠀⠀⠀⣠⣾⡿⠟⠉⠉⠀⢀⡉⠁⠀⠛⠛⢉⣠⣴⣧⠀⠀⠀⠀⠀⠀⠀⠀⠀\n" +
+    "%c⠀⠀⠀⠈⠉⠉⠀⠀⠀⠀⠀⢸⣿⣿⡿⠉⠀⠙⠿⣿⣿⣧⡀⠀⠀⠀⠀⠀⠀⠀\n" +
+    "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠘⣿⣿⠁⠀⠀⠀⠀⠀⠙⠿⣷⠀⠀⠀⠀⠀⠀⠀\n" +
+    "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⠟⠀⠀⠀⠀⠀⠀⠀⠀⠃⠀⠀⠀⠀⠀⠀⠀")
+
+await initTranslations()
 initNav()
 loadUser()
 loadConvs()
