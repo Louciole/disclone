@@ -6,10 +6,10 @@
         <img class="icon" src="/static/icons/material/search.svg"/>
     </div>
 </div>
-<div class="h2">TOUS LES AMIS ─ ${Subscribe("global.user.friends", () => {return global.user.friends.length})}</div>
+<div class="h2">${_t("TOUS LES AMIS")} ─ ${Subscribe("global.user.friends", () => {return global.user.friends.length})}</div>
 <div id="" class="scrollable">
     ${Subscribe("global.user.friends", () => fillWith("friendCard", global.user.friends), 'column')}
 </div>
 <div class="modale" id="more-friends">
-    <div class="item crit" onclick="friend('remove', global.state.modaltarget)">Retirer l'ami</div>
+    <div class="item crit" onclick="friend('remove', global.state.modaltarget)">${_t("Retirer l'ami")}</div>
 </div>

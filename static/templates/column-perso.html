@@ -18,17 +18,17 @@
   </div>
   <div class="icon-wrapper mute" onclick="mute()">
     <img class="icon" src="/static/icons/material/mic.svg"/>
-    <span class="tooltip bottom">Rendre Muet</span>
+    <span class="tooltip bottom">${_t("Rendre Muet")}</span>
     <div class="line red medium visible"></div>
   </div>
   <div class="icon-wrapper" onclick="deafen()">
     <img class="icon" src="/static/icons/material/headset.svg"/>
-    <span class="tooltip bottom">Mettre en sourdine</span>
+    <span class="tooltip bottom">${_t("Mettre en sourdine")}</span>
     <div class="line red medium"></div>
   </div>
   <div class="icon-wrapper" onclick="openMenu('settings')">
     <img class="icon" src="/static/icons/material/settings.svg"/>
-    <span class="tooltip bottom">Paramètres utilisateur</span>
+    <span class="tooltip bottom">${_t("Paramètres utilisateur")}</span>
   </div>
   <div id="profil-menu" class="flying-menu">
     <div class="banner"></div>
@@ -40,8 +40,8 @@
         ${Subscribe('global.user.username',()=>{return(global.user.username)},"username")}
         ${Subscribe('global.user.pronouns',()=>{return(global.user.pronouns)},"pronouns")}
         <hr>
-        <p>${Subscribe('global.user.description',()=>{return(global.user.description ? "<h3>ABOUT ME</h3>".concat(MDToHTML(global.user.description)) : "")},"mdBlock")}</p>
-        <h3>DISCLONE MEMBER SINCE</h3>
+        <p>${Subscribe('global.user.description',()=>{return(global.user.description ? "<h3>".concat(_t("ABOUT ME"),"</h3>",MDToHTML(global.user.description)) : "")},"mdBlock")}</p>
+        <h3>${_t("DISCLONE MEMBER SINCE")}</h3>
         ${Subscribe('global.user.inscription',()=>{return(getTimeStr(global.user.inscription,{ locale: "fr-FR",hour: undefined, minute: undefined}))})}
         <hr>
         <div class="action">
@@ -57,7 +57,7 @@
                   <div class="smol activity-wrapper">
                     <div class="activity green"></div>
                   </div>
-                  <h4>Online</h4>
+                  <h4>${_t("Online")}</h4>
                 </div>
               </div>
               <hr>
@@ -66,7 +66,7 @@
                   <div class="smol activity-wrapper">
                     <div class="activity orange"></div>
                   </div>
-                  <h4>Idle</h4>
+                  <h4>${_t("Idle")}</h4>
                 </div>
               </div>
               <div onclick="changeStatus(2)">
@@ -75,9 +75,9 @@
                     <div class="smol activity-wrapper">
                       <div class="activity RED"></div>
                     </div>
-                    <h4>Do Not Disturb</h4>
+                    <h4>${_t("Do Not Disturb")}</h4>
                   </div>
-                  <p>You will not receive any desktop notifications.</p>
+                  <p>${_t("You will not receive any desktop notifications.")}</p>
                 </div>
               </div>
               <div onclick="changeStatus(3)">
@@ -87,9 +87,9 @@
                     <div class="smol activity-wrapper">
                       <div class="activity spymode"></div>
                     </div>
-                    <h4>Invisible</h4>
+                    <h4>${_t("Invisible")}</h4>
                   </div>
-                  <p>You will not appear online, but you will have full access to all of Disclone.</p>
+                  <p>${_t("You will not appear online, but you will have full access to all of Disclone.")}</p>
                 </div>
               </div>
               <hr>
@@ -99,14 +99,14 @@
         <div class="action" onclick="openMenu('custom-status')">
           <div>
             <img class=icon src="/static/icons/material/emoji.svg"/>
-            <p>Set Custom Status</p>
+            <p>${_t("Set Custom Status")}</p>
           </div>
         </div>
         <hr>
         <div class="action">
           <div>
             <img class=icon src="/static/icons/material/switch.svg"/>
-            <p>Switch Accounts</p>
+            <p>${_t("Switch Accounts")}</p>
           </div>
           <img class=icon src="/static/icons/material/next.svg"/>
         </div>
