@@ -176,6 +176,9 @@ class Disclone(Server):
             friend = self.db.getSomething("disclone_account", arg, "username")
             if not friend:
                 return "user not found"
+            if friend['id'] == uid:
+                return "You can't add yourself as a friend"
+
             friendship = self.db.getFilters("boatakopin",
                                             ["kopinprincipal", "=", uid, "and", "kopinsecondaire", "=", friend['id'],
                                              ") or (", "kopinprincipal", "=", friend['id'], "and", "kopinsecondaire",
