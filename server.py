@@ -45,7 +45,6 @@ class Disclone(Server):
         return conv_id
 
     def clean(self):
-        print("cleaning",self.pool.items())
         for client, ws in self.pool.items():
             self.db.deleteSomething("active_client",client)
             self.db.deleteSomething("subscription",client,selector="client")
