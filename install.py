@@ -18,6 +18,8 @@ class Installer:
             if len(sys.argv) > 2 and sys.argv[2] == "reset":
                 self.nukeNginx()
                 self.installNginx(link=False)
+            elif len(sys.argv) > 2 and sys.argv[2] == "mime":
+                self.addNginxMimeType()
             else:
                 self.installNginx()
         elif arg == "db":
@@ -83,6 +85,23 @@ class Installer:
             return
 
         self.ex("sudo ln -s /etc/nginx/sites-available/" + self.name + " /etc/nginx/sites-enabled/")
+
+    def addNginxMimeType(self):
+        pattern = 'application/javascript'
+        new_line = 'application/javascript mjs;'
+        with open('/etc/nginx/mime.types', 'r+') as f:
+            lines = f.readlines()
+            found = False
+            for i, line in enumerate(lines):
+                if pattern in line:
+                    found = True
+                    lines.insert(i + 1, new_line + '\n')
+                    break
+            if not found:
+                print(f"Pattern '{pattern}' not found in {filename}.")
+            else:
+                f.seek(0)
+                f.writelines(lines)
 
     def setupCrons(self):
         try:

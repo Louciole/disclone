@@ -193,7 +193,7 @@ export function getPrivateConvUser(element){
             return global.users[user]
         }
     }
-
+    return global.users[element.members[0]]
 }
 window.getPrivateConvUser = getPrivateConvUser
 
