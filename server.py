@@ -45,8 +45,10 @@ class Disclone(Server):
         return conv_id
 
     def clean(self):
+        print("cleaning",self.pool.items())
         for client, ws in self.pool.items():
             self.db.deleteSomething("active_client",client)
+            self.db.deleteSomething("subscription",client,selector="client")
 
     # --------------------------------WEBSOCKETS--------------------------------
 
@@ -110,9 +112,15 @@ class Disclone(Server):
         return json.dumps(convs)
 
     @Server.expose
-    def getUsersInfo(self, users):
+    def getUsersInfo(self, client, users):
         uid = self.getUser()
+        client_infos = self.db.getSomething("active_client",client)
+        if client_infos.get("userid") != uid:
+            raise HTTPError(403, "forbidden")
+
         users = self.db.getFilters("disclone_account", ["id", "in", json.loads(users)])
+        for user in users:
+            self.db.insertDict("subscription", {"client":client,"account": user["id"]})
         self.getUsersStatus(users)
         return (json.dumps(users, default=str))
 
@@ -252,8 +260,21 @@ class Disclone(Server):
                 self.db.edit("status", uid, "expiration", status["expiration"])
             else:
                 self.db.edit("status", uid, "expiration", None)
+            self.sendStatusUpdates(uid, status)
         else:
             self.db.edit("disclone_account", uid, element, value)
+
+    def sendStatusUpdates(self, uid, status):
+        query = "select active_client.id, userid, server, idle from active_client,subscription where (subscription.account = %s and active_client.id = subscription.client) OR (active_client.id = %s);"
+        self.db.cur.execute(query, (uid, uid))
+        r = self.db.cur.fetchall()
+        for client in r:
+            status = {"id":uid}
+            if client["userid"] == uid:
+                self.getUsersStatus([status],detailed=True)
+            else :
+                self.getUsersStatus([status])
+            self.sendNotification(client["userid"], {"type": "update_status" ,"content": status})
 
     def getUsersStatus(self, users,detailed=False):
         #these requests could be batched
@@ -268,11 +289,13 @@ class Disclone(Server):
                 clients = self.db.getAll('active_client', user['id'], "userid")
                 idle = True
                 if not len(clients):
-                    if not params['text']:
-                        params['text'] = "Offline"
                     if detailed:
-                        user['status'] = {'icon': 'spymode', 'text': params['text'], 'emoji': params['emoji'], 'expiration': params['expiration'], 'mode': params['mode']}
+                        if not params['text']:
+                            params['text'] = "Online"
+                        user['status'] = {'icon': 'green', 'text': params['text'], 'emoji': params['emoji'], 'expiration': params['expiration'], 'mode': params['mode']}
                     else:
+                        if not params['text']:
+                            params['text'] = "Offline"
                         user['status'] = {'icon': 'spymode', 'text': params['text']}
                     continue
                 for client in clients:

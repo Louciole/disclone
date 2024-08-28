@@ -1,6 +1,6 @@
 import global from "./global.mjs";
-import {addElement, deleteElement, pushElement} from "./sakura.mjs";
-import {displayNotif} from "../main.mjs";
+import {addElement, deleteElement, pushElement, setElement} from "./sakura.mjs";
+import {displayNotif, postWS} from "../main.mjs";
 import {handleMessageGroup, loadUsers} from "../crud.mjs";
 import {xhr} from "./templating.mjs";
 
@@ -24,6 +24,7 @@ export function initWebSockets(){
 
                 const effect = function (){
                     global.state.clientID = JSON.parse(this.responseText)
+                    postWS()
                 }
 
                 xhr("authWS?connectionId=".concat(message.connectionId),effect)
@@ -59,6 +60,12 @@ export function initWebSockets(){
                         break;
                     case "added_conv":
                         addElement('global.convs', message.content.content)
+                        break;
+                    case "update_status":
+                        if (message.content.content.id === global.user.id){
+                            setElement('global.user.status', message.content.content.status)
+                        }
+                        setElement('global.users['.concat(message.content.content.id,"].status"), message.content.content.status)
                         break;
                     case "typing":
                         if(global.state.activeConv === message.content.conv){

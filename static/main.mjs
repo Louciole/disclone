@@ -44,8 +44,56 @@ print("                                            %c Disclone@Carbonlab.dev\n" 
 await initTranslations()
 initNav()
 loadUser()
-loadConvs()
 
+
+export function postWS(){
+    const onFriendsLoaded = function(){
+        global.user.friends = JSON.parse(this.responseText)
+        let usersToload = []
+        for (let friendship of global.user.friends){
+            usersToload.push(getRelevantUser(friendship))
+        }
+        loadUsers(usersToload)
+    }
+
+    xhr("friends?action=get", onFriendsLoaded)
+
+    const onInvitationsLoaded = function(){
+        global.user.invitations = JSON.parse(this.responseText)
+        let usersToload = []
+        for (let friendship of global.user.invitations){
+            usersToload.push(getRelevantUser(friendship))
+        }
+        loadUsers(usersToload)
+    }
+
+    xhr("friends?action=invitations", onInvitationsLoaded)
+
+    const onBlockedLoaded = function(){
+        global.user.blocked = {}
+        let usersToload = []
+
+        for(let blockship of JSON.parse(this.responseText)){
+            usersToload.push(blockship.blocked)
+            global.user.blocked[blockship.id] = blockship
+        }
+        loadUsers(usersToload)
+    }
+
+    xhr("friends?action=getBlocked", onBlockedLoaded)
+    loadConvs()
+    goTo('sec-column',"column-perso",undefined, false)
+    goTo('content',"friends")
+    loadServers()
+    goTo('sec-selector',"privateMessage")
+    loadEmojis()
+    goTo('friends-block','main-friend')
+    console.log("Client ready", global)
+
+    global.state.dom.addEventListener("mousemove", (event) => resetIdle());
+    setInterval(checkIdle,60000)
+    setInterval(checkStatus,60000)
+}
 
 function resetIdle(){
     if (global.user.status.mode !== 0){
@@ -300,15 +348,3 @@ function notMe(userList){
     }
 }
 window.notMe = notMe
-
-goTo('sec-column',"column-perso",undefined, false)
-goTo('content',"friends")
-loadServers()
-goTo('sec-selector',"privateMessage")
-loadEmojis()
-goTo('friends-block','main-friend')
-console.log("Client ready", global)
-
-global.state.dom.addEventListener("mousemove", (event) => resetIdle());
-setInterval(checkIdle,60000)
-setInterval(checkStatus,60000)

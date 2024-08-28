@@ -73,3 +73,9 @@ create table if not exists active_client (
     server integer not null,
     idle bool default false
 );
+
+create table if not exists subscription (
+    client INTEGER NOT NULL,
+    account INTEGER NOT NULL,
+    PRIMARY KEY (client, account)
+);
