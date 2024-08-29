@@ -4,11 +4,15 @@ export async function initTranslations(){
     }else{
         global.settings.lang = navigator.language.split("-")[0]
     }
-    let pack = await import("/static/translations/" + global.settings.lang + ".mjs")
-    if (!pack.lang) {
+
+    let pack;
+    try {
+        pack = await import("/static/translations/" + global.settings.lang + ".mjs")
+    } catch (e) {
         global.settings.lang = "en"
         pack = await import("/static/translations/" + global.settings.lang + ".mjs")
     }
+
     global.i18n = pack.lang
 }
 
