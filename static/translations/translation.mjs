@@ -1,6 +1,6 @@
 export async function initTranslations(){
-    if(document.cookie.includes("lang=")){
-        global.settings.lang = document.cookie.split("lang=")[1].split(";")[0]
+    if(document.cookie.includes("disclone_lang=")){
+        global.settings.lang = document.cookie.split("disclone_lang=")[1].split(";")[0]
     }else{
         global.settings.lang = navigator.language.split("-")[0]
     }
@@ -17,7 +17,7 @@ export async function initTranslations(){
 }
 
 function setLang(code){
-    document.cookie = "lang=" + code + ";path=/"
+    document.cookie = "disclone_lang=" + code + ";path=/"
     document.location.reload()
 }
 window.setLang = setLang
