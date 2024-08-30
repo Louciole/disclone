@@ -30,7 +30,7 @@ function loadTemplate(template, target=undefined, flex= undefined, async){
 window.loadTemplate = loadTemplate
 
 function fillWith(template, list){
-    console.log("fillWith",template,list,typeof list)
+    // console.log("fillWith",template,list,typeof list)
 
     let request
     if(templates[template]){

@@ -47,7 +47,7 @@ function updateElement(selector){
 }
 
 export function setElement(element, value){
-    console.log(element,'has been updated to:', value);
+    // console.log(element,'has been updated to:', value);
     eval(`${element} = value`);
     updateElement(element)
 }

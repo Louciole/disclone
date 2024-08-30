@@ -96,13 +96,24 @@ export function postWS(){
 }
 
 function resetIdle(){
-    if (global.user.status.mode !== 0){
+    if(!global.state.idle){
+        global.state.idle = {state: false, time:new Date().valueOf()}
+    }
+    if (global.user.status.mode != 0){
         return
     }
 
-    if (global.state.idle && global.state.idle.state){
-        const message = {"type" : 'changeActivity', "idle": false, "clientID":global.state.clientID};
-        setElement("global.user.status", {icon: "green", text:"Online"})
+    if (global.state.idle.state){
+        const default_msg = ["Online","Idle","Do not Disturb","Offline"]
+
+        let status = global.user.status
+        status.icon = "green"
+        if(default_msg.includes(global.user.status.text)) {
+            status.text = "Online"
+        }
+        setElement("global.user.status", status)
+
+        const message = {"type" : 'changeActivity', "idle": false, "clientID":global.state.clientID}
         global.state.socket.send(JSON.stringify(message))
     }
     global.state.idle = {state: false, time:new Date().valueOf()}
@@ -121,14 +132,21 @@ function checkStatus(){
 }
 
 function checkIdle(){
-    if (global.user.status.mode !== 0 || global.state.idle.state){
+    if (global.user.status.mode != 0 || global.state.idle?.state){
         return
     }
-
-    const mins = 15
+    console.log("checking idle")
+    const mins = 1
     if(global.state.idle.time + (mins*60000) < new Date().valueOf()){
+        const default_msg = ["Online","Idle","Do not Disturb","Offline"]
+
+        let status = global.user.status
+        status.icon = "orange"
+        if(default_msg.includes(global.user.status.text)) {
+            status.text = "Idle"
+        }
         global.state.idle.state = true
-        setElement("global.user.status", {icon: "orange", text:"Idle"})
+        setElement("global.user.status", status)
         const message = {"type" : 'changeActivity', "idle": true, "clientID":global.state.clientID};
         global.state.socket.send(JSON.stringify(message))
         console.log("client is idle")
@@ -139,7 +157,7 @@ function statusText(){
     if(global.user?.status?.text){
 
         const default_msg = ["Online","Idle","Do not Disturb","Offline"]
-        if(global.user.status.text in default_msg){
+        if(default_msg.includes(global.user.status.text)){
             global.user.status.text = _t(global.user.status.text)
         }
 

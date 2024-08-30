@@ -77,7 +77,8 @@ class Disclone(Server):
                 case "changeActivity":
                     if self.checkWSAuth(websocket,data["clientID"]):
                         self.db.edit("active_client", data["clientID"], "idle", data["idle"])
-                        #TODO send notif to every friends ?
+                        client = self.db.getSomething("active_client", data["clientID"])
+                        await self.sendStatusUpdatesAsync(client["userid"])
                 case _:
                     print("unknown message received", message)
 
@@ -259,11 +260,11 @@ class Disclone(Server):
                 self.db.edit("status", uid, "expiration", status["expiration"])
             else:
                 self.db.edit("status", uid, "expiration", None)
-            self.sendStatusUpdates(uid, status)
+            self.sendStatusUpdates(uid)
         else:
             self.db.edit("disclone_account", uid, element, value)
 
-    def sendStatusUpdates(self, uid, status):
+    def sendStatusUpdates(self, uid):
         query = "select active_client.id, userid, server, idle from active_client,subscription where (subscription.account = %s and active_client.id = subscription.client) OR (active_client.id = %s);"
         self.db.cur.execute(query, (uid, uid))
         r = self.db.cur.fetchall()
@@ -273,7 +274,21 @@ class Disclone(Server):
                 self.getUsersStatus([status],detailed=True)
             else :
                 self.getUsersStatus([status])
-            self.sendNotification(client["userid"], {"type": "update_status" ,"content": status})
+            if sync:
+                self.sendNotification(client["userid"], {"type": "update_status" ,"content": status})
+
+    async def sendStatusUpdatesAsync(self, uid):
+        query = "select active_client.id, userid, server, idle from active_client,subscription where (subscription.account = %s and active_client.id = subscription.client) OR (active_client.id = %s);"
+        self.db.cur.execute(query, (uid, uid))
+        r = self.db.cur.fetchall()
+        for client in r:
+            status = {"id":uid}
+            if client["userid"] == uid:
+                self.getUsersStatus([status],detailed=True)
+            else :
+                self.getUsersStatus([status])
+
+            await self.sendNotificationAsync(client["userid"], {"type": "update_status" ,"content": status})
 
     def getUsersStatus(self, users,detailed=False):
         #these requests could be batched
@@ -301,11 +316,11 @@ class Disclone(Server):
                     if not client['idle']:
                         idle = False
                 if idle:
-                    if not params['text']:
-                        params['text'] = "Idle"
                     if detailed:
-                        user['status'] = {'icon': 'orange', 'text': params['text'], 'emoji': params['emoji'], 'expiration': params['expiration'], 'mode': params['mode']}
+                        user['status'] = {'icon': 'green', 'text': "Online", 'emoji': params['emoji'], 'expiration': params['expiration'], 'mode': params['mode']}
                     else:
+                        if not params['text']:
+                            params['text'] = "Idle"
                         user['status'] = {'icon': 'orange', 'text': params['text'], 'emoji': params['emoji']}
                 else:
                     if not params['text']:
