@@ -1,9 +1,12 @@
 <div id="conv${element.id}" class="item" onclick="${'goToConv('+element.id+')'}">
     <div class="pfp red">
         <div class="activity-wrapper">
-            <div class="activity ${getPrivateConvUser(element).status.icon}"></div>
+            ${Subscribe("global.users["+notMe(element.members,true)+"].status.icon",(new_element = element)=>{return(global.users[notMe(new_element.members)].status.icon)},"activity",{"target":"class","element":"global.convs["+element.id+"]"})}
         </div>
     </div>
-    <p>${getConvName(element)}</p>
+    <div class="vertical fill">
+        <p>${getConvName(element)}</p>
+        ${Subscribe("global.users["+notMe(element.members,true)+"].status",(new_element = element)=>{return(getUserStatus(notMe(new_element.members),true))},"status",{"element":"global.convs["+element.id+"]"})}
+    </div>
     <div class="close">+</div>
 </div>

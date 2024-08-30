@@ -315,12 +315,12 @@ class Disclone(Server):
                     else:
                         user['status'] = {'icon': 'green', 'text': params['text'], 'emoji': params['emoji']}
             elif params['mode'] == 3:
-                if not params['text']:
-                    params['text'] = "Offline"
                 if detailed:
+                    if not params['text']:
+                        params['text'] = "Offline"
                     user['status'] = {'icon': 'spymode', 'text': params['text'], 'expiration': params['expiration'], 'mode': params['mode']}
                 else:
-                    user['status'] = {'icon': 'spymode', 'text': params['text']}
+                    user['status'] = {'icon': 'spymode', 'text': "Offline"}
             elif params['mode'] == 2:
                 if not params['text']:
                     params['text'] = 'Do not Disturb'

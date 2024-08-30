@@ -57,16 +57,31 @@ function fillWith(template, list){
 }
 window.fillWith = fillWith
 
-function Subscribe(element, content, className=undefined, repaint=undefined){
+function Subscribe(element, content, className=undefined, params=undefined){
     //subscribe content to element, content will be reevaluated on element change
     const domElement = document.createElement('div')
     domElement.className = element.replaceAll('.','-').replaceAll('[','🪟').replaceAll(']','🥹')
+
     if (className){
         domElement.classList.add(className)
+        domElement.dataset.defaultClass = domElement.className
     }
-    domElement.innerHTML = content()
-    if(repaint){
-        domElement.dataset.repaint = repaint
+
+    if (params?.target === "class"){
+        domElement.dataset.target = params.target
+        domElement.className = domElement.className + " " + content()
+    }else{
+        domElement.innerHTML = content()
+    }
+
+
+
+    if (params?.element){
+        domElement.dataset.element = params.element
+    }
+
+    if(params?.repaint){
+        domElement.dataset.repaint = params.repaint
     }else{
         domElement.dataset.content = content
     }

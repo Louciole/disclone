@@ -435,8 +435,12 @@ section{
     cursor: pointer;
 }
 
-/*noinspection CssInvalidPropertyValue*/
 #sec-selector .item p{
+    width: -webkit-fill-available;
+    width: -moz-available;
+}
+
+.fill{
     width: -webkit-fill-available;
     width: -moz-available;
 }
@@ -2473,4 +2477,8 @@ select {
     left: 50%;
     transform: translate(-32%, 21%);
     right: auto;
+}
+
+.status{
+    font-size: 0.7rem;
 }

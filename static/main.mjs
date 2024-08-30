@@ -234,17 +234,6 @@ export function getRelevantUser(element){
 }
 window.getRelevantUser = getRelevantUser
 
-export function getPrivateConvUser(element){
-    for (let user of element.members){
-        if (global.user.id !== user) {
-            loadUsers([user])
-            return global.users[user]
-        }
-    }
-    return global.users[element.members[0]]
-}
-window.getPrivateConvUser = getPrivateConvUser
-
 function sendMessage(event){
     if (event.key === "Enter" && !event.shiftKey){
         const onload = () => {
@@ -340,11 +329,37 @@ export function displayNotif(notif){
     //setTimeout(() => notifElt.style.display="none", 1500)
 }
 
-function notMe(userList){
+function notMe(userList, loadUser=false){
     for (let i in userList){
         if (userList[i] != global.user.id){
+            if(loadUser){
+                loadUsers([userList[i]])
+            }
             return userList[i]
         }
     }
+    return userList[0]
 }
 window.notMe = notMe
+
+function getUserStatus(id, customOnly=false){
+    if(global.users[id]?.status?.text){
+
+        const default_msg = ["Online","Idle","Do not Disturb","Offline"]
+        if(default_msg.includes(global.users[id].status.text)){
+            if (customOnly){
+                return ""
+            }
+            global.users[id].status.text = _t(global.users[id].status.text)
+        }
+
+        if(global.users[id]?.status?.emoji){
+            return global.users[id].status.emoji.concat(" ",global.users[id].status.text)
+        }else{
+            return global.users[id].status.text
+        }
+    }else{
+        return _t("Online")
+    }
+}
+window.getUserStatus = getUserStatus

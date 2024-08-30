@@ -20,53 +20,54 @@ window.logout = logout
 
 
 
+function updateElement(selector){
+    const subscriptions = document.querySelectorAll(`[class^="${selector.replaceAll('.','-').replaceAll('[','🪟').replaceAll(']','🥹')}"]`)
+    for (let sub of subscriptions){
+        if(sub.dataset.repaint){
+            const fn = eval(sub.dataset.repaint)
+            fn()
+        }else if(sub.dataset.target === "class"){
+
+            const content = eval(sub.dataset.content)
+            if(sub.dataset.element){
+                sub.className = sub.dataset.defaultClass.concat(' ',content(eval(sub.dataset.element)))
+            }else{
+                sub.className = sub.dataset.defaultClass.concat(' ',content())
+            }
+        }else{
+
+            const content = eval(sub.dataset.content)
+            if(sub.dataset.element){
+                sub.innerHTML = content(eval(sub.dataset.element))
+            }else{
+                sub.innerHTML = content()
+            }
+        }
+    }
+}
+
 export function setElement(element, value){
     console.log(element,'has been updated to:', value);
     eval(`${element} = value`);
-    const subscriptions = document.querySelectorAll(`[class^="${element.replaceAll('.','-').replaceAll('[','🪟').replaceAll(']','🥹')}"]`)
-    for (let sub of subscriptions){
-        const content = eval(sub.dataset.content)
-        sub.innerHTML = content()
-    }
+    updateElement(element)
 }
 
 export function pushElement(element, value){
     // console.log(element,'has been added:', value);
     eval(`${element}.push(value)`);
-    const subscriptions = document.querySelectorAll(`[class^="${element.replaceAll('.','-').replaceAll('[','🪟').replaceAll(']','🥹')}"]`)
-    for (let sub of subscriptions){
-        console.log("we need to evaluate",sub)
-
-        if(sub.dataset.repaint){
-            const fn = eval(sub.dataset.repaint)
-            fn()
-        }else{
-            const content = eval(sub.dataset.content)
-            sub.innerHTML = content()
-        }
-    }
+    updateElement(element)
 }
 
 export function addElement(element, value){
     // console.log(element,'has been added:', value);
     eval(`${element}[value.id] = value`);
-    const subscriptions = document.querySelectorAll(`[class^="${element.replaceAll('.','-').replaceAll('[','🪟').replaceAll(']','🥹')}"]`)
-    for (let sub of subscriptions){
-        console.log("we need to evaluate",sub)
-        const content = eval(sub.dataset.content)
-        sub.innerHTML = content()
-    }
+    updateElement(element)
 }
 
 export function deleteElement(element, id){
     console.log(element,'has been removed:', element[id]);
     eval(`${element}.splice(id,1)`);
-    const subscriptions = document.querySelectorAll(`[class^="${element.replaceAll('.','-').replaceAll('[','🪟').replaceAll(']','🥹')}"]`)
-    for (let sub of subscriptions){
-        console.log("we need to evaluate",sub)
-        const content = eval(sub.dataset.content)
-        sub.innerHTML = content()
-    }
+    updateElement(element)
 }
 
 function checkEnter(event, effect){

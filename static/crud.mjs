@@ -231,7 +231,7 @@ export function sendTyping(){
 
 function changeStatus(mode){
     const default_msg = {"0":"Online","1":"Idle","2":"Do not Disturb","3":"Offline"}
-    const status = {"mode":mode,"text": global.user.status.text !== default_msg[global.user.status.mode]?global.user.status.text:null, "emoji": global.user.status.emoji?global.user.status.expiration:null, "expiration":global.user.status.expiration?global.user.status.expiration:null}
+    const status = {"mode":mode,"text": global.user.status.text !== default_msg[global.user.status.mode]?global.user.status.text:null, "emoji": global.user.status.emoji?global.user.status.emoji:null, "expiration":global.user.status.expiration?global.user.status.expiration:null}
 
     const onload = function() { // request successful
         const default_icons = {"0":"green","1":"orange","2":"RED","3":"spymode"}
