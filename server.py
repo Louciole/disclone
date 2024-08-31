@@ -57,17 +57,20 @@ class Disclone(Server):
             print("WS message received :",message)
             match data["type"]:
                 case "register":
-                    self.wating_clients[self.currentWaiting] = {"connection": websocket, "uid": data["uid"]}
+                    self.waiting_clients[self.currentWaiting] = {"connection": websocket, "uid": data["uid"]}
                     self.currentWaiting += 1
                     answer = {"type": "register_request", "servId": self.id, "connectionId": self.currentWaiting - 1}
                     await websocket.send(json.dumps(answer))
                 case "unregister":
                     print("unregister received")
                     if self.checkWSAuth(websocket,data["clientID"]):
+                        client = self.db.getSomething("active_client", data["clientID"])
                         self.db.deleteSomething("active_client",data["clientID"])
+                        self.db.deleteSomething("subscription",data["clientID"],selector="client")
                         self.pool.pop(data["clientID"])
+                        await self.sendStatusUpdatesAsync(client["userid"])
                     else:
-                        self.wainting_clients.pop(data["clientID"])
+                        self.waiting_clients.pop(data["clientID"])
                 case "typing":
                     members = self.db.getAll("accessconversation", data["conv"], "conversation")
 
@@ -143,6 +146,9 @@ class Disclone(Server):
         user = self.db.getSomething("disclone_account", uid)
         self.getUsersStatus([user],detailed=True)
         return json.dumps(user, default=str)
+
+    def onWSAuth(self,uid):
+        self.sendStatusUpdates(uid)
 
     @Server.expose
     def sendMessage(self, conv, content):
@@ -299,19 +305,14 @@ class Disclone(Server):
                 self.db.insertDict("status", {"id": user['id']})
                 params = {"mode": 0}
 
-            if params['mode'] == 0:
-                clients = self.db.getAll('active_client', user['id'], "userid")
-                idle = True
-                if not len(clients):
-                    if detailed:
-                        if not params['text']:
-                            params['text'] = "Online"
-                        user['status'] = {'icon': 'green', 'text': params['text'], 'emoji': params['emoji'], 'expiration': params['expiration'], 'mode': params['mode']}
-                    else:
-                        if not params['text']:
-                            params['text'] = "Offline"
-                        user['status'] = {'icon': 'spymode', 'text': params['text']}
+            clients = self.db.getAll('active_client', user['id'], "userid")
+            if not len(clients):
+                if not detailed:
+                    user['status'] = {'icon': 'spymode', 'text': "Offline"}
                     continue
+
+            if params['mode'] == 0:
+                idle = True
                 for client in clients:
                     if not client['idle']:
                         idle = False

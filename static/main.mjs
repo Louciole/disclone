@@ -12,6 +12,14 @@ global.state.dom = document.querySelector("body")
 global.state.currentTab = document.getElementById("logo")
 const notifElt = document.getElementById("notif")
 
+window.addEventListener('unload', () => {
+    if (global.state?.socket.readyState !== WebSocket.CLOSED) {
+        const message = {"type" : 'unregister', "clientID":global.state.clientID}
+        global.state.socket.send(JSON.stringify(message))
+        global.state.socket.close()
+    }
+});
+
 function print(...args){
     const green ="#68f66e"
     const blue ="#4284f5"
