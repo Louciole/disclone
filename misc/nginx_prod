@@ -1,16 +1,16 @@
 server{
     listen 80;
     listen 443;
-    server_name hello.carbonlab.dev;
+    server_name disclone.carbonlab.dev;
 
     location /static/ {
         autoindex off;
-        root [PATH];
+        root /var/www/html/disclone;
     }
 
     location / {
         proxy_set_header Host $host;
-        proxy_pass "http://127.0.0.1:[SERV-PORT]";
+        proxy_pass "http://127.0.0.1:8080";
         proxy_redirect off;
     }
 }
@@ -18,10 +18,10 @@ server{
 server{
     listen 80;
     listen 443;
-    server_name ws2.carbonlab.dev;
+    server_name ws.carbonlab.dev;
     location / {
         proxy_set_header Host $host;
-        proxy_pass "http://127.0.0.1:[WS-PORT]";
+        proxy_pass "http://127.0.0.1:8081";
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "Upgrade";

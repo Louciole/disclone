@@ -93,7 +93,8 @@
     <h1>${_t("Sélectionne des amis")}</h1>
     <div class="inline">
         <p>${_t("Tu peux encore ajouter")} </p>
-        ${Subscribe("global.convs[global.state.activeConv].members",()=>{return 10 - global.convs[global.state.activeConv].members.length})}
+
+        ${Subscribe("global.state.pendingConvMembers",()=>{global.state.pendingConvMembers = global.convs[global.state.activeConv].members;return 10 - global.state.pendingConvMembers.length})}
         <p> ${_t("autres amis")}</p>
     </div>
     <label>

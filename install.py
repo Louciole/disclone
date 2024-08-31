@@ -78,7 +78,7 @@ class Installer:
             self.editFile("misc/nginx_local", {"[PATH]": PATH, "[SERV-PORT]": self.config.get("server", "PORT")})
             self.ex("sudo cp ./misc/nginx_local_filled /etc/nginx/sites-available/" + self.name)
         else:
-            self.editFile("misc/nginx_local", {"[PATH]": PATH, "[SERV-PORT]": self.config.get("server", "PORT"), "[WS-PORT]": self.config.get("notification", "PORT")})
+            self.editFile("misc/nginx_prod", {"[PATH]": PATH, "[SERV-PORT]": self.config.get("server", "PORT"), "[WS-PORT]": self.config.get("NOTIFICATION", "PORT")})
             self.ex("sudo cp ./misc/nginx_prod_filled /etc/nginx/sites-available/" + self.name)
 
         if not link:
@@ -137,7 +137,7 @@ class Installer:
         self.ex("cp ./misc/sakura.service_filled /etc/systemd/system/" + self.name + ".service")
         self.ex("sudo systemctl daemon-reload")
         self.ex("sudo systemctl enable " + self.name + ".service")
-        self.ex("sudo systemctl start " + self.name + "disclone.service")
+        self.ex("sudo systemctl start " + self.name + ".service")
 
 
 if len(sys.argv) > 1:

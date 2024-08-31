@@ -20,7 +20,7 @@ window.logout = logout
 
 
 
-function updateElement(selector){
+function updateElement(selector,value=undefined){
     const subscriptions = document.querySelectorAll(`[class^="${selector.replaceAll('.','-').replaceAll('[','🪟').replaceAll(']','🥹')}"]`)
     for (let sub of subscriptions){
         if(sub.dataset.repaint){
@@ -49,25 +49,25 @@ function updateElement(selector){
 export function setElement(element, value){
     // console.log(element,'has been updated to:', value);
     eval(`${element} = value`);
-    updateElement(element)
+    updateElement(element,value)
 }
 
 export function pushElement(element, value){
     // console.log(element,'has been added:', value);
     eval(`${element}.push(value)`);
-    updateElement(element)
+    updateElement(element,value)
 }
 
 export function addElement(element, value){
     // console.log(element,'has been added:', value);
     eval(`${element}[value.id] = value`);
-    updateElement(element)
+    updateElement(element,value)
 }
 
 export function deleteElement(element, id){
     console.log(element,'has been removed:', element[id]);
     eval(`${element}.splice(id,1)`);
-    updateElement(element)
+    updateElement(element,value)
 }
 
 function checkEnter(event, effect){
