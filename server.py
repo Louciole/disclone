@@ -274,8 +274,8 @@ class Disclone(Server):
                 self.getUsersStatus([status],detailed=True)
             else :
                 self.getUsersStatus([status])
-            if sync:
-                self.sendNotification(client["userid"], {"type": "update_status" ,"content": status})
+
+            self.sendNotification(client["userid"], {"type": "update_status" ,"content": status})
 
     async def sendStatusUpdatesAsync(self, uid):
         query = "select active_client.id, userid, server, idle from active_client,subscription where (subscription.account = %s and active_client.id = subscription.client) OR (active_client.id = %s);"

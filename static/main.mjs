@@ -136,7 +136,7 @@ function checkIdle(){
         return
     }
     console.log("checking idle")
-    const mins = 1
+    const mins = 15
     if(global.state.idle.time + (mins*60000) < new Date().valueOf()){
         const default_msg = ["Online","Idle","Do not Disturb","Offline"]
 
