@@ -381,6 +381,19 @@ section{
     height: 1.1rem;
 }
 
+.title input{
+    border-radius: 4px;
+    background: transparent;
+    border: none;
+    width: 100%;
+    font-size: 0.95rem;
+    padding: 0.4rem;
+    color: var(--text);
+    height: 1.1rem;
+    font-weight: 600;
+}
+
+
 ::placeholder {
     color: #777;
     opacity: 1;

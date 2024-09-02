@@ -306,9 +306,7 @@ function getConvName(conv,inputable = false){
         conv.name=name
         return name
     }else{
-        const input = document.createElement("input")
-        input.value = conv.name ? conv.name : ""
-        return input
+        return `<input value="${conv.name ? conv.name : ''}" onblur="renameConv(event,${conv.id})" onkeydown="checkEnter(event, ()=>{renameConv(event,${conv.id})})")>`
     }
 }
 window.getConvName = getConvName

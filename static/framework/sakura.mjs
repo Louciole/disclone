@@ -64,15 +64,22 @@ export function addElement(element, value){
     updateElement(element,value)
 }
 
+// this deletes an element from a list BY ID
 export function deleteElement(element, id){
-    console.log(element,'has been removed:', element[id]);
+    // console.log(element,'has been removed:', element[id]);
     eval(`${element}.splice(id,1)`);
-    updateElement(element,value)
+    updateElement(element)
+}
+
+// this deletes an element from a list BY VALUE
+export function deleteVal(element, val){
+    // console.log(element,'has been removed:', element[id]);
+    eval(`${element} = ${element}.filter(item => item !== val)`);
+    updateElement(element)
 }
 
 function checkEnter(event, effect){
     if (event.key === "Enter"){
-        console.log("enter pressed")
         effect()
     }
 }

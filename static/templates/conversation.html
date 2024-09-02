@@ -11,20 +11,7 @@
 </div>
 <div class="scrollable bottom-margin">
     ${Subscribe('global.convs['.concat(global.state.activeConv,'].messages'),()=>fillWith('messageGroup',global.convs[global.state.activeConv].messageGroups||[]), undefined, {"repaint":()=>(repaintConv(sub, value))})}
-    <div id="welcome-message">
-        <div class="big pfp red">
-        </div>
-        <h1>${global.users[notMe(global.convs[global.state.activeConv].members)].display}</h1>
-        <h2>${global.users[notMe(global.convs[global.state.activeConv].members)].username}</h2>
-        <p>${_t("Ceci est le début de l'historique de tes messages privés avec ")}<b>${getConvName(global.convs[global.state.activeConv])}</b></p>
-        <div class="inline">
-            <div class="pfp blue"></div>
-            <p>1 ${_t("serveur en commun")}</p>
-            <div class="point"></div>
-            <div class="btn gray2" onclick="friend('removeYes',{'id':${notMe(global.convs[global.state.activeConv].members)},'confirm':true})">${_t("Retirer l'ami")}</div>
-            <div class="btn gray2" onclick="blockUser(${notMe(global.convs[global.state.activeConv].members)})">${_t("Bloquer")}</div>
-        </div>
-    </div>
+    ${global.convs[global.state.activeConv].private ? getTemplate('welcomeConvElement'): getTemplate('welcomeGroupElement')}
 </div>
 <div class="chat-input">
     <div class="icon-wrapper">
@@ -94,7 +81,8 @@
     <div class="inline">
         <p>${_t("Tu peux encore ajouter")} </p>
 
-        ${Subscribe("global.state.pendingConvMembers",()=>{global.state.pendingConvMembers = global.convs[global.state.activeConv].members;return 10 - global.state.pendingConvMembers.length})}
+        ${initPendingMembers()}
+        ${Subscribe("global.state.pendingConvMembers["+global.state.activeConv+"]",()=>{return 10 - global.state.pendingConvMembers[global.state.activeConv].length})}
         <p> ${_t("autres amis")}</p>
     </div>
     <label>
@@ -103,5 +91,5 @@
     <div class="scrollable">
         ${fillWith("add-user-elt",global.user.friends)}
     </div>
-    <div class="blue btn disabled">${_t("Créer un MP")}</div>
+    <div id="createConvBtn" class="blue btn disabled" onclick="createConv(event)">${_t("Créer un MP")}</div>
 </div>

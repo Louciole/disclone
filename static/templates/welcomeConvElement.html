@@ -1,0 +1,14 @@
+<div id="welcome-message">
+    <div class="big pfp red">
+    </div>
+    <h1>${global.users[notMe(global.convs[global.state.activeConv].members)].display}</h1>
+    <h2>${global.users[notMe(global.convs[global.state.activeConv].members)].username}</h2>
+    <p>${_t("Ceci est le début de l'historique de tes messages privés avec ")}<b>${getConvName(global.convs[global.state.activeConv])}</b></p>
+    <div class="inline">
+        <div class="pfp blue"></div>
+        <p>1 ${_t("serveur en commun")}</p>
+        <div class="point"></div>
+        <div class="btn gray2" onclick="friend('removeYes',{'id':${notMe(global.convs[global.state.activeConv].members)},'confirm':true})">${_t("Retirer l'ami")}</div>
+        <div class="btn gray2" onclick="blockUser(${notMe(global.convs[global.state.activeConv].members)})">${_t("Bloquer")}</div>
+    </div>
+</div>

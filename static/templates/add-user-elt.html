@@ -6,7 +6,7 @@
     </div>
     <div class="inline">
         <label>
-            <input type="checkbox" ${global.convs[global.state.activeConv].members.includes(getRelevantUser(element))?'checked':''} name="check" />
+            <input type="checkbox" ${global.convs[global.state.activeConv].members.includes(getRelevantUser(element))?'checked':''} name="check"  onclick="addPendingUser(event, ${getRelevantUser(element)})"/>
             <span class="checkbox"></span>
         </label>
     </div>

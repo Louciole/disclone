@@ -2,6 +2,7 @@ let global = {
     "user":{
     },
     "state":{
+        "pendingConvMembers":{},
     },
     "users":{
     },

@@ -1,5 +1,5 @@
 import {addServer, getRelevantUser} from "./main.mjs"
-import {addElement, deleteElement, setElement, difference, pushElement} from "./framework/sakura.mjs"
+import {addElement, deleteElement, setElement, difference, pushElement, deleteVal} from "./framework/sakura.mjs"
 import {initWebSockets} from "./framework/websockets.mjs"
 import global from "./framework/global.mjs"
 import {xhr} from "./framework/templating.mjs";
@@ -300,3 +300,74 @@ function blockUser(id){
     xhr("block?user=".concat(id),effect)
 }
 window.blockUser = blockUser
+
+function initPendingMembers(){
+    if (!global.state.pendingConvMembers[global.state.activeConv]){
+        global.state.pendingConvMembers[global.state.activeConv] = global.convs[global.state.activeConv].members
+    }
+    return ""
+}
+window.initPendingMembers = initPendingMembers
+
+function addPendingUser(event, id){
+    console.log("addPendingUser",global.state.pendingConvMembers[global.state.activeConv])
+    if (event.currentTarget.checked) {
+        if (global.state.pendingConvMembers[global.state.activeConv].length >= 10){
+            event.currentTarget.checked = false
+            return
+        }
+        pushElement("global.state.pendingConvMembers[" + global.state.activeConv + "]", id)
+        if (global.state.pendingConvMembers[global.state.activeConv].length > 2){
+            const btn = document.getElementById("createConvBtn")
+            btn.classList.remove("disabled")
+        }
+    }else {
+        deleteVal("global.state.pendingConvMembers[" + global.state.activeConv + "]", id)
+        if (global.state.pendingConvMembers[global.state.activeConv].length <= 2){
+            const btn = document.getElementById("createConvBtn")
+            btn.classList.add("disabled")
+        }
+    }
+    console.log(global.state.pendingConvMembers[global.state.activeConv])
+}
+window.addPendingUser = addPendingUser
+
+function createConv(event){
+    if (event.currentTarget.classList.contains("disabled")){
+        return
+    }
+
+    let selfId
+    for(let i in global.state.pendingConvMembers[global.state.activeConv]){
+        if(global.state.pendingConvMembers[global.state.activeConv][i] === global.user.id){
+            selfId = i
+            break
+        }
+    }
+
+    global.state.pendingConvMembers[global.state.activeConv].splice(selfId,1)
+    const members = global.state.pendingConvMembers[global.state.activeConv]
+    const conv = {"name":"New Conversation","members":members,"messageGroups":[],"messages":[],"private":false}
+
+    const onload = function() {
+        conv.id = parseInt(this.responseText)
+        addElement("global.convs", conv)
+        closeMenu("#add-users")
+    };
+    xhr("createConv?name=".concat(conv.name,"&members=",JSON.stringify(conv.members)),onload)
+}
+window.createConv = createConv
+
+function renameConv(event,id){
+    if (event.currentTarget.value.length < 1 || event.currentTarget.value.trim() === global.convs[id].name){
+        return
+    }
+
+    const name = event.currentTarget.value.trim()
+    console.log("renameConv",id,event.currentTarget)
+    const onload = function() { // request successful
+        setElement('global.convs['+id+'].name', name)
+    };
+    xhr("/editConv?element=name&value=".concat(name,"&id=",id),onload,"POST")
+}
+window.renameConv = renameConv

@@ -36,9 +36,9 @@ class Disclone(Server):
     def getUserConnection(self, id):
         return self.db.getSomething("active_client", id, "userid")
 
-    def newConv(self, name, members):
+    def newConv(self, name, members, private=True):
         account_id = self.getUser()
-        conv_id = self.db.insertDict('conversation', {'name': name}, getId=True)
+        conv_id = self.db.insertDict('conversation', {'name': name, 'private':private}, getId=True)
         self.db.insertDict('accessconversation', {'account': account_id, 'conversation': conv_id})
         for i in range(0, len(members)):  # this could be batched !
             self.db.insertDict('accessconversation', {'account': members[i], 'conversation': conv_id})
@@ -100,8 +100,19 @@ class Disclone(Server):
         return json.dumps(servers)
 
     @Server.expose
-    def createConv(self, name, members):
-        self.newConv(name, members)
+    def createConv(self, name, members, private=False):
+        members = json.loads(members)
+        return str(self.newConv(name, members, private))
+
+    @Server.expose
+    def editConv(self, element, value, id):
+        uid = self.getUser()
+        members = self.db.getAll("accessconversation", id, "conversation")
+        for j in range(0, len(members)):
+            if members[j]["account"] == uid:
+                self.db.edit("conversation", id, element, value)
+                return "ok"
+        raise HTTPError(403, "forbidden")
 
     @Server.expose
     def getUserConvs(self):
