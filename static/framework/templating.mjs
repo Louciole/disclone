@@ -63,7 +63,10 @@ function Subscribe(element, content, className=undefined, params=undefined){
     domElement.className = element.replaceAll('.','-').replaceAll('[','🪟').replaceAll(']','🥹')
 
     if (className){
-        domElement.classList.add(className)
+        const classList = className.split(" ")
+        for (let name of classList){
+            domElement.classList.add(name)
+        }
         domElement.dataset.defaultClass = domElement.className
     }
 

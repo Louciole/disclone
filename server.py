@@ -339,11 +339,11 @@ class Disclone(Server):
                             params['text'] = "Idle"
                         user['status'] = {'icon': 'orange', 'text': params['text'], 'emoji': params['emoji']}
                 else:
-                    if not params['text']:
-                        params['text'] = "Online"
                     if detailed:
                         user['status'] = {'icon': 'green', 'text': params['text'], 'emoji': params['emoji'], 'expiration': params['expiration'], 'mode': params['mode']}
                     else:
+                        if not params['text']:
+                            params['text'] = "Online"
                         user['status'] = {'icon': 'green', 'text': params['text'], 'emoji': params['emoji']}
             elif params['mode'] == 3:
                 if detailed:
