@@ -1,7 +1,7 @@
 <div class="selected-info">
     <div class="title">
         <div class="circle red"></div>
-        ${getConvName(global.convs[global.state.activeConv], true)}
+        ${Subscribe("global.convs["+global.state.activeConv+"].name", ()=>{return getConvName(global.convs[global.state.activeConv], true)})}
     </div>
     <div>
         <div class="icon-wrapper" onclick="toggleFM('add-users')">

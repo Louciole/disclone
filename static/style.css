@@ -1241,8 +1241,11 @@ section{
     margin: 0.8rem 0;
 }
 
-#welcome-message p{
+#welcome-message .p{
     font-size: 0.9rem;
+    display: flex;
+    flex-wrap: wrap;
+    white-space: pre-wrap;
 }
 
 #welcome-message .inline {
