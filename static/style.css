@@ -442,9 +442,10 @@ section{
     height: 2rem;
     flex-direction: row;
     align-items: center;
-    padding: 0.5rem 0.8rem;
+    padding: 0.5rem 0.5rem;
     margin-bottom: 0.1rem;
     border-radius: 6px;
+    overflow: hidden;
     cursor: pointer;
 }
 

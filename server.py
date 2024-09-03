@@ -111,6 +111,10 @@ class Disclone(Server):
         for j in range(0, len(members)):
             if members[j]["account"] == uid:
                 self.db.edit("conversation", id, element, value)
+
+                for user in members:
+                    self.sendNotification(user["account"], {"type": "edit_conv", "item":element,"id":id ,"content": value})
+
                 return "ok"
         raise HTTPError(403, "forbidden")
 

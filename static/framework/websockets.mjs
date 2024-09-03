@@ -76,6 +76,11 @@ export function initWebSockets(){
                             setTimeout(() => box.parentElement.style.display="none", 5000)
                         }
                         break
+                    case "edit_conv":
+                        if (message.content.item === "name"){
+                            setElement('global.convs['+message.content.id+'].name', message.content.content)
+                        }
+                        break;
                     default:
                         break;
                 }
