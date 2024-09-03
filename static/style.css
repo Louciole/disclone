@@ -456,6 +456,7 @@ section{
 .fill{
     width: -webkit-fill-available;
     width: -moz-available;
+    overflow: hidden;
 }
 
 #sec-selector .item.selected{
@@ -2497,4 +2498,10 @@ select {
 
 .status{
     font-size: 0.7rem;
+}
+
+.ellipsis{
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }

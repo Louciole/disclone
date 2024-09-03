@@ -6,7 +6,7 @@
         </div>
     </div>
     <div class="vertical fill">
-        ${Subscribe("global.convs["+element.id+"].name", (new_element = element)=>{return getConvName(global.convs[new_element.id])},undefined,{"element":"global.convs["+element.id+"]"})}
+        ${Subscribe("global.convs["+element.id+"].name", (new_element = element)=>{return getConvName(global.convs[new_element.id])},"ellipsis",{"element":"global.convs["+element.id+"]"})}
         ${Subscribe("global.users["+notMe(element.members,true)+"].status",(new_element = element)=>{return(getUserStatus(notMe(new_element.members),true))},"status",{"element":"global.convs["+element.id+"]"})}
     </div>
     <div class="close">+</div>
