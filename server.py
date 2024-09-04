@@ -130,17 +130,24 @@ class Disclone(Server):
         return json.dumps(convs)
 
     @Server.expose
-    def getUsersInfo(self, client, users):
+    def getUsersInfo(self, users):
+        uid = self.getUser()
+        users = self.db.getFilters("disclone_account", ["id", "in", json.loads(users)])
+        self.getUsersStatus(users)
+        return (json.dumps(users, default=str))
+
+
+    @Server.expose
+    def subscribe(self,client, cat, items):
         uid = self.getUser()
         client_infos = self.db.getSomething("active_client",client)
         if client_infos.get("userid") != uid:
             raise HTTPError(403, "forbidden")
 
-        users = self.db.getFilters("disclone_account", ["id", "in", json.loads(users)])
-        for user in users:
-            self.db.insertDict("subscription", {"client":client,"account": user["id"]})
-        self.getUsersStatus(users)
-        return (json.dumps(users, default=str))
+        if cat=="user":
+            users = self.db.getFilters("disclone_account", ["id", "in", json.loads(items)])
+            for user in users:
+                self.db.insertDict("subscription", {"client":client,"account": user["id"]})
 
     @Server.expose
     def test(self):

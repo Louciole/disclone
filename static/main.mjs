@@ -3,7 +3,7 @@ import {loadServers, loadUser, loadConvs, loadUsers, handleMessageGroup, sendTyp
 import global from "/static/framework/global.mjs"
 import {MDToHTML} from "/static/markdown/utils.mjs"; // DO NOT REMOVE
 import emojis from "/static/emojis.mjs";
-import {pushElement, setElement} from "/static/framework/sakura.mjs";
+import {addElement, pushElement, setElement} from "/static/framework/sakura.mjs";
 import {xhr} from "./framework/templating.mjs";
 import {initTranslations} from "./translations/translation.mjs";
 
@@ -49,116 +49,38 @@ print("                                            %c Disclone@Carbonlab.dev\n" 
     "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠘⣿⣿⠁⠀⠀⠀⠀⠀⠙⠿⣷⠀⠀⠀⠀⠀⠀⠀\n" +
     "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⠟⠀⠀⠀⠀⠀⠀⠀⠀⠃⠀⠀⠀⠀⠀⠀⠀")
 
-await initTranslations()
-initNav()
-loadUser()
+const onBlockedLoaded = function(){
+    global.user.blocked = {}
+    let usersToload = []
 
+    for(let blockship of JSON.parse(this.responseText)){
+        usersToload.push(blockship.blocked)
+        global.user.blocked[blockship.id] = blockship
+    }
+    loadUsers(usersToload)
+}
+
+const onFriendsLoaded = function(){
+    global.user.friends = JSON.parse(this.responseText)
+    let usersToload = []
+    for (let friendship of global.user.friends){
+        usersToload.push(getRelevantUser(friendship))
+    }
+    loadUsers(usersToload)
+}
+
+const onInvitationsLoaded = function(){
+    global.user.invitations = JSON.parse(this.responseText)
+    let usersToload = []
+    for (let friendship of global.user.invitations){
+        usersToload.push(getRelevantUser(friendship))
+    }
+    loadUsers(usersToload)
+}
 
 export function postWS(){
-    const onFriendsLoaded = function(){
-        global.user.friends = JSON.parse(this.responseText)
-        let usersToload = []
-        for (let friendship of global.user.friends){
-            usersToload.push(getRelevantUser(friendship))
-        }
-        loadUsers(usersToload)
-    }
-
-    xhr("friends?action=get", onFriendsLoaded)
-
-    const onInvitationsLoaded = function(){
-        global.user.invitations = JSON.parse(this.responseText)
-        let usersToload = []
-        for (let friendship of global.user.invitations){
-            usersToload.push(getRelevantUser(friendship))
-        }
-        loadUsers(usersToload)
-    }
-
-    xhr("friends?action=invitations", onInvitationsLoaded)
-
-    const onBlockedLoaded = function(){
-        global.user.blocked = {}
-        let usersToload = []
-
-        for(let blockship of JSON.parse(this.responseText)){
-            usersToload.push(blockship.blocked)
-            global.user.blocked[blockship.id] = blockship
-        }
-        loadUsers(usersToload)
-    }
-
-    xhr("friends?action=getBlocked", onBlockedLoaded)
-    loadConvs()
-    goTo('sec-column',"column-perso",undefined, false)
-    goTo('content',"friends")
-    loadServers()
-    goTo('sec-selector',"privateMessage")
-    loadEmojis()
-    goTo('friends-block','main-friend')
+    xhr("subscribe?client="+global.state.clientID+"&cat=user&items="+JSON.stringify(Object.keys(global.users)),undefined)
     console.log("Client ready", global)
-
-    global.state.dom.addEventListener("mousemove", (event) => resetIdle());
-    setInterval(checkIdle,60000)
-    setInterval(checkStatus,60000)
-}
-
-function resetIdle(){
-    if(!global.state.idle){
-        global.state.idle = {state: false, time:new Date().valueOf()}
-    }
-    if (global.user.status.mode != 0){
-        return
-    }
-
-    if (global.state.idle.state){
-        const default_msg = ["Online","Idle","Do not Disturb","Offline"]
-
-        let status = global.user.status
-        status.icon = "green"
-        if(default_msg.includes(global.user.status.text)) {
-            status.text = "Online"
-        }
-        setElement("global.user.status", status)
-
-        const message = {"type" : 'changeActivity', "idle": false, "clientID":global.state.clientID}
-        global.state.socket.send(JSON.stringify(message))
-    }
-    global.state.idle = {state: false, time:new Date().valueOf()}
-}
-
-function checkStatus(){
-    if (!global.user.status.expiration){
-        return
-    }
-    if (new Date(global.user.status.expiration) < new Date().valueOf()){
-        global.user.status.emoji = null
-        global.user.status.text = getDefaultMessage(global.user.status.mode)
-        global.user.status.expiration = null
-        changeStatus(global.user.status.mode)
-    }
-}
-
-function checkIdle(){
-    if (global.user.status.mode != 0 || global.state.idle?.state){
-        return
-    }
-    console.log("checking idle")
-    const mins = 15
-    if(global.state.idle.time + (mins*60000) < new Date().valueOf()){
-        const default_msg = ["Online","Idle","Do not Disturb","Offline"]
-
-        let status = global.user.status
-        status.icon = "orange"
-        if(default_msg.includes(global.user.status.text)) {
-            status.text = "Idle"
-        }
-        global.state.idle.state = true
-        setElement("global.user.status", status)
-        const message = {"type" : 'changeActivity', "idle": true, "clientID":global.state.clientID};
-        global.state.socket.send(JSON.stringify(message))
-        console.log("client is idle")
-    }
 }
 
 function statusText(){
@@ -251,7 +173,6 @@ function Save(){
 window.Save = Save
 
 export function getRelevantUser(element){
-    console.log("processing",element)
     if (global.user.id === element["kopinprincipal"]){
         return element["kopinsecondaire"]
     }else{
@@ -387,3 +308,20 @@ function getUserStatus(id, customOnly=false){
     }
 }
 window.getUserStatus = getUserStatus
+
+
+await initTranslations()
+goTo('sec-column',"column-perso",undefined, true,()=>{goTo('sec-selector',"privateMessage")})
+goTo('content',"friends",undefined,true,()=>{goTo('friends-block','main-friend')})
+
+initNav()
+loadUser()
+xhr("friends?action=getBlocked", onBlockedLoaded)
+xhr("friends?action=get", onFriendsLoaded)
+xhr("friends?action=invitations", onInvitationsLoaded)
+loadConvs()
+
+loadServers()
+
+// low priority
+loadEmojis()

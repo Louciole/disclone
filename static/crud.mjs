@@ -73,7 +73,7 @@ export function loadUsers(keys){
             global.users[key.id] = key
         }
     };
-    xhr("getUsersInfo?client="+global.state.clientID+"&users="+JSON.stringify(diff), onload, "GET",false)
+    xhr("getUsersInfo?users="+JSON.stringify(diff), onload, "GET",false)
 }
 
 export function loadConv(key){

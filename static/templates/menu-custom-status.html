@@ -8,7 +8,7 @@
                 <div class="icon-wrapper" onclick="toggleFM('emoji-board')" style="padding: 0 0.5rem;">
                     ${Subscribe("global.user.status.emoji", () => {return(global.user.status?.emoji?global.user.status.emoji:"<img class='icon' src='/static/icons/material/emoji.svg'>")},"icon-wrapper")}
                 </div>
-                <input type="text" id=input-status class="dark" placeholder="I'd like to move it move it" value="${global.user.status.text}" >
+                <input type="text" id=input-status class="dark" placeholder="I'd like to move it move it" value="${global.user.status?.text}" >
             </div>
 
             <h3>${_t("DELETE LATER")}</h3>
