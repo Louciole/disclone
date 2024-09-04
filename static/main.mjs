@@ -79,7 +79,8 @@ const onInvitationsLoaded = function(){
 }
 
 export function postWS(){
-    xhr("subscribe?client="+global.state.clientID+"&cat=user&items="+JSON.stringify(Object.keys(global.users)),undefined)
+    const userList = JSON.stringify(Object.keys(global.users).map(cle => parseInt(cle)))
+    xhr("subscribe?client="+global.state.clientID+"&cat=user&items="+userList,undefined)
     console.log("Client ready", global)
 }
 

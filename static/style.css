@@ -27,6 +27,7 @@ html{
 @font-face {
     font-family: "Noto Emoji";
     src: url("fonts/NotoColorEmoji-Regular.ttf");
+    font-display: swap;
 }
 
 body{
@@ -1074,7 +1075,9 @@ section{
 
 .message .content{
     margin: 0;
-    color: var(--text);
+    --textbis: #d2d2d2;
+    color: var(--textbis);
+    font-size: 0.9rem;
     user-select: text;
 }
 

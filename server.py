@@ -141,7 +141,7 @@ class Disclone(Server):
     def subscribe(self,client, cat, items):
         uid = self.getUser()
         client_infos = self.db.getSomething("active_client",client)
-        if client_infos.get("userid") != uid:
+        if not client_infos or client_infos.get("userid") != uid:
             raise HTTPError(403, "forbidden")
 
         if cat=="user":
@@ -340,17 +340,19 @@ class Disclone(Server):
                         idle = False
                 if idle:
                     if detailed:
-                        user['status'] = {'icon': 'green', 'text': "Online", 'emoji': params['emoji'], 'expiration': params['expiration'], 'mode': params['mode']}
+                        if not params['text']:
+                            params['text'] = "Online"
+                        user['status'] = {'icon': 'green', 'text': params['text'], 'emoji': params['emoji'], 'expiration': params['expiration'], 'mode': params['mode']}
                     else:
                         if not params['text']:
                             params['text'] = "Idle"
                         user['status'] = {'icon': 'orange', 'text': params['text'], 'emoji': params['emoji']}
                 else:
+                    if not params['text']:
+                        params['text'] = "Online"
                     if detailed:
                         user['status'] = {'icon': 'green', 'text': params['text'], 'emoji': params['emoji'], 'expiration': params['expiration'], 'mode': params['mode']}
                     else:
-                        if not params['text']:
-                            params['text'] = "Online"
                         user['status'] = {'icon': 'green', 'text': params['text'], 'emoji': params['emoji']}
             elif params['mode'] == 3:
                 if detailed:

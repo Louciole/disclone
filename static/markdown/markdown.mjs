@@ -348,6 +348,7 @@ export class Markdown {
     }
 
     renderToken(token, token_id, tokens){
+        // console.log("render token",token,token_id,tokens)
         const old_id = token_id
         let content = ""
         switch(token.type) {
@@ -430,7 +431,9 @@ export class Markdown {
                     token_id = render[1]
                     content = content.concat(render[0])
                 }
-                break
+                token.type="text"
+                token.content = "<$"+token.props?.color
+                return [fillTemplate(this.HTML_equiv[token.type], token), token_id]
             default:
                 return [fillTemplate(this.HTML_equiv[token.type], token), token_id]
         }
