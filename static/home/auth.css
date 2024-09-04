@@ -85,3 +85,17 @@ form p a{
     color: red;
     font-size: 1rem;
 }
+
+input.disabled {
+    cursor: not-allowed;
+    pointer-events: bounding-box;
+    color: #7b7b7b;
+    background: #f1f1f1;
+}
+
+.action {
+    margin-top: 1rem;
+    font-size: 1rem;
+    text-decoration: underline;
+    cursor: pointer;
+}
