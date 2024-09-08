@@ -159,7 +159,7 @@ class Disclone(Server):
         conv = self.db.getFilters("accessconversation", ["conversation", "=", convId, "and", "account", "=", uid])
         if conv:
             content = {}
-            content["messages"] = self.db.getFilters("message", ["place", "=", convId])
+            content["messages"] = self.db.getFilters("message", ["place", "=", convId, "order by timestamp"])
             return json.dumps(content, default=str)
 
     @Server.expose

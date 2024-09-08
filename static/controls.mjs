@@ -1,4 +1,5 @@
 import global from "./framework/global.mjs"
+import {lookFor} from "./crud.mjs";
 
 function deafen(){
     event.currentTarget.lastElementChild.classList.toggle("visible")
@@ -19,3 +20,15 @@ function silent_typing(){
     global.settings.silent_typing = !global.settings.silent_typing
 }
 window.silent_typing = silent_typing
+
+function reply(msg_id){
+    document.getElementById("replyBox").style.display = "flex"
+    console.log()
+    document.getElementById("replyName").innerText = global.users[lookFor(msg_id.toString(),global.convs[global.state.activeConv].messages).sender].display
+}
+window.reply = reply
+
+function cancelReply(){
+    document.getElementById("replyBox").style.display = "none"
+}
+window.cancelReply = cancelReply

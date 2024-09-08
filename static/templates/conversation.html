@@ -9,29 +9,40 @@
         </div>
     </div>
 </div>
+
 <div class="scrollable bottom-margin">
     ${Subscribe('global.convs['.concat(global.state.activeConv,'].messages'),()=>fillWith('messageGroup',global.convs[global.state.activeConv].messageGroups||[]), undefined, {"repaint":()=>(repaintConv(sub, value))})}
     ${global.convs[global.state.activeConv].private ? getTemplate('welcomeConvElement'): getTemplate('welcomeGroupElement')}
 </div>
-<div class="chat-input">
-    <div class="icon-wrapper">
-        <img class="icon" src="/static/icons/material/add.svg"/>
+
+<div class="chat-wrapper">
+    <div id="replyBox">
+        <p>${_t("Répondre à")} <b id="replyName"></b></p>
+        <div class="icon-wrapper" onclick="cancelReply()">
+            <img class="icon" src="/static/icons/material/closeFilled.svg"/>
+        </div>
     </div>
-    <label style="flex: 1;height: fit-content;">
-        <textarea class="selected" rows="1" placeholder="${_t('Envoyer un message à')} @${getConvName(global.convs[global.state.activeConv])}" onkeydown="sendMessage(event)" oninput="resizeHeight(event)" onblur="saveCursorPosition(event)"></textarea>
-    </label>
-    <div class="icon-wrapper" onclick="silent_typing()">
-        <img class="icon" src="/static/icons/material/keyboard.svg"/>
-        <span class="tooltip bottom">${_t("Enable silent typing")}</span>
-        <div class="line red medium"></div>
-    </div>
-    <div class="icon-wrapper">
-        <img class="icon" src="/static/icons/material/gif.svg"/>
-    </div>
-    <div class="icon-wrapper" onclick="toggleFM('emoji-board')">
-        <img class="icon" src="/static/icons/material/emoji.svg"/>
+    <div class="chat-input">
+        <div class="icon-wrapper">
+            <img class="icon" src="/static/icons/material/add.svg"/>
+        </div>
+        <label style="flex: 1;height: fit-content;">
+            <textarea class="selected" rows="1" placeholder="${_t('Envoyer un message à')} @${getConvName(global.convs[global.state.activeConv])}" onkeydown="sendMessage(event)" oninput="resizeHeight(event)" onblur="saveCursorPosition(event)"></textarea>
+        </label>
+        <div class="icon-wrapper" onclick="silent_typing()">
+            <img class="icon" src="/static/icons/material/keyboard.svg"/>
+            <span class="tooltip bottom">${_t("Enable silent typing")}</span>
+            <div class="line red medium"></div>
+        </div>
+        <div class="icon-wrapper">
+            <img class="icon" src="/static/icons/material/gif.svg"/>
+        </div>
+        <div class="icon-wrapper" onclick="toggleFM('emoji-board')">
+            <img class="icon" src="/static/icons/material/emoji.svg"/>
+        </div>
     </div>
 </div>
+
 <div id=typing-box>
     <div class="inline">
         <div class="circle first"></div>

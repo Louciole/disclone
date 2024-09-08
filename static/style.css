@@ -973,19 +973,46 @@ section{
     height: 1.2rem;
 }
 
+.chat-wrapper{
+    width: calc(100% - 2rem);
+    height: fit-content;
+    border-radius: 8px;
+    overflow: clip;
+    display: flex;
+    flex-direction: column;
+}
+
+#replyBox{
+    background: var(--bg3);
+    color: var(--text2);
+    font-size: 0.8rem;
+    display: none;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.4rem 1rem;
+}
+
+#replyBox .icon{
+    height: 1.2rem;
+}
+
+#replyBox .icon-wrapper{
+    display: flex;
+    cursor: pointer;
+}
+
 .chat-input{
     background: var(--text3);
     border: none;
-    width: calc(100% - 4rem);
+    width: 100%;
     height: fit-content;
     max-height: 50svh;
     padding: 0.6rem;
-    border-radius: 8px;
     display: flex;
+    box-sizing: border-box;
     gap: 0.8rem;
 }
 
-/*noinspection CssInvalidPropertyValue*/
 .chat-input textarea{
     width: -webkit-fill-available;
     width: -moz-available;
@@ -2507,7 +2534,6 @@ select {
 
 .message-group .first-message:hover, .message-group .first-message .message:hover{
     background: var(--bg2);
-
 }
 
 .ellipsis{
@@ -2521,7 +2547,35 @@ select {
     width: fit-content;
     border: 1px solid var(--bg3);
     border-radius: 5px;
-    right: 5rem;
     background: var(--bg);
-    transform: translate(100%, -50%);
+
+    right: 1rem;
+    cursor: pointer;
+    overflow: hidden;
+    display: none;
+}
+
+.message-group .message:hover .message-opt{
+    display: flex;
+    top: -1rem;
+}
+
+.message-group .first-message:hover .message-opt{
+    display: flex;
+    top: -2rem;
+}
+
+.message-opt .icon-wrapper:hover{
+    background: var(--text3);
+}
+
+.message-opt .icon-wrapper{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.2rem;
+}
+
+.message-opt .icon{
+    height: 1.4rem;
 }

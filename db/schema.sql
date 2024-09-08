@@ -50,7 +50,8 @@ create table if not exists message (
     sender integer NOT NULL,
     place integer NOT NULL,
     body TEXT,
-    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    reply integer REFERENCES message(id)
 );
 
 create table if not exists blockship (

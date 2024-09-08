@@ -1,13 +1,13 @@
 <div class="group">
-    <div class="message">
+    <div class="message" id="message-${element.id}">
         <div class="content">
             <div class="meta"></div>
-            <p>${MDToHTML(element.body)}</p>
             <div class="inline message-opt">
-                <div><div class="icon-wrapper">
+                <div class="icon-wrapper" onclick="reply(${element.id})">
                     <img class="icon" src="/static/icons/material/reply.svg"/>
-                </div></div>
+                </div>
             </div>
+            <p>${MDToHTML(element.body)}</p>
         </div>
     </div>
 </div>
