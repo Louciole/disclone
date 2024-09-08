@@ -1079,6 +1079,7 @@ section{
     color: var(--textbis);
     font-size: 0.9rem;
     user-select: text;
+    position: relative;
 }
 
 .message .content div, .mdBlock div{
@@ -2504,8 +2505,23 @@ select {
     font-size: 0.7rem;
 }
 
+.message-group .first-message:hover, .message-group .first-message .message:hover{
+    background: var(--bg2);
+
+}
+
 .ellipsis{
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+.message-opt{
+    position: absolute;
+    width: fit-content;
+    border: 1px solid var(--bg3);
+    border-radius: 5px;
+    right: 5rem;
+    background: var(--bg);
+    transform: translate(100%, -50%);
 }

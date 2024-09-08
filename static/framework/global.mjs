@@ -11,7 +11,6 @@ let global = {
     "i18n":{
     },
     "settings":{
-
     }
 }
 export default global
