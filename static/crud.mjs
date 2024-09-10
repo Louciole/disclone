@@ -93,8 +93,8 @@ export function loadConv(key){
     for(let message of global.convs[key].messages){
         message.body = message.body.replace(/</g, "&lt;")
 
-        // si ça fait moins de 3 minutes de différence, que c'est la même personne et que la date n'a pas changée
-        if(message.sender === lastSender && (new Date(message.timestamp)-new Date(lastTimestamp))/60000<3 && getTimeStr(message.timestamp, { locale: "fr-FR",hour: undefined, minute: undefined}) === getTimeStr(lastTimestamp, { locale: "fr-FR",hour: undefined, minute: undefined})){
+        // si ça fait moins de 3 minutes de différence, que c'est la même personne et que la date n'a pas changée et que le message n'est pas une réponse
+        if(message.sender === lastSender && (new Date(message.timestamp)-new Date(lastTimestamp))/60000<3 && getTimeStr(message.timestamp, { locale: "fr-FR",hour: undefined, minute: undefined}) === getTimeStr(lastTimestamp, { locale: "fr-FR",hour: undefined, minute: undefined}) && !message.reply){
             global.convs[key].messageGroups[global.convs[key].messageGroups.length-1].messages.push(message)
         }else{
             lastSender = message.sender
@@ -192,7 +192,7 @@ window.friend = friend
 // this function should be used only in non performance critical cases
 export function lookFor(element, array){
     for(let i in array){
-        if(array[i].id.toString() === element){
+        if(array[i].id.toString() == element){
             return array[i]
         }
     }
@@ -204,8 +204,8 @@ function newMessageGroup(conv, message){
 
 export function handleMessageGroup(message){
     if (global.convs[message.place].messages.length !== 0){
-        // si ça fait moins de 3 minutes de différence, que c'est la même personne et que la date n'a pas changée
-        if(message.sender === global.convs[message.place].messages[global.convs[message.place].messages.length-1].sender && (new Date(message.timestamp)-new Date(global.convs[message.place].messages[global.convs[message.place].messages.length-1].timestamp))/60000<3 && getTimeStr(message.timestamp, { locale: "fr-FR",hour: undefined, minute: undefined}) === getTimeStr(global.convs[message.place].messages[global.convs[message.place].messages.length-1].timestamp, { locale: "fr-FR",hour: undefined, minute: undefined})){
+        // si ça fait moins de 3 minutes de différence, que c'est la même personne que la date n'a pas changée ET que le message n'est pas une réponse
+        if(message.sender === global.convs[message.place].messages[global.convs[message.place].messages.length-1].sender && (new Date(message.timestamp)-new Date(global.convs[message.place].messages[global.convs[message.place].messages.length-1].timestamp))/60000<3 && getTimeStr(message.timestamp, { locale: "fr-FR",hour: undefined, minute: undefined}) === getTimeStr(global.convs[message.place].messages[global.convs[message.place].messages.length-1].timestamp, { locale: "fr-FR",hour: undefined, minute: undefined}) && !message.reply){
             global.convs[message.place].messageGroups[global.convs[message.place].messageGroups.length-1].messages.push(message)
         }else{
             newMessageGroup(message.place, message)

@@ -1,6 +1,6 @@
 import urllib.parse
 
-from sakura import Server
+from sakura import Server, HTTPError
 import json
 import re
 import signal
@@ -173,17 +173,18 @@ class Disclone(Server):
         self.sendStatusUpdates(uid)
 
     @Server.expose
-    def sendMessage(self, conv, content):
+    def sendMessage(self, conv, content, reply=False):
         print("sending message", conv, content)
         uid = self.getUser()
         conv = json.loads(conv)
-        print(conv)
         if not conv.get("id"):
             conv["id"] = self.newConv("Noname", [uid, conv["dest"]])
 
-        message = {"sender": uid, "place": conv["id"], "body": content}
+        if reply and reply!="undefined" and reply!="null" :
+            message = {"sender": uid, "place": conv["id"], "body": content, "reply": reply}
+        else:
+            message = {"sender": uid, "place": conv["id"], "body": content}
         self.db.insertDict("message", message)
-
         members = self.db.getAll("accessconversation", conv["id"], "conversation")
         for user in members:
             if user["account"] != uid:

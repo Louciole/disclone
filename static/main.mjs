@@ -188,14 +188,15 @@ function sendMessage(event){
         }
 
         if (event.currentTarget.value.trim() !== '' ){
-            xhr("sendMessage?conv=".concat(encodeURI(JSON.stringify({'id':global.state.activeConv})), "&content=", encodeURIComponent(event.currentTarget.value)), onload())
+            xhr("sendMessage?conv=".concat(encodeURI(JSON.stringify({'id':global.state.activeConv})), "&content=", encodeURIComponent(event.currentTarget.value),"&reply=",global.convs[global.state.activeConv].reply), onload())
             const currentDate = new Date();
             const timestamp = currentDate.getTime();
-            const message = {"id":global.convs[global.state.activeConv].messages.length, "sender": global.user.id,"place":global.state.activeConv, "body": event.currentTarget.value, "timestamp":timestamp}
+            const message = {"id":global.convs[global.state.activeConv].messages.length, "sender": global.user.id,"place":global.state.activeConv, "body": event.currentTarget.value, "timestamp":timestamp, "reply":global.convs[global.state.activeConv].reply}
             handleMessageGroup(message)
             pushElement('global.convs['.concat(global.state.activeConv,'].messages'), message)
             event.currentTarget.value = ''
             resizeHeight(event)
+            cancelReply()
         }
         event.preventDefault()
     }else{
@@ -248,6 +249,25 @@ function getSeparator(element){
     }
 }
 window.getSeparator = getSeparator
+
+function getAnswerBlock(element){
+    if(element.messages[0].reply){
+        const og = lookFor(element.messages[0].reply, global.convs[global.state.activeConv].messages)
+
+        return `<div class="inline reply">
+<div class="replyLineBox">
+    <div class="replyLine">
+    </div>
+</div>
+<div class="circle red small"></div>
+<b>@${global.users[og.sender].display}</b>
+<a href="#message-${og.id}" class="ellipsis">${og.body}</a>
+</div>`
+    }else{
+        return ""
+    }
+}
+window.getAnswerBlock = getAnswerBlock
 
 export function displayNotif(notif){
     const notifSound = new Audio('static/sounds/notification.mp3');

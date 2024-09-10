@@ -23,12 +23,14 @@ window.silent_typing = silent_typing
 
 function reply(msg_id){
     document.getElementById("replyBox").style.display = "flex"
-    console.log()
+    global.convs[global.state.activeConv].reply = msg_id
     document.getElementById("replyName").innerText = global.users[lookFor(msg_id.toString(),global.convs[global.state.activeConv].messages).sender].display
+    document.querySelector(".chat-input textarea").focus()
 }
 window.reply = reply
 
 function cancelReply(){
+    global.convs[global.state.activeConv].reply = null
     document.getElementById("replyBox").style.display = "none"
 }
 window.cancelReply = cancelReply

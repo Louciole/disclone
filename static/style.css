@@ -1863,7 +1863,7 @@ input[type="text"]{
     flex-direction: row;
 }
 
-.message-group .first-message:hover{
+.message-group .first-message-wrapper:hover{
     background: var(--bg2);
 }
 
@@ -2532,7 +2532,7 @@ select {
     font-size: 0.7rem;
 }
 
-.message-group .first-message:hover, .message-group .first-message .message:hover{
+.message-group .first-message-wrapper:hover, .message-group .first-message .message:hover{
     background: var(--bg2);
 }
 
@@ -2560,9 +2560,13 @@ select {
     top: -1rem;
 }
 
-.message-group .first-message:hover .message-opt{
+.message-group .first-message-wrapper:hover .message-opt{
     display: flex;
     top: -2rem;
+}
+
+.message-group .first-message-wrapper:hover .reply+.first-message .message-opt{
+    top: -3.5rem;
 }
 
 .message-opt .icon-wrapper:hover{
@@ -2578,4 +2582,46 @@ select {
 
 .message-opt .icon{
     height: 1.4rem;
+}
+
+.replyLine{
+    border-left: solid 3px var(--text2bis);
+    border-top: solid 3px var(--text2bis);
+    height: 50%;
+    box-sizing: border-box;
+    width: 2rem;
+    border-top-left-radius: 0.5rem;
+}
+
+.replyLineBox{
+    height: 1.5rem;
+    display: flex;
+    align-items: flex-end;
+}
+
+.reply{
+    padding: 0 2rem;
+    font-size: 0.8rem;
+}
+
+.reply a{
+    color: var(--text2);
+    text-decoration: none;
+    margin: 0 0.3rem;
+    cursor: pointer;
+    width: 70ch;
+}
+
+.reply a:visited{
+    color: var(--text2);
+}
+
+.reply .circle{
+    height: 0.9rem;
+    margin: 0 0.3rem;
+}
+
+.first-message-wrapper{
+    display: flex;
+    flex-direction: column;
 }
