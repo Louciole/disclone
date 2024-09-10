@@ -41,12 +41,21 @@ window.goToFriends = goToFriends
 function insertStandardEmoji(event,target){
     if (target === "currentInput"){
         // bug ? this does not trigger the typing event, we could use a real event instead
-        const input = document.querySelector("textarea.selected")
+        let input
+
+        //i know...
+        if(event.currentTarget.parentElement.parentElement.parentElement.parentElement.parentElement.id === "std-emoji-board"){
+            input = document.querySelector("#description-input")
+        }else{
+            input = document.querySelector("textarea.selected")
+        }
+
         if(!global.state.previousCursor){
             global.state.previousCursor = {start:0, end:0}
         }
         input.value = input.value.slice(0,global.state.previousCursor.start).concat(event.currentTarget.innerHTML,input.value.slice(global.state.previousCursor.end))
         global.state.previousCursor = {start: global.state.previousCursor.start+event.currentTarget.innerHTML.length, end:global.state.previousCursor.start+event.currentTarget.innerHTML.length}
+        input.dispatchEvent(new Event('input', { bubbles: true }))
     }else if(target === "status"){
         setElement("global.user.status.emoji",event.currentTarget.innerHTML)
         closeFM('emoji-board')

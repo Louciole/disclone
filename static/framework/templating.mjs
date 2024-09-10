@@ -37,7 +37,7 @@ function fillWith(template, list){
         request={"responseText":templates[template]}
     }else{
         request = xhr( '/static/templates/'.concat(template,".html"), undefined, "GET", false)
-        console.log("adding to cache",templates, template)
+        // console.log("adding to cache",templates, template)
         templates[template] = request.responseText
     }
 

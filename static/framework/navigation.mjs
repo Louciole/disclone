@@ -3,10 +3,10 @@ import {setElement} from "./sakura.mjs";
 
 export function initNav(){
     document.addEventListener('click', function (event) {
-        if (activeFM && !activeFM.contains(event.target)) {
-            activeFM.classList.toggle("visible")
+        if (global.state.activeFM && !global.state.activeFM.contains(event.target)) {
+            global.state.activeFM.classList.toggle("visible")
             if (!openingFM){
-                activeFM = undefined
+                global.state.activeFM = undefined
             }else{
                 openingFM=false
             }
@@ -116,40 +116,39 @@ export function goTo(id, target, selected=undefined, async=true, postInsert=unde
 window.goTo = goTo
 
 
-let activeFM;
 let openingFM = false;
 
 function toggleFM(id){
     const FM = document.getElementById(id)
-    if(FM !== activeFM){
+    if(FM !== global.state.activeFM){
         openingFM = true
-        if(activeFM){
-            activeFM.classList.toggle("visible")
+        if(global.state.activeFM){
+            global.state.activeFM.classList.toggle("visible")
         }
-        activeFM = FM
+        global.state.activeFM = FM
     }
 }
 window.toggleFM = toggleFM
 
 export function closeFM(){
-    if(activeFM){
-        activeFM.classList.toggle("visible")
-        activeFM = undefined
+    if(global.state.activeFM){
+        global.state.activeFM.classList.toggle("visible")
+        global.state.activeFM = undefined
     }
 }
 
 function toggleModale(id, event){
     const FM = document.getElementById(id)
-    if(FM !== activeFM){
+    if(FM !== global.state.activeFM){
         openingFM = true
         global.state.modaltarget = event.currentTarget
-        if(activeFM){
-            activeFM.classList.toggle("visible")
+        if(global.state.activeFM){
+            global.state.activeFM.classList.toggle("visible")
         }
         console.log(event.currentTarget,global.state.modaltarget)
         FM.style.top = event.clientY.toString().concat("px")
         FM.style.left = event.clientX.toString().concat("px")
-        activeFM = FM
+        global.state.activeFM = FM
     }
 }
 window.toggleModale = toggleModale

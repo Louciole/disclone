@@ -37,7 +37,7 @@
         <div class="icon-wrapper">
             <img class="icon" src="/static/icons/material/gif.svg"/>
         </div>
-        <div class="icon-wrapper" onclick="toggleFM('emoji-board')">
+        <div class="icon-wrapper" onclick="toggleFM('conv-emoji-board')">
             <img class="icon" src="/static/icons/material/emoji.svg"/>
         </div>
     </div>
@@ -52,7 +52,7 @@
         ${_t("is typing")}...
     </div>
 </div>
-<div id="emoji-board" class="emoji-board">
+<div id="conv-emoji-board" class="emoji-board">
     <div class="menu">
         <div class="inline gap">
             <div class="cat">GIF</div>
@@ -74,7 +74,7 @@
             ${fillWith('scroll-emoji',global.state.emojis)}
         </div>
         <div class="scrollable">
-            ${fillWith('emoji-cat',global.state.emojis)}
+            ${fillWith('emoji-cat-input',global.state.emojis)}
         </div>
     </div>
     <div class="descriptor">
