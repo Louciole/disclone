@@ -1563,6 +1563,7 @@ section{
     position: absolute;
     transform: translate(15px, +50%);
     border: 6px solid var(--bg4);
+    overflow: hidden;
 }
 
 
@@ -2395,6 +2396,7 @@ select {
     padding: 0.3rem;
     width: fit-content;
     top: 43vh;
+    z-index: 1;
 }
 
 .dropdown {
@@ -2624,4 +2626,112 @@ select {
 .first-message-wrapper{
     display: flex;
     flex-direction: column;
+}
+
+#settings .profil-picture .edit{
+    opacity: 0;
+    transition: opacity 200ms;
+    display: flex;
+    width: 100%;
+    height: 100%;
+    justify-content: center;
+}
+
+#settings .profil-picture:hover .edit{
+    opacity: 1;
+    background: #46475051;
+}
+
+#settings .profil-picture .edit img{
+    width: 1.4rem;
+    filter: invert(100%) brightness(100%) contrast(100%);
+}
+
+#settings .modale{
+    background: var(--text);
+    color: var(--bg3);
+    padding: 0.5rem;
+
+}
+
+#settings .modale .item{
+    padding: 0.3rem;
+    cursor: pointer;
+    min-width: 20ch;
+}
+
+#settings .modale .item:hover{
+    color: var(--text);
+    background: var(--accent);
+}
+
+.drop-zone{
+    background: var(--bg3);
+    border-radius: 5px;
+    display: flex;
+    height: 12rem;
+    padding: 1rem;
+    width: 13rem;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-around;
+    margin: auto;
+    position: relative;
+}
+
+.drop-zone .circle{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 9rem;
+    width: 9rem;
+}
+
+.drop-zone p{
+    color: var(--text2);
+    font-weight: bold;
+}
+
+.drop-zone.dragging {
+    border: 4px dashed var(--accent);
+}
+
+.preview{
+    border: 6px solid var(--text);
+    width: 100%;
+    aspect-ratio: 1;
+    box-sizing: border-box;
+    border-radius: 50%;
+    position: absolute;
+    margin: auto;
+    top: 15%;
+}
+
+.resize-box{
+    width: 100%;
+    height: fit-content;
+    background: var(--bg4);
+    border-radius: 7px;
+    overflow: hidden;
+    position: relative;
+}
+
+.resize-wrapper{
+    width: fit-content;
+    height: fit-content;
+    margin: auto;
+}
+
+.resize-box canvas{
+    max-height: 50vh;
+    max-width: 70vw;
+}
+
+.drop-zone input{
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    cursor: pointer;
+    padding: 0;
 }

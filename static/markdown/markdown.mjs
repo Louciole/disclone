@@ -22,7 +22,8 @@ export class Markdown {
         "'":"'",
         "(":"(",
         "/>":"/>",
-        "]":"]"
+        "]":"]",
+        "/":"${content}/"
     }
 
     tokenize(str) {

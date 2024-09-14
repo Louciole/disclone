@@ -371,3 +371,37 @@ function renameConv(event,id){
     xhr("/editConv?element=name&value=".concat(name,"&id=",id),onload,"POST")
 }
 window.renameConv = renameConv
+
+function dropImage(event) {
+    event.preventDefault();
+    event.currentTarget.classList.remove('dragging');
+
+    const files = event.dataTransfer.files;
+    if (files.length > 0) {
+        const file = files[0];
+        uploadResizeFile(file);
+    }
+}
+window.dropImage = dropImage
+
+function uploadResizeFile(file) {
+    openMenu("resize-image",false)
+    const reader = new FileReader();
+
+    reader.onload = function(e) {
+        const canvas = document.getElementById("imageCanvas")
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        img.onload = function() {
+            canvas.width = img.width;
+            canvas.height = img.height;
+
+            ctx.drawImage(img, 0, 0);
+
+            let imageData = ctx.getImageData(0, 0, img.width, img.height);
+
+        };
+        img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+}

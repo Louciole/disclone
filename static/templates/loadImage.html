@@ -1,0 +1,17 @@
+<section class="menu-wrapper" id="loadImage" style="display:none; z-index: 100" onclick="closeMenu()">
+  <div class="menu">
+    <div class="close" onclick="closeMenu('#loadImage')">+</div>
+    <div class="steps" id="">
+      <div class="step">
+        <h2>${_t("Sélectionner une image")}</h2>
+        <div class="drop-zone" ondragover="event.preventDefault();event.currentTarget.classList.add('dragging')" ondragleave="event.preventDefault();event.currentTarget.classList.remove('dragging')" ondrop="dropImage(event)">
+          <div class="circle blue">
+            <img src="/static/icons/material/addImage.svg"/>
+          </div>
+          <p>${_t("Uploader une image")}</p>
+          <input type="file" id="fileInput" accept="image/*" style="opacity: 0; width: 100%;height: 100%;position: absolute" />
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

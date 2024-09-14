@@ -76,12 +76,12 @@ function checkIdle(){
     }
 }
 
-function openMenu(id){
+function openMenu(id, async=true){
     const menu = document.getElementById(id)
     if (menu){
         menu.style.display = "flex"
     }else{
-        loadTemplate(id.concat(".html"), undefined, id)
+        loadTemplate(id.concat(".html"), undefined, id, async)
     }
 }
 window.openMenu = openMenu

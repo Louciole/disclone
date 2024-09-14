@@ -1,0 +1,22 @@
+<section class="menu-wrapper" id="resize-image" style="display:none; z-index: 100" onclick="closeMenu()">
+    <div class="menu">
+        <div class="close" onclick="closeMenu('#resize-image')">+</div>
+        <div class="steps" id="">
+            <div class="step">
+                <h2>${_t("Modifier l'image")}</h2>
+                <div class="resize-box">
+                    <div class="resize-wrapper">
+                        <canvas id="imageCanvas"></canvas>
+                        <div class="preview"></div>
+                    </div>
+
+                </div>
+
+                <div class="inline space-between">
+                    <div class="btn grey" onclick="closeMenu('#resize-image')">${_t("Cancel")}</div>
+                    <div class="btn blue" onclick="changeUsername()">${_t("Apply")}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

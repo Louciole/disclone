@@ -24,11 +24,16 @@
             </div>
         </div>
     </div>
+    <div class="modale" id="editPfp">
+        <div class="item" onclick="openMenu('loadImage')">${_t("Changer d'avatar")}</div>
+    </div>
     <div class="half vertical">
         <h3>${_t("APERCU")}</h3>
         <div class="user-profile">
             <div class="banner"></div>
-            <div class="profil-picture"></div>
+            <div class="profil-picture" onclick="toggleModale('editPfp',event)">
+                <div class="edit"><img src="/static/icons/material/edit.svg"/></div>
+            </div>
             <div class="profil-wrapper">
                 <div class="profil-badges">
                 </div>
