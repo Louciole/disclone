@@ -172,6 +172,10 @@ function resetSelected(id){
 }
 
 function closeMenu(cible = undefined,id='createServerSteps'){
+    if (global.state.disableClose){
+        return
+    }
+
     if(!cible){
         if(event.target !== event.currentTarget){
             return

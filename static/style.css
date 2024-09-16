@@ -2696,15 +2696,35 @@ select {
     border: 4px dashed var(--accent);
 }
 
-.preview{
+.preview::before{
+    content: "";
+    display: flex;
     border: 6px solid var(--text);
-    width: 100%;
     aspect-ratio: 1;
     box-sizing: border-box;
     border-radius: 50%;
     position: absolute;
-    margin: auto;
-    top: 15%;
+}
+
+.width .preview::before{
+    height: 100%;
+    top: 0;
+    transform: translateX(calc(50%* var(--aspect-ratio) - 50%));
+}
+
+.height .preview::before{
+    width: 100%;
+    left: 0;
+    transform: translateY(calc(50%/ var(--aspect-ratio) - 50%));
+}
+
+.preview{
+    width: var(--width);
+    height: var(--height);
+    position: absolute;
+    background: radial-gradient(closest-side circle at center, transparent 100%, #31333870 0);
+    pointer-events: none;
+    top: 0;
 }
 
 .resize-box{
@@ -2717,14 +2737,24 @@ select {
 }
 
 .resize-wrapper{
-    width: fit-content;
-    height: fit-content;
+    max-width: var(--width);
+    max-height: var(--height);
+    height: var(--height);
     margin: auto;
+    position: relative;
+    overflow: hidden;
 }
 
 .resize-box canvas{
-    max-height: 50vh;
-    max-width: 70vw;
+    max-height: calc(var(--scale, 1)* 50vh);
+    max-width: calc(var(--scale, 1)* 100%);
+    height: calc(var(--scale, 1)* var(--height, initial));
+    width: calc(var(--scale, 1)* var(--width, initial));
+    cursor: grab;
+}
+
+.resize-box canvas.dragging{
+    cursor: grabbing;
 }
 
 .drop-zone input{
@@ -2734,4 +2764,19 @@ select {
     position: absolute;
     cursor: pointer;
     padding: 0;
+}
+
+.drag-zone{
+    display: flex;
+    position: relative;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    width: 100%;
+}
+
+.menu input[type="range"]{
+    padding: 0.7rem 0;
+    cursor: pointer;
+    margin: 0 0.7rem;
 }

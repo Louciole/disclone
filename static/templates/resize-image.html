@@ -1,17 +1,24 @@
 <section class="menu-wrapper" id="resize-image" style="display:none; z-index: 100" onclick="closeMenu()">
     <div class="menu">
-        <div class="close" onclick="closeMenu('#resize-image')">+</div>
+        <div class="close" onpointerdown="closeMenu('#resize-image')">+</div>
         <div class="steps" id="">
             <div class="step">
                 <h2>${_t("Modifier l'image")}</h2>
                 <div class="resize-box">
                     <div class="resize-wrapper">
-                        <canvas id="imageCanvas"></canvas>
+                        <div class="drag-zone">
+                            <canvas id="imageCanvas" onpointerdown="startDrag(event)"></canvas>
+                        </div>
+
                         <div class="preview"></div>
                     </div>
 
                 </div>
-
+                <div class="inline">
+                    <img class="icon" src="/static/icons/material/image.svg" style="height: 1rem"/>
+                    <input type="range" min="1" max="2" step="0.05" value="1" oninput="zoom(event.currentTarget.value)"/>
+                    <img class="icon" src="/static/icons/material/image.svg" style="height: 2.2rem"/>
+                </div>
                 <div class="inline space-between">
                     <div class="btn grey" onclick="closeMenu('#resize-image')">${_t("Cancel")}</div>
                     <div class="btn blue" onclick="changeUsername()">${_t("Apply")}</div>

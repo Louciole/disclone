@@ -384,10 +384,11 @@ function dropImage(event) {
 }
 window.dropImage = dropImage
 
-let ctx;
+let image;
 let img = new Image()
 let win = {size:0,'x':0,'y':0}
 let ratio = 1
+let scale = 1;
 let pos = {'x':0,'y':0}
 let cursor = {'x':0,'y':0}
 function uploadResizeFile(file) {
@@ -396,20 +397,24 @@ function uploadResizeFile(file) {
 
     reader.onload = function(e) {
         const canvas = document.getElementById("imageCanvas")
-        ctx = canvas.getContext('2d');
+        image=canvas
+        const ctx = canvas.getContext('2d');
         img.onload = function() {
             canvas.width = img.width;
             canvas.height = img.height;
             ratio = img.width/canvas.getBoundingClientRect().width
-            canvas.parentElement.style.setProperty('--aspect-ratio',(img.width/img.height).toString())
+            const wrapper = canvas.parentElement.parentElement
+            wrapper.style.setProperty('--aspect-ratio',(img.width/img.height).toString())
+            wrapper.style.setProperty('--width',(img.width / ratio).toString()+ "px")
+            wrapper.style.setProperty('--height',(img.height / ratio).toString()+ "px")
             if(img.width >= img.height){
-                canvas.parentElement.querySelector('.preview').classList.remove("height")
-                canvas.parentElement.querySelector('.preview').classList.add("width")
+                wrapper.classList.remove("height")
+                wrapper.classList.add("width")
                 win.x = (img.width - img.height)/2
                 win.y = 0
             }else {
-                canvas.parentElement.querySelector('.preview').classList.remove("width")
-                canvas.parentElement.querySelector('.preview').classList.add("height")
+                wrapper.classList.remove("width")
+                wrapper.classList.add("height")
                 win.x = 0
                 win.y = (img.height - img.width)/2
             }
@@ -425,31 +430,37 @@ function uploadResizeFile(file) {
 window.uploadResizeImage = uploadResizeFile
 
 function startDrag(event){
+    global.state.disableClose = true
     cursor = {'x':event.clientX,'y':event.clientY}
+    image = event.currentTarget
+    image.classList.add('dragging')
     document.onmouseup = closeDragElement;
     document.onmousemove = dragImage;
+    global.temp = image
 }
 window.startDrag = startDrag
 
 function closeDragElement(event) {
     document.onmouseup = null;
     document.onmousemove = null;
+    image.classList.remove('dragging')
+    setTimeout(()=>{global.state.disableClose = false}, 50);
     //todo cancel close menu event
 }
 
 function dragImage(event){
-    const diffX = (event.clientX - cursor.x) * (1/ratio)
-    if(pos.x + diffX <= win.x){
+    const diffX = (event.clientX - cursor.x) /ratio
+    if(pos.x*scale + diffX <= (win.x*scale)){
         if(pos.x + diffX >= win.size + win.x - img.width){
             pos.x = pos.x + diffX
         }else{
             pos.x= win.size + win.x - img.width
         }
     }else{
-        pos.x=win.x
+        pos.x=win.x*scale
     }
 
-    const diffY = (event.clientY - cursor.y) * (1/ratio)
+    const diffY = (event.clientY - cursor.y)/ratio
     if(pos.y + diffY <= win.y){
         if(pos.y + diffY >= win.size + win.y - img.height){
             pos.y = pos.y + diffY
@@ -459,8 +470,34 @@ function dragImage(event){
     }else{
         pos.y=win.y
     }
-    ctx.fillStyle = "black";
-    ctx.fillRect(0, 0, img.width, img.height);
-    ctx.drawImage(img, pos.x, pos.y);
+
+    image.parentElement.style.margin = "calc("+(pos.y/ratio).toString()+"px * var(--scale,1)) 0 0 calc("+(pos.x/ratio).toString()+"px * var(--scale,1))"
+    console.log(image.parentElement.style.margin)
 }
 window.dragImage = dragImage
+
+function reduceImage(){
+    const canvas = document.getElementById("imageCanvas")
+    const ctx = canvas.getContext('2d');
+    const wrapper = canvas.parentElement.parentElement
+    const width = wrapper.getBoundingClientRect().width
+    const height = wrapper.getBoundingClientRect().height
+    const ratio = img.width/canvas.getBoundingClientRect().width
+    const x = Math.max(0, pos.x * ratio)
+    const y = Math.max(0, pos.y * ratio)
+    const size = Math.min(img.width,img.height)
+    const data = ctx.getImageData(x, y, size, size)
+    canvas.width = size
+    canvas.height = size
+    ctx.putImageData(data,0,0)
+    const dataURL = canvas.toDataURL("image/jpeg", 0.8)
+    const blob = dataURItoBlob(dataURL)
+    const file = new File([blob], "image.jpg", {type: 'image/jpeg'})
+    uploadImage(file)
+}
+
+function zoom(new_scale){
+    scale = new_scale
+    image.parentElement.style.setProperty('--scale',scale.toString())
+}
+window.zoom = zoom
