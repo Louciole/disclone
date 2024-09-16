@@ -384,24 +384,83 @@ function dropImage(event) {
 }
 window.dropImage = dropImage
 
+let ctx;
+let img = new Image()
+let win = {size:0,'x':0,'y':0}
+let ratio = 1
+let pos = {'x':0,'y':0}
+let cursor = {'x':0,'y':0}
 function uploadResizeFile(file) {
     openMenu("resize-image",false)
     const reader = new FileReader();
 
     reader.onload = function(e) {
         const canvas = document.getElementById("imageCanvas")
-        const ctx = canvas.getContext('2d');
-        const img = new Image();
+        ctx = canvas.getContext('2d');
         img.onload = function() {
             canvas.width = img.width;
             canvas.height = img.height;
+            ratio = img.width/canvas.getBoundingClientRect().width
+            canvas.parentElement.style.setProperty('--aspect-ratio',(img.width/img.height).toString())
+            if(img.width >= img.height){
+                canvas.parentElement.querySelector('.preview').classList.remove("height")
+                canvas.parentElement.querySelector('.preview').classList.add("width")
+                win.x = (img.width - img.height)/2
+                win.y = 0
+            }else {
+                canvas.parentElement.querySelector('.preview').classList.remove("width")
+                canvas.parentElement.querySelector('.preview').classList.add("height")
+                win.x = 0
+                win.y = (img.height - img.width)/2
+            }
 
             ctx.drawImage(img, 0, 0);
-
+            win.size = Math.min(img.width,img.height)
             let imageData = ctx.getImageData(0, 0, img.width, img.height);
-
         };
         img.src = event.target.result;
     };
     reader.readAsDataURL(file);
 }
+window.uploadResizeImage = uploadResizeFile
+
+function startDrag(event){
+    cursor = {'x':event.clientX,'y':event.clientY}
+    document.onmouseup = closeDragElement;
+    document.onmousemove = dragImage;
+}
+window.startDrag = startDrag
+
+function closeDragElement(event) {
+    document.onmouseup = null;
+    document.onmousemove = null;
+    //todo cancel close menu event
+}
+
+function dragImage(event){
+    const diffX = (event.clientX - cursor.x) * (1/ratio)
+    if(pos.x + diffX <= win.x){
+        if(pos.x + diffX >= win.size + win.x - img.width){
+            pos.x = pos.x + diffX
+        }else{
+            pos.x= win.size + win.x - img.width
+        }
+    }else{
+        pos.x=win.x
+    }
+
+    const diffY = (event.clientY - cursor.y) * (1/ratio)
+    if(pos.y + diffY <= win.y){
+        if(pos.y + diffY >= win.size + win.y - img.height){
+            pos.y = pos.y + diffY
+        }else{
+            pos.y= win.size + win.y - img.height
+        }
+    }else{
+        pos.y=win.y
+    }
+    ctx.fillStyle = "black";
+    ctx.fillRect(0, 0, img.width, img.height);
+    ctx.drawImage(img, pos.x, pos.y);
+}
+window.dragImage = dragImage
