@@ -30,6 +30,13 @@ create table if not exists accessServer (
 ALTER TABLE accessServer
 ADD CONSTRAINT SERVACC_SERV_CONSTRAINT FOREIGN KEY (server) REFERENCES server (id) ON UPDATE CASCADE;
 
+create table if not exists server_cat (
+    id bigserial NOT NULL PRIMARY KEY,
+    name varchar(44) NOT NULL,
+    server integer NOT NULL,
+    place float NOT NULL DEFAULT 0.1
+);
+
 create table if not exists conversationElement (
     id bigserial NOT NULL PRIMARY KEY
 );
@@ -37,6 +44,13 @@ create table if not exists conversationElement (
 create table if not exists conversation (
     name varchar(255) NOT NULL,
     private bool default true
+) inherits (conversationElement);
+
+create table if not exists textual_channel (
+    name varchar(255) NOT NULL,
+    server integer NOT NULL,
+    category integer,
+    place float NOT NULL DEFAULT 0.1
 ) inherits (conversationElement);
 
 create table if not exists accessConversation (
@@ -51,7 +65,8 @@ create table if not exists message (
     place integer NOT NULL,
     body TEXT,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    reply integer REFERENCES message(id)
+    reply integer REFERENCES message(id),
+    edited bool default false
 );
 
 create table if not exists blockship (

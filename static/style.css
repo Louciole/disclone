@@ -765,14 +765,16 @@ section{
     height: 1.8rem;
     align-items: center;
     border-radius: 5px;
+    gap: 0.4rem;
+    padding: 0 0.3rem;
 }
 
 .voc:hover, .conv:hover{
     background: var(--bg);
 }
 
-.voc .circle, .conv .circle{
-    margin-right: 0.3rem;
+.voc .icon, .conv .icon{
+    height: 1.4rem;
 }
 
 .inline-thingy :not(.title){
@@ -2779,4 +2781,27 @@ select {
     padding: 0.7rem 0;
     cursor: pointer;
     margin: 0 0.7rem;
+}
+
+#drag-wrapper {
+    height: 100svh;
+    width: 100vw;
+    top: 0;
+    right: 0;
+    position: absolute;
+    pointer-events: none;
+}
+
+.snap-zone{
+    background: var(--green);
+    position: fixed;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.snap-zone.horizontal{
+    height: 4px;
+    width: 100%;
+    border-radius: 2px;
 }

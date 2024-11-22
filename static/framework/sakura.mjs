@@ -3,10 +3,8 @@ function logout(){
     let request = new XMLHttpRequest();
     request.open('POST', url, true);
     request.onload = function() { // request successful
-        console.log("logged out",request.responseText)
-
-        if (request.responseText === "ok"){
-            window.location.href = "/auth";
+        if (request.response === 302){
+            window.location.href = request.response.headers.get('location');
         }
     };
 
@@ -110,10 +108,10 @@ function goodbye(){
         let request = new XMLHttpRequest();
         request.open('POST', url, true);
         request.onload = function() { // request successful
-            console.log("account deleted",request.responseText)
+            console.log("account deleted")
 
-            if (request.responseText === "ok"){
-                window.location.href = "/auth";
+            if (request.response === 302){
+                window.location.href = request.response.headers.get('location');
             }
         };
 

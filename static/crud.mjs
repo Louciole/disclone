@@ -29,7 +29,9 @@ function newServer(){
     let request = new XMLHttpRequest();
     request.open('POST', "createServer", true);
     request.onload = function() {
-        addServer("New Server")
+        const serv = {name:"New Server",id:JSON.parse(request.responseText)}
+        global.servers[serv.id] = serv
+        addServer(serv.name, serv.id)
     };
 
     request.onerror = function() {
@@ -43,8 +45,9 @@ window.newServer = newServer
 export function loadServers(){
     const onload = function() {
         const response = JSON.parse(this.responseText)
+        global.servers = response
         for (let i in response) {
-            addServer(response[i].name)
+            addServer(response[i].name, response[i].id)
         }
     };
     xhr("getUserServers",onload)
@@ -386,6 +389,7 @@ window.dropImage = dropImage
 
 let image;
 let img = new Image()
+let ctx
 let win = {size:0,'x':0,'y':0}
 let ratio = 1
 let scale = 1;
@@ -398,7 +402,7 @@ function uploadResizeFile(file) {
     reader.onload = function(e) {
         const canvas = document.getElementById("imageCanvas")
         image=canvas
-        const ctx = canvas.getContext('2d');
+        ctx = canvas.getContext('2d');
         img.onload = function() {
             canvas.width = img.width;
             canvas.height = img.height;
@@ -421,7 +425,6 @@ function uploadResizeFile(file) {
 
             ctx.drawImage(img, 0, 0);
             win.size = Math.min(img.width,img.height)
-            let imageData = ctx.getImageData(0, 0, img.width, img.height);
         };
         img.src = event.target.result;
     };
@@ -501,3 +504,71 @@ function zoom(new_scale){
     image.parentElement.style.setProperty('--scale',scale.toString())
 }
 window.zoom = zoom
+
+function uploadImage(){
+    const imageData = ctx.getImageData(0, 0, img.width, img.height);
+
+    const croppedImageData = ctx.getImageData(cropStartX, cropStartY, cropWidth, cropHeight);
+
+    // Resize the cropped image to fit within a circle
+    const circleRadius = Math.max(cropWidth, cropHeight) / 2;
+    const circleCenterX = cropStartX + cropWidth / 2;
+    const circleCenterY = cropStartY + cropHeight / 2;
+
+    const resizedImageData = new ImageData(circleRadius * 2, circleRadius * 2);
+    for (let x = 0; x < circleRadius * 2; x++) {
+        for (let y = 0; y < circleRadius * 2; y++) {
+            const distance = Math.sqrt((x - circleRadius) ** 2 + (y - circleRadius) ** 2);
+            if (distance <= circleRadius) {
+                const originalX = Math.round(circleCenterX + (x - circleRadius) * cropWidth / circleRadius);
+                const originalY = Math.round(circleCenterY + (y - circleRadius) * cropHeight / circleRadius);
+                resizedImageData.data[(y * circleRadius * 2 + x) * 4] = croppedImageData.data[(originalY * cropWidth + originalX) * 4];
+                resizedImageData.data[(y * circleRadius * 2 + x) * 4 + 1] = croppedImageData.data[(originalY * cropWidth + originalX) * 4 + 1];
+                resizedImageData.data[(y * circleRadius * 2 + x) * 4 + 2] = croppedImageData.data[(originalY * cropWidth + originalX) * 4 + 2];
+                resizedImageData.data[(y * circleRadius * 2 + x) * 4 + 3] = croppedImageData.data[(originalY * cropWidth + originalX) * 4 + 3];
+            }
+        }
+    }
+
+    const croppedImageURL = URL.createObjectURL(new Blob([new Uint8ClampedArray(imageData.data)], { type: 'image/png' }));
+}
+window.uploadImage = uploadImage
+
+export function loadServer(id){
+    const onload = function() { // request successful
+        console.log(this.responseText)
+        const serv = lookFor(id,global.servers)
+        serv["dirs"] = JSON.parse(this.responseText)
+        orderServDirs(serv)
+    };
+    xhr("getServContent?servID=".concat(id.toString()),onload)
+}
+
+function firstGreater(arr, target) {
+    for (let i = 0; i < arr.length; i++) {
+        if (arr[i].place >= target) {
+            return i;
+        }
+    }
+}
+
+function orderServDirs(serv){
+    serv?.dirs?.cat.sort((a, b) => a.place - b.place);
+    serv?.dirs?.channels.sort((a, b) => a.place - b.place);
+
+    for (let cat of serv.dirs.cat){
+        cat.channels = []
+    }
+
+    let ordered = Object.values(serv.dirs.cat)
+    for (let chan of serv.dirs.channels){
+        if (chan.category){
+            lookFor(chan.category,serv.dirs.cat).channels.push(chan)
+        }else{
+            //insert between categories
+            ordered.splice(firstGreater(ordered,chan.place), 0, chan);
+        }
+    }
+    console.log("ME ",ordered)
+    setElement("global.state.currentServer['displayed-dirs']", ordered)
+}

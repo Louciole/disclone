@@ -1,7 +1,7 @@
 import global from "./framework/global.mjs"
-import {loadConv} from "./crud.mjs";
+import {loadConv, loadServer, lookFor} from "./crud.mjs";
 import {setElement} from "./framework/sakura.mjs";
-import {closeFM} from "./framework/navigation.mjs";
+import {closeFM, goTo} from "./framework/navigation.mjs";
 
 let emptyStr = '' //DO NOT REMOVE
 
@@ -155,3 +155,10 @@ function changeDropdown(event) {
     dropdown.classList.remove("show");
 }
 window.changeDropdown = changeDropdown
+
+function goToServer(event,id){
+    global.state.currentServer = lookFor(id,global.servers)
+    goTo('sec-selector','serverSelector',{'category':'currentTab' ,'event': event},true,goTo('content','server-channel'))
+    loadServer(id)
+}
+window.goToServer = goToServer

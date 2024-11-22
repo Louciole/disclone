@@ -2,6 +2,7 @@ import {initNav, goTo} from "/static/framework/navigation.mjs"
 import {loadServers, loadUser, loadConvs, loadUsers, handleMessageGroup, sendTyping, lookFor} from "/static/crud.mjs"
 import global from "/static/framework/global.mjs"
 import {MDToHTML} from "/static/markdown/utils.mjs"; // DO NOT REMOVE
+import { initDrag } from "./drag.mjs";
 import emojis from "/static/emojis.mjs";
 import {addElement, pushElement, setElement} from "/static/framework/sakura.mjs";
 import {xhr} from "./framework/templating.mjs";
@@ -114,11 +115,11 @@ function getSlug(name){
     return slug
 }
 
-export function addServer(name){
+export function addServer(name,id){
     const servers = document.getElementById('servers')
     servers.insertAdjacentHTML("beforeend",`
         <div class="container">
-            <div class="item serveur" onclick="goTo('sec-selector','serverSelector',{'category':'currentTab' ,'event': event})">${getSlug(name)}</div>
+            <div class="item serveur" onclick="goToServer(event,${id})">${getSlug(name)}</div>
             <div class="indicator"></div>
             <span class="tooltip left">${name}</span>
         </div>
@@ -346,3 +347,4 @@ loadServers()
 
 // low priority
 loadEmojis()
+initDrag()

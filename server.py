@@ -20,12 +20,12 @@ class Disclone(Server):
 
     @Server.expose
     def index(self):
-        return open(PATH + "/static/home/home.html").read()
+        return self.file(PATH + "/static/home/home.html")
 
     @Server.expose
     def channels(self, uid="me"):
         self.checkJwt()
-        return open(PATH + "/static/main.html").read()
+        return self.file(PATH + "/static/main.html")
 
     def onLogin(self, uid):
         if not self.db.getSomething("disclone_account", uid):
@@ -92,6 +92,10 @@ class Disclone(Server):
         account_id = self.getUser()
         server_id = self.db.insertDict('server', {'name': "New Server", "owner": account_id}, getId=True)
         self.db.insertDict('accessserver', {'account': account_id, 'server': server_id})
+        textCatID = self.db.insertDict('server_cat', {'name': "salons textuels", 'server': server_id},getId=True)
+        self.db.insertDict('server_cat', {'name': "salons vocaux", 'server': server_id})
+        self.db.insertDict('textual_channel', {'name': "général", 'server': server_id, "category": textCatID})
+        return str(server_id)
 
     @Server.expose
     def getUserServers(self):
@@ -151,7 +155,7 @@ class Disclone(Server):
 
     @Server.expose
     def test(self):
-        return open(PATH + "/.idea/test.html").read()
+        return self.file(PATH + "/.idea/test.html")
 
     @Server.expose
     def getConvContent(self, convId):
@@ -163,7 +167,28 @@ class Disclone(Server):
             return json.dumps(content, default=str)
 
     @Server.expose
+    def getServContent(self, servID, channelID=None):
+        uid = self.getUser()
+        #TODO handle access rights
+        serv = self.db.getFilters("accessserver", ["account", "=", uid])
+        if serv:
+            content = {}
+            if not channelID:
+                content["channels"] = self.db.getAll("textual_channel", servID,"server")
+                content["cat"] = self.db.getAll("server_cat", servID,"server")
+            else:
+                content["messages"] = self.db.getFilters("message", ["place", "=", channelID, "order by timestamp"])
+            return json.dumps(content, default=str)
+
+    @Server.expose
     def getUserInfo(self):
+        uid = self.getUser()
+        user = self.db.getSomething("disclone_account", uid)
+        self.getUsersStatus([user],detailed=True)
+        return json.dumps(user, default=str)
+
+    @Server.expose
+    def uploadImage(self):
         uid = self.getUser()
         user = self.db.getSomething("disclone_account", uid)
         self.getUsersStatus([user],detailed=True)
@@ -190,6 +215,18 @@ class Disclone(Server):
             if user["account"] != uid:
                 self.sendNotification(user["account"], {"type": "message", "content": message})
         return
+
+    @Server.expose
+    def editMessage(self, message, content):
+        print("editing message", message, content)
+        uid = self.getUser()
+
+        message = self.db.getSomething("message", message)
+
+        if not message or message["sender"] != uid:
+            raise HTTPError(403, "forbidden")
+
+        self.db.edit("message", message["id"], "body", content)
 
     @Server.expose
     def registerActivity(self, SDP):
@@ -292,6 +329,20 @@ class Disclone(Server):
             self.sendStatusUpdates(uid)
         else:
             self.db.edit("disclone_account", uid, element, value)
+
+    @Server.expose
+    def editServer(self, property, id, value, field=None, action=None):
+        uid = self.getUser()
+        if field == "id":
+            raise HTTPError(403, "forbidden")
+
+        if property == "channel":
+            server = self.db.getSomething("server", id)
+            if server["owner"] == uid:
+                self.db.edit("server", id, field, value)
+                return "ok"
+            else:
+                return "forbidden"
 
     def sendStatusUpdates(self, uid):
         query = "select active_client.id, userid, server, idle from active_client,subscription where (subscription.account = %s and active_client.id = subscription.client) OR (active_client.id = %s);"

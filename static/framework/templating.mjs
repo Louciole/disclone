@@ -47,6 +47,9 @@ function fillWith(template, list){
             const element = list[elementId]
             content += eval('`' + request.responseText + '`')
         }
+    }else if (!list){
+        console.warn("fillWith called with undefined list")
+        return content
     }else{
         for (let element of list){
             content += eval('`' + request.responseText + '`')

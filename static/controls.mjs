@@ -29,6 +29,11 @@ function reply(msg_id){
 }
 window.reply = reply
 
+function editMsg(msg_id){
+    console.log("editing",msg_id)
+}
+window.editMsg = editMsg
+
 function cancelReply(){
     global.convs[global.state.activeConv].reply = null
     document.getElementById("replyBox").style.display = "none"
