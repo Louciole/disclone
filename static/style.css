@@ -2,6 +2,7 @@ html{
     --bg: #313338;
     --accent: #5865F2;
     --accent2: #4752C4;
+    --accent3: #7880bc;
     --bg2: #2a2d30;
     --bg3: #23272A;
     --bg4: #1E1F22;
@@ -2804,4 +2805,111 @@ select {
     height: 4px;
     width: 100%;
     border-radius: 2px;
+}
+
+#upload-wrapper{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    width: 100vw;
+    position: absolute;
+    background: rgb(10 10 10 / 73%);
+    z-index: 99;
+    opacity: 0;
+    right: 0;
+    top: 0;
+    pointer-events: none;
+}
+
+
+.dragging #upload-wrapper{
+    opacity: 1;
+    pointer-events: all;
+}
+
+#upload-wrapper>div{
+    background: var(--accent2);
+    border-radius: 0.6rem;
+    padding: 0.7rem;
+    width: fit-content;
+    max-width: 300px;
+    height: 11vw;
+}
+
+#upload-wrapper>div>div{
+    border: dashed 2px var(--accent3);
+    border-radius: 0.3rem;
+    width: 100%;
+    height: 100%;
+    padding: 1rem;
+    box-sizing: border-box;
+    display: flex;
+    color: var(--text);
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.neutral{
+    height: 100%;
+    width: 100%;
+    display: inherit;
+    flex-direction: inherit;
+    flex: inherit;
+    align-items: inherit;
+}
+
+#upload-wrapper > *{
+    pointer-events: none;
+}
+
+#imageBox{
+    background: var(--text3);
+    border-bottom: 1px solid var(--text2bis);
+    display: none;
+    padding: 1rem;
+    height: 11rem;
+}
+
+#imageBox canvas{
+    background: var(--bg);
+    height: 100%;
+    border-radius: 0.3rem;
+    padding: 0.3rem;
+    box-sizing: border-box;
+}
+
+#imageBox > div{
+    display: flex;
+    height: 100%;
+}
+
+.imageMenu{
+    padding: 0.05rem;
+    position: relative;
+    transform: translate(-50%, -0.3rem);
+    display: flex;
+    background: var(--bg2);
+    height: fit-content;
+    border-radius: 0.2rem;
+    overflow: hidden;
+}
+
+.imageMenu .icon-wrapper{
+    padding: 0.3rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+}
+
+.imageMenu .icon-wrapper:hover{
+    background: var(--text3);
+}
+
+.imageMenu .icon{
+    height: 1.2rem;
+    filter: invert(36%) sepia(68%) saturate(3862%) hue-rotate(336deg) brightness(95%) contrast(96%);
 }

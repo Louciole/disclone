@@ -387,6 +387,18 @@ function dropImage(event) {
 }
 window.dropImage = dropImage
 
+function dropImageMessage(event) {
+    event.preventDefault()
+    document.querySelector('.dragging').classList.remove('dragging')
+
+    const files = event.dataTransfer.files;
+    if (files.length > 0) {
+        const file = files[0]
+        displayMessageImage(file)
+    }
+}
+window.dropImageMessage = dropImageMessage
+
 let image;
 let img = new Image()
 let ctx
@@ -431,6 +443,37 @@ function uploadResizeFile(file) {
     reader.readAsDataURL(file);
 }
 window.uploadResizeImage = uploadResizeFile
+
+function displayMessageImage(file){
+    const reader = new FileReader();
+    const canvas = document.getElementsByClassName("imageCanvas")[0]
+    const box = document.getElementById("imageBox")
+    box.style.display = "block"
+    image = canvas
+    ctx = canvas.getContext('2d');
+    reader.onload = function(e) {
+        global.state.currentMessageImages = [reader.result]
+        img.onload = function() {
+            const size = Math.max(img.width,img.height)
+            canvas.width = size;
+            canvas.height = size;
+            const x = (size - img.width)/2
+            const y = (size - img.height)/2
+            console.log(size,img.width,img.height,"pos",x,y,size-x,size - y)
+            ctx.drawImage(img, x, y, img.width, img.height);
+        }
+        img.src = event.target.result;
+    }
+    reader.readAsDataURL(file);
+}
+
+function removeImageMessage(event){
+    const box = document.getElementById("imageBox")
+    box.style.display = "none"
+    // event.currentTarget.querySelector(".imageCanvas")[0].
+    global.state.currentMessageImages = []
+}
+window.removeImageMessage = removeImageMessage
 
 function startDrag(event){
     global.state.disableClose = true

@@ -1,13 +1,18 @@
 let templates = {}
 
-export function xhr(endpoint,effect,method="GET", async=true){
+export function xhr(endpoint,effect,method="GET", async=true, body=undefined){
     let xhr= new XMLHttpRequest();
     xhr.open(method, endpoint, async);
     xhr.onload=effect
     xhr.onerror = function() {
         console.log("request failed")
     };
-    xhr.send();
+    if (body) {
+        xhr.setRequestHeader("Content-Type", "application/json");
+        xhr.send(JSON.stringify(body));
+    }else{
+        xhr.send();
+    }
     return xhr
 }
 

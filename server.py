@@ -1,4 +1,5 @@
 import urllib.parse
+from unicodedata import category
 
 from sakura import Server, HTTPError
 import json
@@ -198,8 +199,10 @@ class Disclone(Server):
         self.sendStatusUpdates(uid)
 
     @Server.expose
-    def sendMessage(self, conv, content, reply=False):
-        print("sending message", conv, content)
+    def sendMessage(self, conv, content, reply=False, images = []):
+        print("sending message", conv, content , len(images))
+        for image in images:
+            self.saveFile(image)
         uid = self.getUser()
         conv = json.loads(conv)
         if not conv.get("id"):

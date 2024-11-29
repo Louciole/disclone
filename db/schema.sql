@@ -66,7 +66,8 @@ create table if not exists message (
     body TEXT,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     reply integer REFERENCES message(id),
-    edited bool default false
+    edited bool default false,
+    attachments json
 );
 
 create table if not exists blockship (

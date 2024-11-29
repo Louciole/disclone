@@ -188,11 +188,11 @@ function sendMessage(event){
         const onload = () => {
         }
 
-        if (event.currentTarget.value.trim() !== '' ){
-            xhr("sendMessage?conv=".concat(encodeURI(JSON.stringify({'id':global.state.activeConv})), "&content=", encodeURIComponent(event.currentTarget.value),"&reply=",global.convs[global.state.activeConv].reply), onload())
+        if (event.currentTarget.value.trim() !== '' || global.state?.currentMessageImages?.length>0){
+            xhr("sendMessage?conv=".concat(encodeURI(JSON.stringify({'id':global.state.activeConv})), "&content=", encodeURIComponent(event.currentTarget.value),"&reply=",global.convs[global.state.activeConv].reply), onload(),"POST",true,{"images":global.state.currentMessageImages})
             const currentDate = new Date();
             const timestamp = currentDate.getTime();
-            const message = {"id":global.convs[global.state.activeConv].messages.length, "sender": global.user.id,"place":global.state.activeConv, "body": event.currentTarget.value, "timestamp":timestamp, "reply":global.convs[global.state.activeConv].reply}
+            const message = {"id":global.convs[global.state.activeConv].messages.length, "sender": global.user.id,"place":global.state.activeConv, "body": event.currentTarget.value, "timestamp":timestamp, "reply":global.convs[global.state.activeConv].reply, "images":global.state.currentMessageImages}
             handleMessageGroup(message)
             pushElement('global.convs['.concat(global.state.activeConv,'].messages'), message)
             event.currentTarget.value = ''
