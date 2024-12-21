@@ -28,6 +28,7 @@ h2{
     text-align: center;
     font-weight: 900;
     line-height: 3.7rem;
+    z-index: 1;
 }
 
 p{
@@ -112,7 +113,7 @@ a:link {
 
 .bg{
     height: 172vh;
-    position: absolute;
+    position: fixed;
     right: 0;
     transform: translate(8%, 3svh) rotate(322deg);
     pointer-events: none;
@@ -129,9 +130,50 @@ h3{
     margin: 1.5rem 0;
 }
 
-@media (max-aspect-ratio:11/9) {
+@media (max-aspect-ratio:12/9) {
     .side-text{
         visibility: hidden;
 
+    }
+}
+
+@media (orientation:portrait) {
+    h2{
+        font-size: 1.7rem;
+        line-height: 2rem;
+        width: 90%;
+    }
+
+    .img {
+        height: auto;
+        width: 80vw;
+        border-radius: 0.5rem;
+        padding: 0.5rem;
+        transform: none;
+    }
+
+    .img img {
+        width: 100%;
+        border-radius: 0.5rem;
+    }
+
+    footer p{
+        display: none;
+    }
+
+    footer{
+        height: 6svh;
+        position: fixed;
+        bottom: 0;
+        width: 100%;
+        font-size: 0.9rem;
+        background: #6370855e;
+        backdrop-filter: blur(2px);
+        filter: drop-shadow(-3px 3px 8px #00000063);
+    }
+
+    #pres{
+        height: 62svh;
+        padding: 13svh 0 0 0;
     }
 }
