@@ -16,6 +16,6 @@ test:
   script:
     - echo 'Running tests...'
     - python -m pip install -r requirements.txt
-    - python -m ./tests/run.py
+    - python tests/run.py
   only:
     - maine
