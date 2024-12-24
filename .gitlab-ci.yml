@@ -1,7 +1,7 @@
-image: alpine:latest
 
 pages:
   stage: deploy
+  image: alpine:latest
   script:
     - echo 'Nothing to do...'
   artifacts:
@@ -12,6 +12,7 @@ pages:
 
 test:
   stage: test
+  image: python:3.9-slim-buster
   script:
     - echo 'Running tests...'
     - python -m pip install -r requirements.txt
