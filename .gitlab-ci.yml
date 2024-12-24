@@ -9,3 +9,12 @@ pages:
     - public
   only:
     - front-archive
+
+test:
+  stage: test
+  script:
+    - echo 'Running tests...'
+    - python -m pip install -r requirements.txt
+    - python -m ./tests/run.py
+  only:
+    - maine
