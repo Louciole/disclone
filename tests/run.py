@@ -67,5 +67,11 @@ if __name__ == "__main__":
             counter += count[0]
             total += count[1]
 
-    color = Fore.GREEN if counter == total else Fore.RED
+    if counter == total:
+        color = Fore.GREEN
+        exCode = 0
+    else:
+        color = Fore.RED
+        exCode = 1
     print(color + f"{counter}/{total} tests passed")
+    exit(exCode)
