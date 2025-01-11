@@ -185,19 +185,22 @@ window.getRelevantUser = getRelevantUser
 
 function sendMessage(event){
     if (event.key === "Enter" && !event.shiftKey){
-        const onload = () => {
-        }
+        const target = event.currentTarget
 
-        if (event.currentTarget.value.trim() !== '' || global.state?.currentMessageImages?.length>0){
-            xhr("sendMessage?conv=".concat(encodeURI(JSON.stringify({'id':global.state.activeConv})), "&content=", encodeURIComponent(event.currentTarget.value),"&reply=",global.convs[global.state.activeConv].reply), onload(),"POST",true,{"images":global.state.currentMessageImages})
+        const onload = function(){
+            const attachments = this.responseText
             const currentDate = new Date();
             const timestamp = currentDate.getTime();
-            const message = {"id":global.convs[global.state.activeConv].messages.length, "sender": global.user.id,"place":global.state.activeConv, "body": event.currentTarget.value, "timestamp":timestamp, "reply":global.convs[global.state.activeConv].reply, "images":global.state.currentMessageImages}
+            const message = {"id":global.convs[global.state.activeConv].messages.length, "sender": global.user.id,"place":global.state.activeConv, "body": target.value, "timestamp":timestamp, "reply":global.convs[global.state.activeConv].reply, "attachments":attachments}
             handleMessageGroup(message)
             pushElement('global.convs['.concat(global.state.activeConv,'].messages'), message)
-            event.currentTarget.value = ''
+            target.value = ''
             resizeHeight(event)
             cancelReply()
+        }
+
+        if (target.value.trim() !== '' || global.state?.currentMessageImages?.length>0){
+            xhr("sendMessage?conv=".concat(encodeURI(JSON.stringify({'id':global.state.activeConv})), "&content=", encodeURIComponent(target.value),"&reply=",global.convs[global.state.activeConv].reply), onload,"POST",true,{"attachments":global.state.currentMessageImages})
         }
         event.preventDefault()
     }else{

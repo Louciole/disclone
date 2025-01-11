@@ -1,11 +1,11 @@
 echo --------------------------INSTALLING PYTHON DEPENDENCIES------------------------
-sudo apt install postgresql postgresql-contrib -y
-sudo apt install build-essential -y
+sudo apt install -y postgresql postgresql-contrib
+sudo apt install -y build-essential
 sudo add-apt-repository ppa:deadsnakes/ppa
 sudo apt install python3.11
-sudo apt install python3.11-dev -y
-sudo apt install libpq-dev -y
-sudo apt install python3.11-venv -y
+sudo apt install -y python3.11-dev
+sudo apt install -y libpq-dev
+sudo apt install -y python3.11-venv
 python3.11 -m venv ./venv/
 source venv/bin/activate
 #installing psycopg here to get the C implem in place of th pure python one

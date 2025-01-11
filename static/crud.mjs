@@ -85,6 +85,7 @@ export function loadConv(key){
 
     const request = xhr("getConvContent?convId="+JSON.stringify(key), onload, "GET",false)
     const elements = JSON.parse(request.responseText)
+    elements.attachments = elements.attachments ? JSON.parse(elements.attachments) : []
     for(let element in elements){
         global.convs[key][element] = elements[element]
     }
@@ -206,6 +207,8 @@ function newMessageGroup(conv, message){
 }
 
 export function handleMessageGroup(message){
+    console.log("handleMessageGroup",message)
+    message.attachments = message.attachments ? JSON.parse(message.attachments) : []
     if (global.convs[message.place].messages.length !== 0){
         // si ça fait moins de 3 minutes de différence, que c'est la même personne que la date n'a pas changée ET que le message n'est pas une réponse
         if(message.sender === global.convs[message.place].messages[global.convs[message.place].messages.length-1].sender && (new Date(message.timestamp)-new Date(global.convs[message.place].messages[global.convs[message.place].messages.length-1].timestamp))/60000<3 && getTimeStr(message.timestamp, { locale: "fr-FR",hour: undefined, minute: undefined}) === getTimeStr(global.convs[message.place].messages[global.convs[message.place].messages.length-1].timestamp, { locale: "fr-FR",hour: undefined, minute: undefined}) && !message.reply){

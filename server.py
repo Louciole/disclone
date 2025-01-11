@@ -199,25 +199,27 @@ class Disclone(Server):
         self.sendStatusUpdates(uid)
 
     @Server.expose
-    def sendMessage(self, conv, content, reply=False, images = []):
-        print("sending message", conv, content , len(images))
-        for image in images:
-            self.saveFile(image)
+    def sendMessage(self, conv, content, reply=False, attachments = []):
         uid = self.getUser()
+        print("sending message", conv, content , len(attachments))
+
+        attachmentList = []
+        for attachment in attachments:
+            attachmentList.append(self.saveFile(attachment))
         conv = json.loads(conv)
         if not conv.get("id"):
             conv["id"] = self.newConv("Noname", [uid, conv["dest"]])
 
+        message = {"sender": uid, "place": conv["id"], "body": content, "attachments": json.dumps(attachmentList)}
         if reply and reply!="undefined" and reply!="null" :
-            message = {"sender": uid, "place": conv["id"], "body": content, "reply": reply}
-        else:
-            message = {"sender": uid, "place": conv["id"], "body": content}
+            message["reply"] = reply
+
         self.db.insertDict("message", message)
         members = self.db.getAll("accessconversation", conv["id"], "conversation")
         for user in members:
             if user["account"] != uid:
                 self.sendNotification(user["account"], {"type": "message", "content": message})
-        return
+        return json.dumps(attachmentList)
 
     @Server.expose
     def editMessage(self, message, content):

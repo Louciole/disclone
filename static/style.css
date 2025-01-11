@@ -2913,3 +2913,15 @@ select {
     height: 1.2rem;
     filter: invert(36%) sepia(68%) saturate(3862%) hue-rotate(336deg) brightness(95%) contrast(96%);
 }
+
+.imageMessage:has(img){
+    overflow: hidden;
+    height: 33svh;
+    display: flex;
+    margin: 0.3rem 0;
+}
+
+.imageMessage img{
+    height: 100%;
+    border-radius: 1rem;
+}
