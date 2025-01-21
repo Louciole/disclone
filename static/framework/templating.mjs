@@ -8,6 +8,7 @@ export function xhr(endpoint,effect,method="GET", async=true, body=undefined){
         console.log("request failed")
     };
     if (body) {
+        debugger
         xhr.setRequestHeader("Content-Type", "application/json");
         xhr.send(JSON.stringify(body));
     }else{
@@ -81,7 +82,10 @@ function Subscribe(element, content, className=undefined, params=undefined){
     if (params?.target === "class"){
         domElement.dataset.target = params.target
         domElement.className = domElement.className + " " + content()
-    }else{
+    }else if(params?.target === "style"){
+        domElement.dataset.target = params.target
+        domElement.style = content()
+    } else{
         domElement.innerHTML = content()
     }
 

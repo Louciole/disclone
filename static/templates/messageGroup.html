@@ -3,8 +3,7 @@ ${getSeparator(element)}
   <div class="first-message-wrapper">
     ${getAnswerBlock(element)}
     <div class="first-message">
-      <div class="pfp red">
-      </div>
+      ${Subscribe('global.users['+element.messages[0].sender+'].pfp',()=>{return 'background-image:url(/static/attachments/'+global.users[element.messages[0].sender]?.pfp+');'},"pfp red",{"target":"style"})}
       <div class="message-block">
         <div class="sender">
           ${Subscribe("global.users["+element.messages[0].sender.toString()+"].display", () => {return(global.users[element.messages[0].sender].display)},"h3")}

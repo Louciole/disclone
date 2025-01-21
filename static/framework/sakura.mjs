@@ -32,6 +32,13 @@ function updateElement(selector,value=undefined){
             }else{
                 sub.className = sub.dataset.defaultClass.concat(' ',content())
             }
+        }else if(sub.dataset.target === "style"){
+            const content = eval(sub.dataset.content)
+            if(sub.dataset.element){
+                sub.style = content(eval(sub.dataset.element))
+            }else{
+                sub.style = content()
+            }
         }else{
 
             const content = eval(sub.dataset.content)

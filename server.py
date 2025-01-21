@@ -201,7 +201,6 @@ class Disclone(Server):
     @Server.expose
     def sendMessage(self, conv, content, reply=False, attachments = []):
         uid = self.getUser()
-        print("sending message", conv, content , len(attachments))
 
         attachmentList = []
         for attachment in attachments:
@@ -332,6 +331,9 @@ class Disclone(Server):
             else:
                 self.db.edit("status", uid, "expiration", None)
             self.sendStatusUpdates(uid)
+        elif element == "pfp":
+            print("COUCOU", uid, element, value)
+            self.db.edit("disclone_account", uid, element, self.saveFile(value))
         else:
             self.db.edit("disclone_account", uid, element, value)
 

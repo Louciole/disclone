@@ -5,4 +5,4 @@ def run():
     return resList
 
 def dummy():
-    return ("dummy 2",False)
+    return ("dummy 2",True)

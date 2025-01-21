@@ -465,6 +465,7 @@ function displayMessageImage(file){
             console.log(size,img.width,img.height,"pos",x,y,size-x,size - y)
             ctx.drawImage(img, x, y, img.width, img.height);
         }
+        debugger
         img.src = event.target.result;
     }
     reader.readAsDataURL(file);
@@ -498,87 +499,83 @@ function closeDragElement(event) {
 }
 
 function dragImage(event){
-    const diffX = (event.clientX - cursor.x) /ratio
-    if(pos.x*scale + diffX <= (win.x*scale)){
-        if(pos.x + diffX >= win.size + win.x - img.width){
-            pos.x = pos.x + diffX
-        }else{
-            pos.x= win.size + win.x - img.width
-        }
-    }else{
-        pos.x=win.x*scale
-    }
+    const canvas = document.getElementById("imageCanvas")
+    ratio = img.width/canvas.getBoundingClientRect().width
 
-    const diffY = (event.clientY - cursor.y)/ratio
-    if(pos.y + diffY <= win.y){
-        if(pos.y + diffY >= win.size + win.y - img.height){
-            pos.y = pos.y + diffY
-        }else{
-            pos.y= win.size + win.y - img.height
-        }
-    }else{
-        pos.y=win.y
-    }
+    const diffX = (event.clientX - cursor.x)/(30*scale)
+    const diffY = (event.clientY - cursor.y)/(30*scale)
 
-    image.parentElement.style.margin = "calc("+(pos.y/ratio).toString()+"px * var(--scale,1)) 0 0 calc("+(pos.x/ratio).toString()+"px * var(--scale,1))"
-    console.log(image.parentElement.style.margin)
+    const borderX = (img.width/ratio - (win.size/(scale*ratio)))/2
+    const borderY = (img.height/ratio - (win.size/(scale*ratio)))/2
+
+    pos.x = Math.max(-borderX,Math.min(pos.x+diffX,borderX))
+    pos.y = Math.max(-borderY,Math.min(pos.y+diffY,borderY))
+
+    image.parentElement.style.margin = `${pos.y}px 0 0 ${pos.x}px`
+    console.log(image.parentElement.style.margin,win,scale,ratio)
 }
 window.dragImage = dragImage
 
-function reduceImage(){
-    const canvas = document.getElementById("imageCanvas")
-    const ctx = canvas.getContext('2d');
-    const wrapper = canvas.parentElement.parentElement
-    const width = wrapper.getBoundingClientRect().width
-    const height = wrapper.getBoundingClientRect().height
-    const ratio = img.width/canvas.getBoundingClientRect().width
-    const x = Math.max(0, pos.x * ratio)
-    const y = Math.max(0, pos.y * ratio)
-    const size = Math.min(img.width,img.height)
-    const data = ctx.getImageData(x, y, size, size)
-    canvas.width = size
-    canvas.height = size
-    ctx.putImageData(data,0,0)
-    const dataURL = canvas.toDataURL("image/jpeg", 0.8)
-    const blob = dataURItoBlob(dataURL)
-    const file = new File([blob], "image.jpg", {type: 'image/jpeg'})
-    uploadImage(file)
-}
 
 function zoom(new_scale){
     scale = new_scale
+    const canvas = document.getElementById("imageCanvas")
+    ratio = img.width/canvas.getBoundingClientRect().width
     image.parentElement.style.setProperty('--scale',scale.toString())
 }
 window.zoom = zoom
 
-function uploadImage(){
-    const imageData = ctx.getImageData(0, 0, img.width, img.height);
+function uploadProfileImage(field="pfp"){
 
-    const croppedImageData = ctx.getImageData(cropStartX, cropStartY, cropWidth, cropHeight);
-
-    // Resize the cropped image to fit within a circle
-    const circleRadius = Math.max(cropWidth, cropHeight) / 2;
-    const circleCenterX = cropStartX + cropWidth / 2;
-    const circleCenterY = cropStartY + cropHeight / 2;
-
-    const resizedImageData = new ImageData(circleRadius * 2, circleRadius * 2);
-    for (let x = 0; x < circleRadius * 2; x++) {
-        for (let y = 0; y < circleRadius * 2; y++) {
-            const distance = Math.sqrt((x - circleRadius) ** 2 + (y - circleRadius) ** 2);
-            if (distance <= circleRadius) {
-                const originalX = Math.round(circleCenterX + (x - circleRadius) * cropWidth / circleRadius);
-                const originalY = Math.round(circleCenterY + (y - circleRadius) * cropHeight / circleRadius);
-                resizedImageData.data[(y * circleRadius * 2 + x) * 4] = croppedImageData.data[(originalY * cropWidth + originalX) * 4];
-                resizedImageData.data[(y * circleRadius * 2 + x) * 4 + 1] = croppedImageData.data[(originalY * cropWidth + originalX) * 4 + 1];
-                resizedImageData.data[(y * circleRadius * 2 + x) * 4 + 2] = croppedImageData.data[(originalY * cropWidth + originalX) * 4 + 2];
-                resizedImageData.data[(y * circleRadius * 2 + x) * 4 + 3] = croppedImageData.data[(originalY * cropWidth + originalX) * 4 + 3];
-            }
-        }
+    let cropStartX
+    let cropStartY
+    if (img.width > img.height){
+        cropStartX = img.width - img.height - (pos.x*2*ratio)
+        cropStartY = pos.y*2*ratio
+    }else if(img.width < img.height){
+        cropStartX = pos.x*2*ratio
+        cropStartY = Math.min(0,img.height - img.width - (pos.y*2*ratio))
+    }else{
+        cropStartX = pos.x*2*ratio/scale
+        cropStartY = pos.y*2*ratio/scale
     }
+    console.log("cropping",cropStartX,cropStartY,win.size/scale,pos)
+    const imageData = ctx.getImageData(cropStartX, cropStartY, win.size/scale, win.size/scale)
 
-    const croppedImageURL = URL.createObjectURL(new Blob([new Uint8ClampedArray(imageData.data)], { type: 'image/png' }));
+    const onImgLoaded = function(result) {
+        const onload = function () {
+            console.log(this.responseText)
+        }
+        console.log(result, {"value":result})
+
+        xhr("change?element=".concat(field), onload,"POST",true,{"value":result})
+    }
+    imageDataToB64(imageData,onImgLoaded)
 }
-window.uploadImage = uploadImage
+window.uploadProfileImage = uploadProfileImage
+
+function imageDataToB64(imageData, onloaded) {
+    const w = imageData.width
+    const h = imageData.height
+    const canvas = document.createElement("canvas")
+    canvas.width = w
+    canvas.height = h
+    const ctx = canvas.getContext("2d")
+    ctx.putImageData(imageData, 0, 0)
+
+    canvas.toBlob(function (blob){
+        const reader = new FileReader()
+        reader.onload = function(){
+            onloaded(event.target.result)
+        }
+        reader.onerror = () => {
+            console.log("error")
+        }
+        // debugger
+        reader.readAsDataURL(blob)
+    }, "image/jpeg", 0.5)
+}
+
 
 export function loadServer(id){
     const onload = function() { // request successful

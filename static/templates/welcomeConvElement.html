@@ -1,6 +1,5 @@
 <div id="welcome-message">
-    <div class="big pfp red">
-    </div>
+    ${Subscribe('global.users['+notMe(global.convs[global.state.activeConv].members)+'].pfp',()=>{return 'background-image:url(/static/attachments/'+global.users[notMe(global.convs[global.state.activeConv].members)]?.pfp+');'},"big pfp red",{"target":"style"})}
     <h1>${global.users[notMe(global.convs[global.state.activeConv].members)].display}</h1>
     <h2>${global.users[notMe(global.convs[global.state.activeConv].members)].username}</h2>
     <p>${_t("Ceci est le début de l'historique de tes messages privés avec ")}<b>${getConvName(global.convs[global.state.activeConv])}</b></p>

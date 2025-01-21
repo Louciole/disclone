@@ -1,5 +1,5 @@
 <div id="conv${element.id}" class="item" onclick="${'goToConv('+element.id+')'}">
-    <div class="pfp red">
+    <div class="global-user-pfp pfp red" data-target="style" data-content="()=>{return 'background-image:url(/static/attachments/'+global.users[notMe(element.members,true)]?.pfp+');'}" style="background-image:url(/static/attachments/${global.users[notMe(element.members,true)]?.pfp}">
 
         <div class="activity-wrapper">
             ${element.private ? Subscribe("global.users["+notMe(element.members,true)+"].status.icon",(new_element = element)=>{return(global.users[notMe(new_element.members)].status.icon)},"activity",{"target":"class","element":"global.convs["+element.id+"]"}): ""}

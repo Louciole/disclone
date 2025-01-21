@@ -564,6 +564,7 @@ section{
     border-radius: 50%;
     display: flex;
     flex-direction: column-reverse;
+    background-size: contain;
     align-items: flex-end;
 }
 
@@ -844,6 +845,7 @@ section{
     position: absolute;
     transform: translate(15px, -50%);
     border: 6px solid var(--bg3);
+    background-size: cover;
 }
 
 .profil-badges {
@@ -1566,6 +1568,7 @@ section{
     position: absolute;
     transform: translate(15px, +50%);
     border: 6px solid var(--bg4);
+    background-size: contain;
     overflow: hidden;
 }
 
@@ -2633,6 +2636,7 @@ select {
 
 #settings .profil-picture .edit{
     opacity: 0;
+    position: absolute;
     transition: opacity 200ms;
     display: flex;
     width: 100%;
@@ -2924,4 +2928,18 @@ select {
 .imageMessage img{
     height: 100%;
     border-radius: 1rem;
+}
+
+img[alt]{
+    font-size: 0;
+}
+
+img[src="/static/attachments/null"]{
+    display: none;
+}
+
+.pfp img{
+    height: 100%;
+    width: 100%;
+
 }

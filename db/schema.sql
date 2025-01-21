@@ -5,7 +5,8 @@ create table disclone_account(
     inscription TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     pronouns varchar(24),
     description varchar(250),
-    faction integer
+    faction integer,
+    pfp text
 );
 
 create table status(

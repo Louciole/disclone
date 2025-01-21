@@ -1,7 +1,7 @@
 <h1>${_t("Mon Compte")}</h1>
 <div class="user-profile">
     <div class="banner"></div>
-    <div class="profil-picture"></div>
+    ${Subscribe('global.user.pfp',()=>{return 'background-image:url(/static/attachments/'+global.user?.pfp+');'},"profil-picture",{"target":"style"})}
     <div class="profil-wrapper">
         <div class="profil-badges">
             <div class="name">${Subscribe('global.user.display',()=>{return(global.user.display)})}</div>
