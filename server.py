@@ -1,10 +1,13 @@
 import urllib.parse
 from unicodedata import category
 
-from sakura import Server, HTTPError
+from sakura import Server, HTTPError, HTTPRedirect
 import json
 import re
 import signal
+import string
+import random
+import datetime
 
 # websockets imports
 import asyncio
@@ -13,6 +16,7 @@ import threading
 
 from os.path import abspath, dirname
 
+B62 = string.digits + string.ascii_letters
 PATH = dirname(abspath(__file__))
 
 
@@ -27,6 +31,20 @@ class Disclone(Server):
     def channels(self, uid="me"):
         self.checkJwt()
         return self.file(PATH + "/static/main.html")
+
+    @Server.expose
+    def default(self, target, **kwargs):
+        target = target.strip('/')
+        print("default received", target)
+        res = self.db.getSomething("invitation",target,"link")
+        print("invitation ?", res)
+        if res and res != []:
+            if res["expiration"] < datetime.datetime.now():
+                return self.file(PATH + "/static/expired_invitation.html")
+            else:
+                return self.file(PATH + "/static/invitation.html")
+        else:
+            raise HTTPError(self.response,404,"Not Found")
 
     def onLogin(self, uid):
         if not self.db.getSomething("disclone_account", uid):
@@ -350,6 +368,35 @@ class Disclone(Server):
                 return "ok"
             else:
                 return "forbidden"
+
+    @Server.expose
+    def createInvitation(self, server, pref=None):
+        uid = self.getUser()
+        res = self.db.getFilters("accessserver", ["account", "=", uid, "and", "server", "=", server])
+        if not res or res == []:
+            return HTTPError(403, "forbidden")
+
+        res = self.db.getSomething("invitation", server, "server")
+        if res and res != []:
+            return res["link"]
+
+        if not pref:
+            id = ''.join(random.sample(B62, 8))
+
+            while 1:
+                if self.db.getSomething("invitation",id,"link"):
+                    id = ''.join(random.sample(B62, 8))
+                else:
+                    self.db.insertDict("invitation",{"link": id,"server":server,"expiration":datetime.datetime.now() + datetime.timedelta(days=7)})
+                    return id
+        else:
+            id=pref
+            while 1:
+                if self.db.getSomething("invitation",id,"link"):
+                    id = pref + ''.join(random.sample(B62, 3))
+                else :
+                    self.db.insertDict("invitation",{"link": id,"server":server,"expiration":datetime.datetime.now() + datetime.timedelta(days=7)})
+                    return id
 
     def sendStatusUpdates(self, uid):
         query = "select active_client.id, userid, server, idle from active_client,subscription where (subscription.account = %s and active_client.id = subscription.client) OR (active_client.id = %s);"

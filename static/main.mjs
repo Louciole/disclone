@@ -12,6 +12,8 @@ window.global = global
 global.state.dom = document.querySelector("body")
 global.state.currentTab = document.getElementById("logo")
 const notifElt = document.getElementById("notif")
+const { hostname, port } = window.location;
+global.state.location = { host:hostname, port:port, short:port ? hostname + ":" + port : hostname }
 
 window.addEventListener('unload', () => {
     if (global.state?.socket.readyState !== WebSocket.CLOSED) {

@@ -6,7 +6,7 @@
     ${Subscribe("global.state.currentServer['displayed-dirs']",() => fillWith('server-category',global.state.currentServer["displayed-dirs"] ? global.state.currentServer["displayed-dirs"] : []))}
 </div>
 <div id="server-settings" class="flying-menu">
-    <div class="item blue"><p>${_t("Inviter des gens")}</p><img class="light-blue icon" src="/static/icons/material/groupadd.svg"></div>
+    <div class="item blue" onclick="createInvitation()"><p>${_t("Inviter des gens")}</p><img class="light-blue icon" src="/static/icons/material/groupadd.svg"></div>
     <hr>
     <div class="cat">
         <div class="item"><p>${_t("Paramètres du serveur")}</p><img class="icon" src="/static/icons/material/settings.svg"></div>

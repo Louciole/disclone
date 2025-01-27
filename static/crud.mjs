@@ -615,3 +615,12 @@ function orderServDirs(serv){
     console.log("ME ",ordered)
     setElement("global.state.currentServer['displayed-dirs']", ordered)
 }
+
+function createInvitation(){
+    xhr("createInvitation?server="+global.state.currentServer.id,function(){
+        global.state.currentInvitationId = this.responseText
+        openMenu('server-invitation')
+    })
+
+}
+window.createInvitation = createInvitation

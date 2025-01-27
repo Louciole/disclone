@@ -383,6 +383,7 @@ section{
     font-size: 0.85rem;
     padding: 0.4rem;
     height: 1.1rem;
+    color: var(--text2);
 }
 
 .title input{
@@ -1856,6 +1857,7 @@ input[type="text"]{
 
 .menu-wrapper{
     position: absolute;
+    right: 0;
     width: 100vw;
     height: 100svh;
     justify-content: center;

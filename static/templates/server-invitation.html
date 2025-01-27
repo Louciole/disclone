@@ -1,0 +1,15 @@
+<section class="menu-wrapper" id="server-invitation" style="display:none" onclick="closeMenu()">
+    <div class="menu">
+        <div class="close" onclick="closeMenu('#server-invitation')">+</div>
+        <div class="steps" id="createServerSteps">
+            <div class="step">
+                <p>${_t("ENVOYER UN LIEN D'INVITATION A UN AMI")}</p>
+                <div>
+                    <input type="text" value="https://${global.state.location.short + '/' + global.state.currentInvitationId}" readonly>
+                    <button onclick="copyToClipboard(this)">${_t("Copier")}</button>
+                </div>
+                <p class="small">${_t("Ton lien d'invitation expire dans 7 jours.")}</p>
+            </div>
+        </div>
+    </div>
+</section>

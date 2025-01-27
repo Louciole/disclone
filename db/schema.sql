@@ -97,3 +97,11 @@ create table if not exists subscription (
     account INTEGER NOT NULL,
     PRIMARY KEY (client, account)
 );
+
+create table if not exists invitation (
+    id bigserial NOT NULL PRIMARY KEY,
+    server integer not null,
+    link varchar(8) NOT NULL,
+    expiration TIMESTAMP
+);
+

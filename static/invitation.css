@@ -1,0 +1,93 @@
+html{
+    --bg: #313338;
+    --accent-light: #818aef;
+    --accent: #5865F2;
+    --accent2: #4752C4;
+    --accent3: #7880bc;
+    --bg2: #2a2d30;
+    --bg3: #23272A;
+    --bg4: #1E1F22;
+    --bg5: #101112;
+    --text: #F2F3F5;
+    --text2: #a8a8a8;
+    --text2bis: #4c4f57;
+    --text3: #3b3d44;
+    --green: #27a94b;
+    --red: #ED4245;
+    --orange: #FF9A00;
+
+    --sb-size: 9px;
+}
+
+@font-face {
+    font-family: "Open Sans";
+    src: url("fonts/OpenSans-VariableFont_wdth,wght.ttf");
+    font-weight: 125 950;
+    font-stretch: 75% 125%;
+    font-style: normal;
+}
+
+a{
+    text-decoration: none;
+    width: 100%;
+}
+a:visited{
+    text-decoration: none;
+}
+
+body{
+    display: flex;
+    position: fixed;
+    width: 100vw;
+    height: 100svh;
+    margin: 0;
+    font-family: 'Open Sans', sans-serif;
+    overflow: hidden;
+    background: var(--bg4);
+    align-items: center;
+    justify-content: center;
+}
+
+.window{
+    width: fit-content;
+    display: flex;
+    height: fit-content;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--text);
+    background: var(--bg);
+    box-sizing: border-box;
+    border-radius: 6px;
+    max-width: 50%;
+    padding: 2rem;
+}
+
+h2{
+    font-size: 2rem;
+    margin: 0;
+}
+
+p{
+    color:var(--text2);
+}
+
+.btn{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    background: var(--accent);
+    color: var(--text);
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    margin-top: 1rem;
+    box-sizing: border-box;
+    width: 100%;
+}
+
+.btn:hover{
+    background: var(--accent2);
+}
