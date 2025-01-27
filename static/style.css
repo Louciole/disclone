@@ -1,11 +1,13 @@
 html{
     --bg: #313338;
+    --accent-light: #818aef;
     --accent: #5865F2;
     --accent2: #4752C4;
     --accent3: #7880bc;
     --bg2: #2a2d30;
     --bg3: #23272A;
     --bg4: #1E1F22;
+    --bg5: #101112;
     --text: #F2F3F5;
     --text2: #a8a8a8;
     --text2bis: #4c4f57;
@@ -2941,5 +2943,70 @@ img[src="/static/attachments/null"]{
 .pfp img{
     height: 100%;
     width: 100%;
+}
 
+#server-settings {
+    background: var(--bg5);
+    top: 3.5rem;
+    border-radius: 6px;
+    padding: 0.6rem;
+    width: 220px;
+    color: var(--text2);
+    font-size: 0.85rem;
+    font-weight: 500;
+    box-sizing: border-box;
+}
+
+#server-settings hr{
+    border-color: var(--bg3);
+    width: calc(100% - 1rem);
+}
+
+#server-settings hr {
+    background: var(--bg3);
+    border: none;
+    height: 1px;
+}
+
+#server-settings .item {
+    height: 0.9rem;
+    border-radius: 3px;
+    transition: background 50ms;
+}
+
+#server-settings .item.red:hover {
+    background: var(--red) !important;
+    color: var(--text) !important;
+}
+
+
+#server-settings .item:hover {
+    background: var(--accent) !important;
+    color: var(--text) !important;
+}
+
+#server-settings .icon {
+    height: 1.3rem;
+}
+
+#server-settings .blue {
+    color: var(--accent-light);
+    background: inherit;
+}
+
+#server-settings .red {
+    color: var(--red);
+    background: inherit;
+}
+
+.icon.red{
+    filter: invert(33%) sepia(94%) saturate(1937%) hue-rotate(336deg) brightness(95%) contrast(94%);
+    background: none !important;
+}
+.icon.light-blue{
+    filter: invert(49%) sepia(94%) saturate(748%) hue-rotate(207deg) brightness(98%) contrast(90%);
+}
+
+.item:hover .icon.red, .item:hover .icon.light-blue{
+    filter: invert(98%) sepia(29%) saturate(3975%) hue-rotate(178deg) brightness(119%) contrast(90%);
 }

@@ -1,7 +1,18 @@
-<div id="server-infos">
+<div id="server-infos" onclick="toggleFM('server-settings')">
     <h1>${global.state.currentServer?.name}</h1><div class="icon">></div>
 </div>
 <div id="drag-wrapper"></div>
 <div class="scrollable" id="server-selector" ondrop="dropSnippet(event)" ondragover="allowSnippetDrop(event)">
     ${Subscribe("global.state.currentServer['displayed-dirs']",() => fillWith('server-category',global.state.currentServer["displayed-dirs"] ? global.state.currentServer["displayed-dirs"] : []))}
+</div>
+<div id="server-settings" class="flying-menu">
+    <div class="item blue"><p>${_t("Inviter des gens")}</p><img class="light-blue icon" src="/static/icons/material/groupadd.svg"></div>
+    <hr>
+    <div class="cat">
+        <div class="item"><p>${_t("Paramètres du serveur")}</p><img class="icon" src="/static/icons/material/settings.svg"></div>
+        <div class="item"><p>${_t("Créer un salon")}</p><img class="icon" src="/static/icons/material/add.svg"></div>
+        <div class="item"><p>${_t("Créer une catégorie")}</p><img class="icon" src="/static/icons/material/add.svg"></div>
+    </div>
+    <hr>
+    <div class="item red"><p>${_t("Quitter le serveur")}</p><img class="red icon" src="/static/icons/material/trash.svg"></div>
 </div>
