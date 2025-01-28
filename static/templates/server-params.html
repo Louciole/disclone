@@ -1,0 +1,30 @@
+<section id="server-params" style="display:none">
+  <div id="settings-list-params" class="scrollable settings-list">
+    <section id="">
+      <h3>${"SERVER NAME"}</h3>
+      <div class="item selected" onclick="goTo('setting-content', 'account-settings',{'category':'currentSettingTab' ,'event': event})">${_t("Vue d'ensemble")}</div>
+      <div class="item" id="profil-settings" onclick="goTo( 'setting-content', 'profile-settings',{'category':'currentSettingTab' ,'event': event})">${_t("Rôles")}</div>
+      <div class="item">${_t("Émojis")}</div>
+      <div class="item">${_t("Lien d'invitation personalisé")}</div>
+      <hr>
+      <h3>${_t("MODÉRATION")}</h3>
+      <div class="item">${_t("Configuration de Sécurité")}</div>
+      <div class="item">${_t("AutoMod")}</div>
+      <div class="item">${_t("Bannissements")}</div>
+      <hr>
+      <h3>${_t("GESTION DES UTILISATEURS")}</h3>
+      <div class="item">${_t("Membres")}</div>
+      <div class="item">${_t("Invitations")}</div>
+      <hr>
+      <div class="item">${_t("Supprimer le serveur")}
+        <div class="grey circle"></div>
+      </div>
+    </section>
+  </div>
+  <div id="setting-panel" class="scrollable">
+      <div id="setting-server-content" class="setting-content">
+        ${getTemplate('server-main-settings')}
+      </div>
+      <div class="close" onclick="closeMenu('#server-params')">+</div>
+  </div>
+</section>

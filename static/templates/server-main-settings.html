@@ -1,0 +1,16 @@
+<h1>${_t("Vue d'ensemble du serveur")}</h1>
+<div class="inline">
+    <div class="circle red big">
+    </div>
+    <div class="server-name">
+        <h2>${_t("NOM DU SERVEUR")}</h2>
+        <input type="text" placeholder="${_t('nom du serveur')}" value="${'SERVER NAME'}">
+    </div>
+</div>
+<hr>
+
+<div class="save-settings" style="display: none">
+    <p>${_t("Attention, il reste des modifications non enregistrées !")}</p>
+    <div class="underlhover" onclick="reset()">${_t("Réinitialiser")}</div>
+    <div class="btn green" onclick="Save()">${_t("Enregistrer les modifications")}</div>
+</div>

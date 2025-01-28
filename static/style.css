@@ -1433,7 +1433,7 @@ section{
     color: var(--text);
 }
 
-#settings{
+#settings, #server-params{
     position: absolute;
     width: 100vw;
     height: 100svh;
@@ -1444,7 +1444,7 @@ section{
     z-index: 100;
 }
 
-#settings-list {
+.settings-list {
     background: var(--bg3);
     display: flex;
     flex-direction: column;
@@ -1454,11 +1454,11 @@ section{
     padding-top: 3rem;
 }
 
-#settings-list section{
+.settings-list section{
     width: 15rem;
 }
 
-#settings-list .item{
+.settings-list .item{
     padding: 0.4rem 0.6rem;
     display: flex;
     font-size: 1rem;
@@ -1469,21 +1469,21 @@ section{
     border-radius: 4px;
 }
 
-#settings-list .item:hover{
+.settings-list .item:hover{
     background: var(--bg);
 }
 
-#settings-list .selected {
+.settings-list .selected {
     color: var(--text);
     background: var(--text2bis);
 }
 
-#settings .scrollable{
+#settings .scrollable, #server-params .scrollable{
     height: 100svh;
     max-height: 100svh;
 }
 
-#settings .close{
+#settings .close, #server-params .close{
     border: 3px solid;
     margin: 3rem;
     font-size: 1.6rem;
@@ -1501,17 +1501,17 @@ section{
     align-items: center;
 }
 
-#settings .close:hover{
+#settings .close:hover, #server-params .close:hover{
     color: var(--text);
 }
 
-#settings h3{
+#settings h3, #server-params h3{
     font-size: 0.7rem;
     margin: 0.1rem 1.2rem;
     padding: 0 0.6rem;
 }
 
-#settings .misc{
+#settings .misc, #server-params .misc{
     padding: 0.1rem 0.6rem;
     display: flex;
     font-size: 0.8rem;
@@ -1526,14 +1526,14 @@ section{
     flex-direction: row;
 }
 
-#settings-list hr {
+.settings-list hr {
     margin: 0.5rem 1.8rem;
     border: none;
     border-bottom: 1px solid;
     border-color: var(--text2bis);
 }
 
-#setting-content {
+.setting-content {
     min-width: 25rem;
     width: 45vw;
     padding-top: 3rem;
@@ -1543,7 +1543,7 @@ section{
     font-size: 0.8rem;
 }
 
-#settings h1{
+#settings h1, #server-params h1{
     margin: 0;
     font-size: 1.2rem;
     color: var(--text);
@@ -1582,12 +1582,12 @@ section{
     padding-bottom: 1rem;
 }
 
-#settings .btn {
+#settings .btn, #server-params .btn{
     width: fit-content;
     padding: 0.4rem 1rem;
 }
 
-#settings .btn:hover{
+#settings .btn:hover, #server-params .btn:hover{
     transition: opacity 100ms;
     opacity: 0.8;
 }
@@ -2096,14 +2096,14 @@ img.icon{
     border-bottom: 1px solid var(--text3);
 }
 
-#setting-content .chat-input{
+.setting-content .chat-input{
     width: calc(100% - 1rem);
     background: var(--bg4);
     margin-top: 1rem;
 }
 
 @media screen  and (max-aspect-ratio: 10/9){
-    #setting-content {
+    .setting-content {
         width: 54vw;
         margin-left: 2rem;
     }
