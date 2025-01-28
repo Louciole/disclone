@@ -30,14 +30,12 @@ class Disclone(Server):
     @Server.expose
     def channels(self, uid="me"):
         self.checkJwt()
-        return self.file(PATH + "/static/main.html")
+        return (self.file(PATH + "/static/main.html"))
 
     @Server.expose
     def default(self, target, **kwargs):
         target = target.strip('/')
-        print("default received", target)
         res = self.db.getSomething("invitation",target,"link")
-        print("invitation ?", res)
         if res and res != []:
             if res["expiration"] < datetime.datetime.now():
                 return self.file(PATH + "/static/expired_invitation.html")
@@ -139,7 +137,7 @@ class Disclone(Server):
                     self.sendNotification(user["account"], {"type": "edit_conv", "item":element,"id":id ,"content": value})
 
                 return "ok"
-        raise HTTPError(403, "forbidden")
+        raise HTTPError(self.response, 403, "forbidden")
 
     @Server.expose
     def getUserConvs(self):
@@ -165,7 +163,7 @@ class Disclone(Server):
         uid = self.getUser()
         client_infos = self.db.getSomething("active_client",client)
         if not client_infos or client_infos.get("userid") != uid:
-            raise HTTPError(403, "forbidden")
+            raise HTTPError(self.response,403, "forbidden")
 
         if cat=="user":
             users = self.db.getFilters("disclone_account", ["id", "in", json.loads(items)])
@@ -246,7 +244,7 @@ class Disclone(Server):
         message = self.db.getSomething("message", message)
 
         if not message or message["sender"] != uid:
-            raise HTTPError(403, "forbidden")
+            raise HTTPError(self.response, 403, "forbidden")
 
         self.db.edit("message", message["id"], "body", content)
 
@@ -324,7 +322,7 @@ class Disclone(Server):
             friendship = self.db.getSomething("boatakopin",arg)
             if friendship and friendship["accepted"] and (friendship["kopinprincipal"] == uid or friendship["kopinsecondaire"] == uid):
                 self.db.deleteSomething("boatakopin", arg)
-            raise HTTPError(403, "forbidden")
+            raise HTTPError(self.response, 403, "forbidden")
 
     @Server.expose
     def change(self, element, value):
@@ -359,7 +357,7 @@ class Disclone(Server):
     def editServer(self, property, id, value, field=None, action=None):
         uid = self.getUser()
         if field == "id":
-            raise HTTPError(403, "forbidden")
+            raise HTTPError(self.response, 403, "forbidden")
 
         if property == "channel":
             server = self.db.getSomething("server", id)
@@ -367,14 +365,23 @@ class Disclone(Server):
                 self.db.edit("server", id, field, value)
                 return "ok"
             else:
-                return "forbidden"
+                return ("forbidden")
+
+    @Server.expose
+    def serverDisplay(self, invite):
+        server = self.db.getSomething("invitation", invite, "link")
+        if server:
+            details = self.db.getSomething("server", server["server"])
+            return details["name"]
+        else:
+            raise HTTPError(self.response, 404, "Not Found")
 
     @Server.expose
     def createInvitation(self, server, pref=None):
         uid = self.getUser()
         res = self.db.getFilters("accessserver", ["account", "=", uid, "and", "server", "=", server])
         if not res or res == []:
-            return HTTPError(403, "forbidden")
+            return HTTPError(self.response, 403, "forbidden")
 
         res = self.db.getSomething("invitation", server, "server")
         if res and res != []:
@@ -397,6 +404,19 @@ class Disclone(Server):
                 else :
                     self.db.insertDict("invitation",{"link": id,"server":server,"expiration":datetime.datetime.now() + datetime.timedelta(days=7)})
                     return id
+
+    @Server.expose
+    def join(self, source):
+        uid = self.getUser()
+        res = self.db.getSomething("invitation", source, "link")
+        if res and res != []:
+            if res["expiration"] < datetime.datetime.now():
+                raise HTTPError(self.response, 403, "forbidden")
+            if self.db.getFilters("accessserver", ["account", "=", uid, "and", "server", "=", res["server"]]):
+                raise HTTPError(self.response, 403, "you're already in this server")
+            self.db.insertDict("accessserver", {"account": uid, "server": res["server"]})
+            raise HTTPRedirect(self.response, "/channels")
+        raise HTTPError(self.response, 404, "Not Found")
 
     def sendStatusUpdates(self, uid):
         query = "select active_client.id, userid, server, idle from active_client,subscription where (subscription.account = %s and active_client.id = subscription.client) OR (active_client.id = %s);"

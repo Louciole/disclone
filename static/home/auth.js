@@ -7,15 +7,26 @@ function loginSubmit(event) {
         const parrain = urlParams.get('parrain')
         url+="?parrain="+parrain
     }
+
     const errorBox = document.querySelector("#messageframe");
     let request = new XMLHttpRequest();
     request.open('POST', url, true);
     request.onload = function() { // request successful
         console.log(request.responseText)
         if (request.responseText === "ok"){
-            window.location.href = "/channels";
+            if (urlParams.has('ref')){
+                const ref = urlParams.get('ref')
+                window.location.href = "/" + ref;
+            }else{
+                window.location.href = "/channels";
+            }
         }else if(request.responseText === "verif"){
-            window.location.href = "/verif";
+            if (urlParams.has('ref')){
+                const ref = urlParams.get('ref')
+                window.location.href = "/verif?ref="+ref
+            }else{
+                window.location.href = "/verif";
+            }
         }else{
             errorBox.innerHTML=request.responseText
         }
@@ -32,12 +43,19 @@ function loginSubmit(event) {
 function signupSubmit(event){
     const url = "/signup";
     const errorBox = document.querySelector("#messageframe");
+    const queryString = window.location.search;
+    const urlParams = new URLSearchParams(queryString);
 
     let request = new XMLHttpRequest();
     request.open('POST', url, true);
     request.onload = function() { // request successful
         if (request.responseText === "ok"){
-            window.location.href = "/channels";
+            if (urlParams.has('ref')){
+                const ref = urlParams.get('ref')
+                window.location.href = "/" + ref;
+            }else{
+                window.location.href = "/channels";
+            }
         }else{
             errorBox.innerHTML=request.responseText
         }

@@ -1,5 +1,8 @@
 <div class="window">
-    <h2>${_t("Invitation valide")}</h2>
-    <p>${_t("Cette invitation est peut-être expirée, ou tu n'as peut-être pas la permission de rejoindre.")}</p>
-    <a href="/channels"><div class="btn">${_t("Retourner au chaud")}</div></a>
+    <h3>${_t("Tu as été invité.e à rejoindre")}</h3>
+    <div class="inline">
+        <div class="circle"></div>
+        <h2>${global.state.serverName}</h2>
+    </div>
+    ${global.state.jwt ? `<a href="/join?source=${global.state.link}"><div class="btn">${_t("Rejoindre")}</div></a>` : `<a href="/auth?ref=${global.state.link}"><div class="btn">${_t("Se connecter ou S'inscrire")}</div></a>`}
 </div>
