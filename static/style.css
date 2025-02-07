@@ -1126,11 +1126,11 @@ section{
 }
 
 .message .content a, .mdBlock a{
-    color:#4f9eea;;
+    color:#4f9eea;
 }
 
 .message .content a:visited, .mdBlock a:visited{
-    color:#4f9eea;;
+    color:#4f9eea;
 }
 
 .separator{
@@ -3011,4 +3011,32 @@ img[src="/static/attachments/null"]{
 
 .item:hover .icon.red, .item:hover .icon.light-blue{
     filter: invert(98%) sepia(29%) saturate(3975%) hue-rotate(178deg) brightness(119%) contrast(90%);
+}
+
+.message textarea{
+    width: 100%;
+    background: var(--text3);
+    border: none;
+    border-radius: 3px;
+    color: var(--text);
+    height: calc(100% - 2rem);
+    max-height: 50svh;
+    font-size: 0.95rem;
+    padding: 0.3rem;
+    font-family: 'Open Sans', 'Noto Emoji', sans-serif;
+    box-sizing: border-box;
+    line-height: 1.3rem;
+    resize: none;
+    margin: 0.1rem 0;
+}
+
+.edit .helper {
+    font-size: 0.8rem;
+    display: flex;
+    white-space: break-spaces;
+}
+
+.helper .action {
+    color: #4f9eea;
+    cursor: pointer;
 }

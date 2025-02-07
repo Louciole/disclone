@@ -247,6 +247,8 @@ class Disclone(Server):
             raise HTTPError(self.response, 403, "forbidden")
 
         self.db.edit("message", message["id"], "body", content)
+        self.db.edit("message", message["id"], "edited", True)
+        #TODO send edition notification
 
     @Server.expose
     def registerActivity(self, SDP):
