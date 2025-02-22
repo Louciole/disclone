@@ -465,7 +465,6 @@ function displayMessageImage(file){
             console.log(size,img.width,img.height,"pos",x,y,size-x,size - y)
             ctx.drawImage(img, x, y, img.width, img.height);
         }
-        debugger
         img.src = event.target.result;
     }
     reader.readAsDataURL(file);
@@ -621,6 +620,5 @@ function createInvitation(){
         global.state.currentInvitationId = this.responseText
         openMenu('server-invitation')
     })
-
 }
 window.createInvitation = createInvitation

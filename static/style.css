@@ -1746,7 +1746,7 @@ input[type="text"]{
     border: none;
 }
 
-#setting-content input{
+.setting-content input{
     background: var(--bg4);
     border: none;
     color: var(--text);
@@ -3039,4 +3039,9 @@ img[src="/static/attachments/null"]{
 .helper .action {
     color: #4f9eea;
     cursor: pointer;
+}
+
+p.edited {
+    font-size: 0.7rem;
+    color: var(--text2);
 }

@@ -248,7 +248,13 @@ class Disclone(Server):
 
         self.db.edit("message", message["id"], "body", content)
         self.db.edit("message", message["id"], "edited", True)
-        #TODO send edition notification
+
+
+        members = self.db.getAll("accessconversation", message["place"], "conversation")
+
+        for member in members:
+            if member["account"] != uid:
+                self.sendNotification(member,{"type":"message_edited", "content":{"id":message,"content":content}})
 
     @Server.expose
     def registerActivity(self, SDP):

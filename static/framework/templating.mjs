@@ -8,7 +8,6 @@ export function xhr(endpoint,effect,method="GET", async=true, body=undefined){
         console.log("request failed")
     };
     if (body) {
-        debugger
         xhr.setRequestHeader("Content-Type", "application/json");
         xhr.send(JSON.stringify(body));
     }else{
