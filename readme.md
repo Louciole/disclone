@@ -39,3 +39,11 @@ If you plan to commit something don't forget to IGNORE the *.ini file
 run
 
 	git update-index --assume-unchanged server.ini
+
+## 🧶 Troubleshooting
+
+if postgres does not accept password authentication, you can change the `pg_hba.conf` file
+
+`sudo nano /etc/postgresql/16/main/pg_hba.conf`
+
+replace peer by ident
