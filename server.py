@@ -22,6 +22,7 @@ PATH = dirname(abspath(__file__))
 
 class Disclone(Server):
     features = {"websockets": True, "errors": {404: "/static/404.html"}}
+    clients = []
 
     @Server.expose
     def index(self):
@@ -69,6 +70,15 @@ class Disclone(Server):
     # --------------------------------WEBSOCKETS--------------------------------
 
     async def handle_message(self, websocket):
+        self.clients.append(websocket)
+
+        # Attribue le rôle d'offreur au premier client
+        if len(self.clients) == 1:
+            await websocket.send(json.dumps({ "type": "role", "role": "offerer" }))
+        else:
+            await websocket.send(json.dumps({ "type": "role", "role": "answerer" }))
+
+
         async for message in websocket:
             data = json.loads(message)
             print("WS message received :",message)
@@ -100,6 +110,15 @@ class Disclone(Server):
                         client = self.db.getSomething("active_client", data["clientID"])
                         await self.sendStatusUpdatesAsync(client["userid"])
                 case _:
+
+
+                    try:
+                        async for message in websocket:
+                            for client in self.clients:
+                                if client != websocket and client.open:
+                                    await client.send(message)
+                    finally:
+                        self.clients.remove(websocket)
                     print("unknown message received", message)
 
     # -----------------------------------API-------------------------------------
