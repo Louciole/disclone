@@ -72,13 +72,6 @@ class Disclone(Server):
     async def handle_message(self, websocket):
         self.clients.append(websocket)
 
-        # Attribue le rôle d'offreur au premier client
-        if len(self.clients) == 1:
-            await websocket.send(json.dumps({ "type": "role", "role": "offerer" }))
-        else:
-            await websocket.send(json.dumps({ "type": "role", "role": "answerer" }))
-
-
         async for message in websocket:
             data = json.loads(message)
             print("WS message received :",message)
@@ -109,16 +102,11 @@ class Disclone(Server):
                         self.db.edit("active_client", data["clientID"], "idle", data["idle"])
                         client = self.db.getSomething("active_client", data["clientID"])
                         await self.sendStatusUpdatesAsync(client["userid"])
+                case "callIce" | "callAnswer" | "callOffer" | "callHangup":
+                    for client in self.clients:
+                        if client != websocket:
+                            await client.send(message)
                 case _:
-
-
-                    try:
-                        async for message in websocket:
-                            for client in self.clients:
-                                if client != websocket and client.open:
-                                    await client.send(message)
-                    finally:
-                        self.clients.remove(websocket)
                     print("unknown message received", message)
 
     # -----------------------------------API-------------------------------------
