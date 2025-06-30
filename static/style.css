@@ -772,10 +772,16 @@ section{
     border-radius: 5px;
     gap: 0.4rem;
     padding: 0 0.3rem;
+    cursor: pointer;
 }
 
 .voc:hover, .conv:hover{
-    background: var(--bg);
+    background: var(--bg2);
+}
+
+.conv.selected{
+    background: var(--text3);
+    color: var(--text);
 }
 
 .voc .icon, .conv .icon{
@@ -1273,6 +1279,7 @@ section{
     color: var(--text);
     font-size: 2rem;
     margin: 0.6rem 0;
+    display: flex;
 }
 
 #welcome-message h2{
@@ -1433,7 +1440,7 @@ section{
     color: var(--text);
 }
 
-#settings, #server-params{
+.settings-menu{
     position: absolute;
     width: 100vw;
     height: 100svh;
@@ -1478,12 +1485,12 @@ section{
     background: var(--text2bis);
 }
 
-#settings .scrollable, #server-params .scrollable{
+.settings-menu .scrollable{
     height: 100svh;
     max-height: 100svh;
 }
 
-#settings .close, #server-params .close{
+.settings-menu .close{
     border: 3px solid;
     margin: 3rem;
     font-size: 1.6rem;
@@ -1501,17 +1508,17 @@ section{
     align-items: center;
 }
 
-#settings .close:hover, #server-params .close:hover{
+.settings-menu .close:hover{
     color: var(--text);
 }
 
-#settings h3, #server-params h3{
+.settings-menu h3{
     font-size: 0.7rem;
     margin: 0.1rem 1.2rem;
     padding: 0 0.6rem;
 }
 
-#settings .misc, #server-params .misc{
+.settings-menu .misc{
     padding: 0.1rem 0.6rem;
     display: flex;
     font-size: 0.8rem;
@@ -1543,7 +1550,7 @@ section{
     font-size: 0.8rem;
 }
 
-#settings h1, #server-params h1{
+.settings-menu h1{
     margin: 0;
     font-size: 1.2rem;
     color: var(--text);
@@ -1582,12 +1589,12 @@ section{
     padding-bottom: 1rem;
 }
 
-#settings .btn, #server-params .btn{
+.settings-menu .btn{
     width: fit-content;
     padding: 0.4rem 1rem;
 }
 
-#settings .btn:hover, #server-params .btn:hover{
+.settings-menu .btn:hover{
     transition: opacity 100ms;
     opacity: 0.8;
 }
@@ -3044,4 +3051,25 @@ img[src="/static/attachments/null"]{
 p.edited {
     font-size: 0.7rem;
     color: var(--text2);
+}
+
+#member-list-wrapper {
+    height: 100%;
+    width: fit-content;
+    background: var(--bg2);
+}
+
+#member-list{
+    height: 100%;
+    min-width: 15ch;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1rem;
+    gap: 0.8rem;
+}
+
+#member-list > .inline{
+    height: 2rem;
 }

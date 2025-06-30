@@ -57,7 +57,9 @@ export function loadConvs(){
     const onload = function() {
         const keys = JSON.parse(this.responseText)
         for(let key of keys){
-            addElement("global.convs", key)
+            global.privateConvs[key.id] = key // HACK
+            global.convs[key.id] = global.privateConvs[key.id]
+            addElement("global.privateConvs", key);
         }
     };
     xhr("getUserConvs",onload)
@@ -86,6 +88,37 @@ export function loadConv(key){
     const request = xhr("getConvContent?convId="+JSON.stringify(key), onload, "GET",false)
     const elements = JSON.parse(request.responseText)
     elements.attachments = elements.attachments ? JSON.parse(elements.attachments) : []
+    for(let element in elements){
+        global.convs[key][element] = elements[element]
+    }
+
+    let lastSender = undefined
+    let lastTimestamp = undefined
+    global.convs[key].messageGroups = []
+
+    for(let message of global.convs[key].messages){
+        message.body = message.body.replace(/</g, "&lt;")
+
+        // si ça fait moins de 3 minutes de différence, que c'est la même personne et que la date n'a pas changée et que le message n'est pas une réponse
+        if(message.sender === lastSender && (new Date(message.timestamp)-new Date(lastTimestamp))/60000<3 && getTimeStr(message.timestamp, { locale: "fr-FR",hour: undefined, minute: undefined}) === getTimeStr(lastTimestamp, { locale: "fr-FR",hour: undefined, minute: undefined}) && !message.reply){
+            global.convs[key].messageGroups[global.convs[key].messageGroups.length-1].messages.push(message)
+        }else{
+            lastSender = message.sender
+            newMessageGroup(key, message)
+        }
+        lastTimestamp = message.timestamp
+    }
+}
+
+export function loadChan(key){
+    const onload = function() {
+    };
+
+    const request = xhr("getChanContent?convId="+JSON.stringify(key), onload, "GET",false)
+    const elements = JSON.parse(request.responseText)
+    elements.attachments = elements.attachments ? JSON.parse(elements.attachments) : []
+
+    global.convs[key] = {}
     for(let element in elements){
         global.convs[key][element] = elements[element]
     }
@@ -579,11 +612,14 @@ function imageDataToB64(imageData, onloaded) {
 export function loadServer(id){
     const onload = function() { // request successful
         console.log(this.responseText)
+        const resp = JSON.parse(this.responseText)
         const serv = lookFor(id,global.servers)
-        serv["dirs"] = JSON.parse(this.responseText)
+        serv["dirs"] = {"channels" : resp.channels, "cat" : resp.cat}
+        serv["members"] = resp.members
+        loadUsers(resp.members)
         orderServDirs(serv)
     };
-    xhr("getServContent?servID=".concat(id.toString()),onload)
+    xhr("getServContent?servID=".concat(id.toString()),onload,"GET",false)
 }
 
 function firstGreater(arr, target) {
@@ -622,3 +658,8 @@ function createInvitation(){
     })
 }
 window.createInvitation = createInvitation
+
+function createChan(){
+    xhr("editServer?id="+global.state.currentServer.id+"&property=channel&action=create",undefined)
+}
+window.createChan = createChan

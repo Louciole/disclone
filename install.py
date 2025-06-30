@@ -78,7 +78,10 @@ class Installer:
             self.editFile("misc/nginx_local", {"[PATH]": PATH, "[SERV-PORT]": self.config.get("server", "PORT")})
             self.ex("sudo cp ./misc/nginx_local_filled /etc/nginx/sites-available/" + self.name)
         else:
-            self.editFile("misc/nginx_prod", {"[PATH]": PATH, "[SERV-PORT]": self.config.get("server", "PORT"), "[WS-PORT]": self.config.get("NOTIFICATION", "PORT")})
+            try:
+                self.editFile("misc/nginx_prod", {"[PATH]": PATH, "[SERV-PORT]": self.config.get("server", "PORT"), "[WS-PORT]": self.config.get("NOTIFICATION", "PORT")})
+            except Exception:
+                self.editFile("misc/nginx_prod", {"[PATH]": PATH, "[SERV-PORT]": self.config.get("server", "PORT")})
             self.ex("sudo cp ./misc/nginx_prod_filled /etc/nginx/sites-available/" + self.name)
 
         if not link:

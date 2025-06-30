@@ -4,7 +4,7 @@
     </div>
     <div class="server-name">
         <h2>${_t("NOM DU SERVEUR")}</h2>
-        <input type="text" placeholder="${_t('nom du serveur')}" value="${'SERVER NAME'}">
+        <input id="name-input" type="text" placeholder="${_t('nom du serveur')}" value="${global.state.currentServer.name}" oninput="updatePreview(event, 'global.state.currentServer.name')">
     </div>
 </div>
 <hr>
@@ -12,5 +12,5 @@
 <div class="save-settings" style="display: none">
     <p>${_t("Attention, il reste des modifications non enregistrées !")}</p>
     <div class="underlhover" onclick="reset()">${_t("Réinitialiser")}</div>
-    <div class="btn green" onclick="Save()">${_t("Enregistrer les modifications")}</div>
+    <div class="btn green" onclick="Save('editServer')">${_t("Enregistrer les modifications")}</div>
 </div>

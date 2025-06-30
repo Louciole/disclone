@@ -86,6 +86,21 @@ function openMenu(id, async=true){
 }
 window.openMenu = openMenu
 
+function toggleMenu(id, async=true,target=undefined){
+    const menu = document.getElementById(id)
+    if (menu){
+        if (menu.style.display === "flex"){
+            menu.style.display = "none"
+            return
+        }
+
+        menu.style.display = "flex"
+    }else{
+        loadTemplate(id.concat(".html"), target, id, async)
+    }
+}
+window.toggleMenu = toggleMenu
+
 export function goTo(id, target, selected=undefined, async=true, postInsert=undefined){
     if (postInsert){
         loadTemplate(target.concat(".html"), id, undefined, false)
@@ -149,6 +164,10 @@ function toggleModale(id, event){
         FM.style.top = event.clientY.toString().concat("px")
         FM.style.left = event.clientX.toString().concat("px")
         global.state.activeFM = FM
+        if (event.type === "contextmenu"){
+            event.preventDefault()
+            global.state.activeFM.classList.add("visible")
+        }
     }
 }
 window.toggleModale = toggleModale

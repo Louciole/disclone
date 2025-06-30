@@ -8,6 +8,8 @@ let global = {
     },
     "convs":{
     },
+    "privateConvs":{
+    },
     "i18n":{
     },
     "settings":{

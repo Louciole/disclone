@@ -203,6 +203,20 @@ class Disclone(Server):
             return json.dumps(content, default=str)
 
     @Server.expose
+    def getChanContent(self, convId):
+        uid = self.getUser()
+        chan = self.db.getSomething("textual_channel", convId)
+        if not chan:
+            raise HTTPError(self.response, 404, "Not Found")
+
+        conv = self.db.getFilters("accessserver", ["server", "=", chan["server"], "and", "account", "=", uid])
+        # TODO handle access rights
+        if conv:
+            content = {"name": chan["name"], "id": convId}
+            content["messages"] = self.db.getFilters("message", ["place", "=", convId, "order by timestamp"])
+            return json.dumps(content, default=str)
+
+    @Server.expose
     def getServContent(self, servID, channelID=None):
         uid = self.getUser()
         #TODO handle access rights
@@ -212,6 +226,9 @@ class Disclone(Server):
             if not channelID:
                 content["channels"] = self.db.getAll("textual_channel", servID,"server")
                 content["cat"] = self.db.getAll("server_cat", servID,"server")
+                content["members"] = self.db.getFilters("accessserver", ["server", "=", servID])
+                for i in range(0, len(content["members"])):
+                    content["members"][i] = content["members"][i]["account"]
             else:
                 content["messages"] = self.db.getFilters("message", ["place", "=", channelID, "order by timestamp"])
             return json.dumps(content, default=str)
@@ -380,19 +397,42 @@ class Disclone(Server):
         else:
             self.db.edit("disclone_account", uid, element, value)
 
+    def checkAccessRights(self, uid, server, action):
+        if not self.db.getFilters("accessserver", ["account", "=", uid, "and", "server", "=", server]):
+            return False
+
+        if action == "edit":
+            if self.db.getSomething("server", server)["owner"] != uid:
+                return False
+            #TODO make it for real
+
+        return True
+
     @Server.expose
-    def editServer(self, property, id, value, field=None, action=None):
+    def editServer(self, property, id, value=None, field=None, action=None, targetId=None):
         uid = self.getUser()
-        if field == "id":
+        if field == "id" or field == "owner" or not self.checkAccessRights(uid, id, "edit"):
             raise HTTPError(self.response, 403, "forbidden")
 
         if property == "channel":
-            server = self.db.getSomething("server", id)
-            if server["owner"] == uid:
-                self.db.edit("server", id, field, value)
-                return "ok"
-            else:
-                return ("forbidden")
+            print("editing channel", id, field, value, action, targetId)
+
+            if action == "create":
+                self.db.insertDict("textual_channel", {"name": "new channel", "server": id, "category": 1})
+                return
+
+            chan = self.db.getSomething("textual_channel", targetId)
+            if not chan or chan["server"] != int(id) or field == "server":
+                raise HTTPError(self.response, 403, "forbidden")
+
+            if action == "delete":
+                self.db.deleteSomething("textual_channel", targetId)
+                return
+
+            self.db.edit("textual_channel", targetId, field, value)
+        elif property == "name":
+            self.db.edit("server", id, field, value)
+
 
     @Server.expose
     def serverDisplay(self, invite):
@@ -411,7 +451,7 @@ class Disclone(Server):
             return HTTPError(self.response, 403, "forbidden")
 
         res = self.db.getSomething("invitation", server, "server")
-        if res and res != []:
+        if res and res != [] and res["expiration"] > datetime.datetime.now():
             return res["link"]
 
         if not pref:

@@ -1,5 +1,5 @@
 import global from "./framework/global.mjs"
-import {loadConv, loadServer, lookFor} from "./crud.mjs";
+import {loadChan, loadConv, loadServer, lookFor} from "./crud.mjs";
 import {setElement} from "./framework/sakura.mjs";
 import {closeFM, goTo} from "./framework/navigation.mjs";
 
@@ -23,6 +23,23 @@ function goToConv(convId){
     goTo('content','conversation',undefined,false)
 }
 window.goToConv = goToConv
+
+function goToChannel(id){
+    let targetElt
+    if(global.state.activeConv){
+        targetElt = document.getElementById("channel".concat(global.state.activeConv))
+        targetElt.classList.remove("selected")
+    }
+
+    global.state.activeConv = id
+    loadChan(id)
+
+    targetElt = document.getElementById("channel".concat(id))
+    targetElt.classList.add("selected")
+
+    goTo('content','server-channel',undefined,false)
+}
+window.goToChannel = goToChannel
 
 function goToFriends(event){
     if(global.state.activeConv){
@@ -158,7 +175,9 @@ window.changeDropdown = changeDropdown
 
 function goToServer(event,id){
     global.state.currentServer = lookFor(id,global.servers)
-    goTo('sec-selector','serverSelector',{'category':'currentTab' ,'event': event},true,goTo('content','server-channel'))
+    global.state.activeConv = undefined
     loadServer(id)
+    goTo('sec-selector','serverSelector',{'category':'currentTab' ,'event': event},true,()=> goToChannel(global.state.currentServer.dirs.channels[0].id))
+
 }
 window.goToServer = goToServer

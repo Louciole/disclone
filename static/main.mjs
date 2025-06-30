@@ -160,14 +160,23 @@ function repaintConv(sub, value){
 }
 window.repaintConv = repaintConv
 
-function Save(){
+function Save(endpoint="change"){
     console.log("saving",global.state["currentForm"])
     for (let key in global.state["currentForm"]){
         if (key !== "modified" && global.state["currentForm"][key].modified){
             const target = key.split("-")[0]
             console.log("target is ",target)
-            xhr("change?element=".concat(target,"&value=",encodeURIComponent(global.state["currentForm"][key].value)), undefined,"POST",false)
-            setElement("global.user.".concat(target), global.state["currentForm"][key].value)
+            if (endpoint === "editServer") {
+                xhr(endpoint + "?id=".concat(global.state.currentServer.id, "&property=", target, "&value=", encodeURIComponent(global.state["currentForm"][key].value)), undefined, "POST", false)
+                setElement("global.state.currentServer.".concat(target), global.state["currentForm"][key].value)
+            }else if (endpoint === "editChannel"){
+                const id= global.state.modaltarget.dataset.id
+                xhr("editServer?id=".concat(global.state.currentServer.id,"&property=channel&value=",encodeURIComponent(global.state["currentForm"][key].value),"&field=name&targetId=",id), undefined,"POST",false)
+                setElement("global.state.currentServer.".concat(target), global.state["currentForm"][key].value)
+            }else{
+                xhr(endpoint+"?element=".concat(target,"&value=",encodeURIComponent(global.state["currentForm"][key].value)), undefined,"POST",false)
+                setElement("global.user.".concat(target), global.state["currentForm"][key].value)
+            }
         }
     }
     delete global.state["currentForm"]
