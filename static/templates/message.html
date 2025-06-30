@@ -10,7 +10,8 @@
                     <img class="icon" src="/static/icons/material/reply.svg"/>
                 </div>
             </div>
-            ${MDToHTML(element.body)}
+            <div class="mdBlock">${MDToHTML(element.body)}</div>
+
             <p class="edited">${element.edited ? _t('(modifié)'):''}</p>
             <div class="imageMessage">
                 ${fillWith('image',element.attachments)}

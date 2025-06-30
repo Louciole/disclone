@@ -415,10 +415,9 @@ class Disclone(Server):
             raise HTTPError(self.response, 403, "forbidden")
 
         if property == "channel":
-            print("editing channel", id, field, value, action, targetId)
 
             if action == "create":
-                self.db.insertDict("textual_channel", {"name": "new channel", "server": id, "category": 1})
+                self.db.insertDict("textual_channel", {"name": "new channel", "server": id})
                 return
 
             chan = self.db.getSomething("textual_channel", targetId)
@@ -431,7 +430,7 @@ class Disclone(Server):
 
             self.db.edit("textual_channel", targetId, field, value)
         elif property == "name":
-            self.db.edit("server", id, field, value)
+            self.db.edit("server", id, property, value)
 
 
     @Server.expose

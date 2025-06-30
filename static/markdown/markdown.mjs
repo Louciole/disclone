@@ -16,7 +16,7 @@ export class Markdown {
         "||":"<div class='spoiler' onclick='showSpoiler(event)'>${content}</div>",
         "link":"<a href='${props.link}' target='_blank'>${content}</a>",
         "color":"<div class='color' style='color: ${props.color}'>${content}</div>",
-        "endline":"<p class='newline'>\n</p>",
+        "endline":"\n",
         "newline":"",
         ")":")",
         "'":"'",
@@ -175,7 +175,10 @@ export class Markdown {
                                 currentToken.content = currentToken.content.concat(char)
                                 break
                             case '\n':
+                                currentToken.type = "text"
+                                tokenList.push(currentToken)
                                 tokenList.push(new Token("endline"))
+                                currentToken = new Token("newline")
                                 break
                             default:
                                 currentToken.type="text"
