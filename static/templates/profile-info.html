@@ -1,0 +1,17 @@
+<div id="profileInfo" class="flying-menu">
+  <div class="banner"></div>
+  ${Subscribe('global.state.profileInfo',()=>{return 'background-image:url(/static/attachments/'+global.state.profileInfo?.pfp+');'},"profil-picture",{"target":"style"})}
+  <div class="profil-wrapper">
+    <div class="profil-badges"></div>
+    <div class="profil-infos">
+      ${Subscribe('global.state.profileInfo.display',()=>{return(global.state.profileInfo?.display)},"name")}
+      ${Subscribe('global.state.profileInfo.username',()=>{return(global.state.profileInfo?.username)},"username")}
+      ${Subscribe('global.state.profileInfo.pronouns',()=>{return(global.state.profileInfo?.pronouns)},"pronouns")}
+      <hr>
+      <p>${Subscribe('global.state.profileInfo.description',()=>{return(global.state.profileInfo?.description ? "<h3>".concat(_t("ABOUT ME"),"</h3>",MDToHTML(global.state.profileInfo?.description)) : "")},"mdBlock")}</p>
+      <h3>${_t("DISCLONE MEMBER SINCE")}</h3>
+      ${Subscribe('global.state.profileInfo.inscription',()=>{return(getTimeStr(global.state.profileInfo?.inscription,{ locale: "fr-FR",hour: undefined, minute: undefined}))})}
+
+    </div>
+  </div>
+</div>

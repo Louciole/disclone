@@ -5,7 +5,7 @@ ${getSeparator(element)}
     <div class="first-message">
       ${Subscribe('global.users['+element.messages[0].sender+'].pfp',()=>{return 'background-image:url(/static/attachments/'+global.users[element.messages[0].sender]?.pfp+');'},"pfp red",{"target":"style"})}
       <div class="message-block">
-        <div class="sender">
+        <div class="sender" onclick="toggleProfileInfo(${element.messages[0].sender},event)">
           ${Subscribe("global.users["+element.messages[0].sender.toString()+"].display", () => {return(global.users[element.messages[0].sender].display)},"h3")}
           <p>${getTimeStr(element.messages[0].timestamp)}</p>
         </div>

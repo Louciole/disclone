@@ -571,6 +571,10 @@ section{
     align-items: flex-end;
 }
 
+#member-list .pfp{
+    cursor: pointer;
+}
+
 #message-menu{
     display: flex;
     align-items: center;
@@ -830,7 +834,7 @@ section{
     height: 2rem;
 }
 
-#profil-menu {
+#profil-menu, #profileInfo  {
     height: fit-content;
     width: 320px;
     transform: translate(20px, calc(-50% - 2.5rem));
@@ -840,13 +844,13 @@ section{
     z-index: 19;
 }
 
-#profil-menu .banner {
+#profil-menu .banner, #profileInfo .banner {
     background: wheat;
     border-radius: 6px 6px 0 0;
     height: 60px;
 }
 
-#profil-menu .profil-picture {
+#profil-menu .profil-picture, #profileInfo .profil-picture {
     height: 80px;
     width: 80px;
     background: var(--red);
@@ -1107,6 +1111,8 @@ section{
     color: var(--text);
     margin: 0;
     font-size: 1rem;
+    pointer-events: all;
+    cursor: pointer;
 }
 
 .sender p{
@@ -2142,6 +2148,11 @@ img.icon{
 
 #profil-menu .action:hover .hover-menu-hitbox{
     display: flex;
+}
+
+#profileInfo{
+    color: var(--text2);
+    transform: none;
 }
 
 h4 {

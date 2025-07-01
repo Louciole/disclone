@@ -181,3 +181,42 @@ function goToServer(event,id){
 
 }
 window.goToServer = goToServer
+
+function toggleProfileInfo(id,event){
+    if (id !== global.state.profileInfo?.id) {
+        closeFM()
+    }
+    setElement("global.state.profileInfo", global.users[id])
+    toggleFM('profileInfo')
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    let top = rect.top;
+    let left = rect.left + 60;
+
+    const modalRect = global.state.activeFM.getBoundingClientRect();
+
+    if (left + modalRect.width > viewportWidth) {
+        if (rect.left - modalRect.width - 10 < 0) {
+            left = viewportWidth - modalRect.width - 10;
+            left = Math.max(left, 10);
+        }else {
+            left = rect.left - modalRect.width - 10;
+        }
+
+    }
+
+    if (top + modalRect.height > viewportHeight) {
+        top = rect.top - modalRect.height;
+        if (top < 0) {
+            top = Math.max(viewportHeight - modalRect.height - 10, 10); // clamp to bottom edge
+        }
+    }
+
+    global.state.activeFM.style.top = top + 'px';
+    global.state.activeFM.style.left = left + 'px';
+
+}
+window.toggleProfileInfo = toggleProfileInfo

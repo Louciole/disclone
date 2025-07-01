@@ -349,6 +349,7 @@ window.getUserStatus = getUserStatus
 await initTranslations()
 goTo('sec-column',"column-perso",undefined, true,()=>{goTo('sec-selector',"privateMessage")})
 goTo('content',"friends",undefined,true,()=>{goTo('friends-block','main-friend')})
+loadTemplate("profile-info.html")
 
 initNav()
 loadUser()
