@@ -1,0 +1,12 @@
+<h1>${_t("Roles")}</h1>
+<p>${_t("Use roles to group members and assign them permissions")}</p>
+<div class="btn blue" onclick="createRole()">${_t("Create Role")}</div>
+<div class="roleList">
+    <div class="head">
+        <h2>${_t("ROLES")} - 0</h2>
+        <h2>${_t("MEMBERS")}</h2>
+    </div>
+    <div class="content">
+        ${fillWith('role-element',global.state.currentServer.roles)}
+    </div>
+</div>

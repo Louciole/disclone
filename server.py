@@ -222,6 +222,7 @@ class Disclone(Server):
             if not channelID:
                 content["channels"] = self.db.getAll("textual_channel", servID,"server")
                 content["cat"] = self.db.getAll("server_cat", servID,"server")
+                content["roles"] = self.db.getAll("role", servID,"server")
                 content["members"] = self.db.getFilters("accessserver", ["server", "=", servID])
                 for i in range(0, len(content["members"])):
                     content["members"][i] = content["members"][i]["account"]
@@ -411,7 +412,6 @@ class Disclone(Server):
             raise HTTPError(self.response, 403, "forbidden")
 
         if property == "channel":
-
             if action == "create":
                 self.db.insertDict("textual_channel", {"name": "new channel", "server": id})
                 return
@@ -425,6 +425,20 @@ class Disclone(Server):
                 return
 
             self.db.edit("textual_channel", targetId, field, value)
+        elif property == "role":
+            if action == "create":
+                id = self.db.insertDict("role", {"name": "new role", "server": id}, getId=True)
+                return str(id)
+
+            role = self.db.getSomething("role", targetId)
+            if not role or role["server"] != int(id) or field == "server":
+                raise HTTPError(self.response, 403, "forbidden")
+
+            if action == "delete":
+                self.db.deleteSomething("role", targetId)
+                return
+
+            self.db.edit("role", targetId, field, value)
         elif property == "name":
             self.db.edit("server", id, property, value)
 

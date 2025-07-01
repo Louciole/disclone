@@ -1,0 +1,11 @@
+<h1>${_t("EDIT ROLE")} - ${global.state.currentRole.name}</h1>
+<h2>${_t("Display")}</h2>
+<div id="roleEditContent">
+    <h2>${_t('Role Name')}</h2>
+    <input type="text" id="roleName" placeholder="${_t('Role Name')}" value="${global.state.currentRole.name}" oninput="updatePreview(event, 'global.state.currentRole.name')">
+</div>
+<div class="save-settings" style="display: none">
+    <p>${_t("Attention, il reste des modifications non enregistrées !")}</p>
+    <div class="underlhover" onclick="reset()">${_t("Réinitialiser")}</div>
+    <div class="btn green" onclick="Save('editRole')">${_t("Enregistrer les modifications")}</div>
+</div>

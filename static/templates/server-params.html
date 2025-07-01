@@ -1,9 +1,9 @@
 <section class="settings-menu" id="server-params" style="display:none">
   <div id="settings-list-params" class="scrollable settings-list">
     <section id="">
-      <h3>${"SERVER NAME"}</h3>
-      <div class="item selected" onclick="goTo('setting-content', 'account-settings',{'category':'currentSettingTab' ,'event': event})">${_t("Vue d'ensemble")}</div>
-      <div class="item" id="profil-settings" onclick="goTo( 'setting-content', 'profile-settings',{'category':'currentSettingTab' ,'event': event})">${_t("Rôles")}</div>
+      <h3>${global.state.currentServer.name}</h3>
+      <div class="item selected" onclick="goTo('setting-server-content', 'server-main-settings',{'category':'currentSettingTab' ,'event': event})">${_t("Vue d'ensemble")}</div>
+      <div class="item" id="profil-settings" onclick="goTo( 'setting-server-content', 'server-roles-settings',{'category':'currentSettingTab' ,'event': event})">${_t("Rôles")}</div>
       <div class="item">${_t("Émojis")}</div>
       <div class="item">${_t("Lien d'invitation personalisé")}</div>
       <hr>

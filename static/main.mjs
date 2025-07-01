@@ -169,10 +169,14 @@ function Save(endpoint="change"){
             if (endpoint === "editServer") {
                 xhr(endpoint + "?id=".concat(global.state.currentServer.id, "&property=", target, "&value=", encodeURIComponent(global.state["currentForm"][key].value)), undefined, "POST", false)
                 setElement("global.state.currentServer.".concat(target), global.state["currentForm"][key].value)
-            }else if (endpoint === "editChannel"){
-                const id= global.state.modaltarget.dataset.id
-                xhr("editServer?id=".concat(global.state.currentServer.id,"&property=channel&value=",encodeURIComponent(global.state["currentForm"][key].value),"&field=name&targetId=",id), undefined,"POST",false)
-                setElement("global.state.currentServer.".concat(target), global.state["currentForm"][key].value)
+            }else if (endpoint === "editChannel") {
+                const id = global.state.modaltarget.dataset.id
+                xhr("editServer?id=".concat(global.state.currentServer.id, "&property=channel&value=", encodeURIComponent(global.state["currentForm"][key].value), "&field=name&targetId=", id), undefined, "POST", false)
+                // setElement("global.state.currentServer.".concat(target), global.state["currentForm"][key].value)
+            }else if (endpoint === "editRole") {
+                const id = global.state.currentRole.id
+                xhr("editServer?id=".concat(global.state.currentServer.id, "&property=role&value=", encodeURIComponent(global.state["currentForm"][key].value), "&field=name&targetId=", id), undefined, "POST", false)
+                // setElement("global.state.currentServer.".concat(target), global.state["currentForm"][key].value)
             }else{
                 xhr(endpoint+"?element=".concat(target,"&value=",encodeURIComponent(global.state["currentForm"][key].value)), undefined,"POST",false)
                 setElement("global.user.".concat(target), global.state["currentForm"][key].value)

@@ -616,6 +616,7 @@ export function loadServer(id){
         const serv = lookFor(id,global.servers)
         serv["dirs"] = {"channels" : resp.channels, "cat" : resp.cat}
         serv["members"] = resp.members
+        serv["roles"] = resp.roles
         loadUsers(resp.members)
         orderServDirs(serv)
     };
@@ -663,3 +664,14 @@ function createChan(){
     xhr("editServer?id="+global.state.currentServer.id+"&property=channel&action=create",undefined)
 }
 window.createChan = createChan
+
+function createRole(){
+    const onload = function() {
+        addElement("global.state.currentServer.roles",{"name":"new role", "id":this.responseText, "permissions":{}})
+        global.state.currentRole = global.state.currentServer.roles[this.responseText]
+        goTo( 'setting-server-content', 'server-role-settings')
+    }
+
+    xhr("editServer?id="+global.state.currentServer.id+"&property=role&action=create",onload)
+}
+window.createRole = createRole

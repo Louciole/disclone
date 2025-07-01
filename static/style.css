@@ -3084,3 +3084,17 @@ p.edited {
 #member-list > .inline{
     height: 2rem;
 }
+
+.roleList>div {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.roleList h2 {
+    font-size: 0.8rem;
+    color: var(--text);
+}
+
+.roleList .head{
+    border-bottom: solid 1px var(--text3);
+}

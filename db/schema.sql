@@ -106,6 +106,12 @@ create table if not exists invitation (
     expiration TIMESTAMP
 );
 
+create table if not exists role (
+    id bigserial NOT NULL PRIMARY KEY,
+    server integer NOT NULL,
+    name varchar(24) NOT NULL,
+    color varchar(7) DEFAULT '#000000'
+);
 create table if not exists room (
     id bigserial NOT NULL PRIMARY KEY,
     server integer
