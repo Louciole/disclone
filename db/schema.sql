@@ -6,7 +6,8 @@ create table disclone_account(
     pronouns varchar(24),
     description varchar(250),
     faction integer,
-    pfp text
+    pfp text,
+    current_room integer
 );
 
 create table status(
@@ -105,3 +106,7 @@ create table if not exists invitation (
     expiration TIMESTAMP
 );
 
+create table if not exists room (
+    id bigserial NOT NULL PRIMARY KEY,
+    server integer
+);

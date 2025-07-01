@@ -71,6 +71,7 @@ class Disclone(Server):
 
     async def handle_message(self, websocket):
         self.clients.append(websocket)
+        self.calls = {}
 
         async for message in websocket:
             data = json.loads(message)
@@ -102,10 +103,17 @@ class Disclone(Server):
                         self.db.edit("active_client", data["clientID"], "idle", data["idle"])
                         client = self.db.getSomething("active_client", data["clientID"])
                         await self.sendStatusUpdatesAsync(client["userid"])
-                case "callIce" | "callAnswer" | "callOffer" | "callHangup":
+                case "callIce" | "callAnswer" | "callOffer" | "callHangup" | "callParticipants" :
                     for client in self.clients:
                         if client != websocket:
                             await client.send(message)
+                case "callJoin":
+                    room = self.calls.get(data["room"])
+
+                    if room:
+                        self.calls["room"] = set()
+
+
                 case _:
                     print("unknown message received", message)
 
