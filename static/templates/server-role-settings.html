@@ -3,6 +3,34 @@
 <div id="roleEditContent">
     <h2>${_t('Role Name')}</h2>
     <input type="text" id="roleName" placeholder="${_t('Role Name')}" value="${global.state.currentRole.name}" oninput="updatePreview(event, 'global.state.currentRole.name')">
+    <h2>${_t('Role Color')}</h2>
+    <p>${_t('Members use the color of their highest role in the role list.')}</p>
+    <div class="roleColor">
+        <div class="big"></div>
+        <div class="grid">
+            <div class="item" onclick="setRoleColor(event)" style="--color:#1abc9c"></div>
+            <div class="item" onclick="setRoleColor(event)" style="--color:#2ecc71"></div>
+            <div class="item" onclick="setRoleColor(event)" style="--color:#3498db"></div>
+            <div class="item" onclick="setRoleColor(event)" style="--color:#9b59b6"></div>
+            <div class="item" onclick="setRoleColor(event)" style="--color:#e91e63"></div>
+            <div class="item" onclick="setRoleColor(event)" style="--color:#f1c40f"></div>
+            <div class="item" onclick="setRoleColor(event)" style="--color:#e67e22"></div>
+            <div class="item" onclick="setRoleColor(event)" style="--color:#e74c3c"></div>
+            <div class="item" onclick="setRoleColor(event)" style="--color:#95a5a6"></div>
+            <div class="item" onclick="setRoleColor(event)" style="--color:#607d8b"></div>
+
+            <div class="item" onclick="setRoleColor(event)" style="--color:#11806a"></div>
+            <div class="item" onclick="setRoleColor(event)" style="--color:#1f8b4c"></div>
+            <div class="item" onclick="setRoleColor(event)" style="--color:#206694"></div>
+            <div class="item" onclick="setRoleColor(event)" style="--color:#71368a"></div>
+            <div class="item" onclick="setRoleColor(event)" style="--color:#ad1457"></div>
+            <div class="item" onclick="setRoleColor(event)" style="--color:#c27c0e"></div>
+            <div class="item" onclick="setRoleColor(event)" style="--color:#a84300"></div>
+            <div class="item" onclick="setRoleColor(event)" style="--color:#992d22"></div>
+            <div class="item" onclick="setRoleColor(event)" style="--color:#979c9f"></div>
+            <div class="item" onclick="setRoleColor(event)" style="--color:#546e7a"></div>
+        </div>
+    </div>
 </div>
 <div class="save-settings" style="display: none">
     <p>${_t("Attention, il reste des modifications non enregistrées !")}</p>

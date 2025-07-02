@@ -25,6 +25,7 @@ html{
     font-weight: 125 950;
     font-stretch: 75% 125%;
     font-style: normal;
+    font-display: swap;
 }
 
 @font-face {
@@ -3085,11 +3086,6 @@ p.edited {
     height: 2rem;
 }
 
-.roleList>div {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-}
-
 .roleList h2 {
     font-size: 0.8rem;
     color: var(--text);
@@ -3097,4 +3093,86 @@ p.edited {
 
 .roleList .head{
     border-bottom: solid 1px var(--text3);
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+}
+
+#loading-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--bg2);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--text);
+    z-index: 9999;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 6px solid #ccc;
+    border-top: 6px solid var(--accent);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+#loading-screen.fade-out {
+    opacity: 0;
+    visibility: hidden;
+}
+
+.roleList .item {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    border-bottom: solid 1px var(--text3);
+    padding: 0.5rem 0;
+
+}
+
+.roleList .item > div{
+    display: flex;
+    align-items: center;
+}
+
+.roleList .item .actionList{
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+}
+.roleList .item .action {
+    height: 2rem;
+    cursor: pointer;
+}
+
+.roleList .item .hoverAction {
+    opacity: 0;
+    transition: opacity 200ms;
+}
+
+.roleList .item:hover .hoverAction {
+    opacity: 1;
+}
+
+.roleColor .grid{
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+}
+
+.roleColor .grid .item {
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 3px;
+    cursor: pointer;
+    background-color: var(--color);
 }

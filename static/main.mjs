@@ -351,19 +351,30 @@ window.getUserStatus = getUserStatus
 
 
 await initTranslations()
-goTo('sec-column',"column-perso",undefined, true,()=>{goTo('sec-selector',"privateMessage")})
 goTo('content',"friends",undefined,true,()=>{goTo('friends-block','main-friend')})
 loadTemplate("profile-info.html")
-
+loadConvs()
 initNav()
 loadUser()
 xhr("friends?action=getBlocked", onBlockedLoaded)
 xhr("friends?action=get", onFriendsLoaded)
 xhr("friends?action=invitations", onInvitationsLoaded)
-loadConvs()
+
 
 loadServers()
 
 // low priority
 loadEmojis()
 initDrag()
+
+window.addEventListener('load', () => {
+    const loadingScreen = document.getElementById('loading-screen');
+
+    // Fade out the loading screen
+    loadingScreen.classList.add('fade-out');
+
+    // Optional: wait until the transition ends before removing or showing content
+    loadingScreen.addEventListener('transitionend', () => {
+        loadingScreen.style.display = 'none';
+    });
+});

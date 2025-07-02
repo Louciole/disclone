@@ -20,6 +20,10 @@
     <link href="/static/style.css" rel="stylesheet">
 </head>
 <body>
+    <div id="loading-screen">
+        <h1>Disclone is loading</h1>
+        <div class="spinner"></div>
+    </div>
     <section id="main-selector">
         <div class="container">
             <div id="logo" class="item selected" onclick="global.state.activeConv=undefined; goTo('sec-selector','privateMessage',{'category':'currentTab' ,'event': event},true,goTo('content','friends',undefined,true,()=>{goTo('friends-block','main-friend')}))">

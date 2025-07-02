@@ -3,7 +3,7 @@ import {addElement, deleteElement, setElement, difference, pushElement, deleteVa
 import {initWebSockets} from "./framework/websockets.mjs"
 import global from "./framework/global.mjs"
 import {xhr} from "./framework/templating.mjs";
-import {closeFM} from "./framework/navigation.mjs";
+import {closeFM, goTo} from "./framework/navigation.mjs";
 
 function changeUsername(){
     const input = document.getElementById("username-input")
@@ -61,6 +61,8 @@ export function loadConvs(){
             global.convs[key.id] = global.privateConvs[key.id]
             addElement("global.privateConvs", key);
         }
+        goTo('sec-column',"column-perso",undefined, true,()=>{goTo('sec-selector',"privateMessage")})
+
     };
     xhr("getUserConvs",onload)
 }
@@ -675,3 +677,13 @@ function createRole(){
     xhr("editServer?id="+global.state.currentServer.id+"&property=role&action=create",onload)
 }
 window.createRole = createRole
+
+function setRoleColor(event){
+    const color = getComputedStyle(event.currentTarget).getPropertyValue('--color')
+
+    const onload = function() {
+        setElement("global.state.currentRole.color",color)
+    }
+    xhr("editServer?id="+global.state.currentServer.id+"&property=role&field=color&value="+encodeURIComponent(color)+"&targetId="+global.state.currentRole.id, onload)
+}
+window.setRoleColor = setRoleColor
