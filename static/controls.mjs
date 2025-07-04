@@ -70,6 +70,17 @@ function editMsg(msg_id){
 }
 window.editMsg = editMsg
 
+function delMsg(msg_id){
+    if (confirm('Voulez-vous vraiment supprimer ce message ?')) {
+
+        const onload = function() { // request successful
+            //TODO delete message
+        };
+        xhr("deleteMessage?message="+msg_id, onload)
+    }
+}
+window.delMsg = delMsg
+
 function onEdition(event,id){
     if(event.key === "Enter" && !event.shiftKey){
         const target = event.currentTarget

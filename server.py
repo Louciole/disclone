@@ -290,6 +290,25 @@ class Disclone(Server):
                 self.sendNotification(member,{"type":"message_edited", "content":{"id":message,"content":content}})
 
     @Server.expose
+    def deleteMessage(self, message):
+        print("editing message", message)
+        uid = self.getUser()
+
+        messageId = message
+        message = self.db.getSomething("message", message)
+
+        if not message or message["sender"] != uid:
+            raise HTTPError(self.response, 403, "forbidden")
+
+        self.db.deleteSomething("message", messageId)
+
+        members = self.db.getAll("accessconversation", message["place"], "conversation")
+
+        for member in members:
+            if member["account"] != uid:
+                self.sendNotification(member,{"type":"message_deleted", "content":{"id":messageId}})
+
+    @Server.expose
     def registerActivity(self, SDP):
         uid = self.getUser()
         self.db.insertDict("active_client", {"userid": uid, "SDP": SDP})
