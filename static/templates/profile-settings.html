@@ -4,12 +4,12 @@
     <div class="half vertical">
         <h3>${_t("NOM D'AFFICHAGE")}</h3>
         <label>
-            <input type="text" id="display-name-input" value="${global.user.display}" oninput="updatePreview(event, 'global.user.display')">
+            <input type="text" id="display-name-input" value="${global.user.display}" oninput="updatePreview('formUser', event, 'global.user.display')">
         </label>
         <hr>
         <h3>${_t("PRONOMS")}</h3>
         <label>
-            <input type="text" id="pronouns-input" value="${global.user.pronouns ? global.user.pronouns : ''}"  oninput="updatePreview(event, 'global.user.pronouns ? global.user.pronouns : emptyStr')">
+            <input type="text" id="pronouns-input" value="${global.user.pronouns ? global.user.pronouns : ''}"  oninput="updatePreview('formUser', event, 'global.user.pronouns ? global.user.pronouns : emptyStr')">
         </label>
         <hr>
         <h3>${_t("A PROPOS DE MOI")}</h3>
@@ -17,7 +17,7 @@
 
         <div class="chat-input">
             <label style="flex: 1;height: fit-content;">
-                <textarea id="description-input" class="selected" rows="5" maxlength="250" onblur="saveCursorPosition(event)" oninput="updatePreview(event, 'global.user.description ? global.user.description : emptyStr',{title: '<h3>ABOUT ME</h3>',value:'MDToHTML(event.currentTarget.value)'})">${global.user.description ? global.user.description : ''}</textarea>
+                <textarea id="description-input" class="selected" rows="5" maxlength="250" onblur="saveCursorPosition(event)" oninput="updatePreview('formUser', event, 'global.user.description ? global.user.description : emptyStr',{title: '<h3>ABOUT ME</h3>',value:'MDToHTML(event.currentTarget.value)'})">${global.user.description ? global.user.description : ''}</textarea>
             </label>
             <div class="icon-wrapper" onclick="toggleFM('std-emoji-board')">
                 <img class="icon" src="/static/icons/material/emoji.svg">
@@ -51,7 +51,7 @@
 </div>
 
 
-<div class="save-settings" style="display: none">
+<div id="formUser" class="save-settings" style="display: none">
     <p>${_t("Attention, il reste des modifications non enregistrées !")}</p>
     <div class="underlhover" onclick="reset()">${_t("Réinitialiser")}</div>
     <div class="btn green" onclick="Save()">${_t("Enregistrer les modifications")}</div>

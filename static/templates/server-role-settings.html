@@ -2,11 +2,14 @@
 <h2>${_t("Display")}</h2>
 <div id="roleEditContent">
     <h2>${_t('Role Name')}</h2>
-    <input type="text" id="roleName" placeholder="${_t('Role Name')}" value="${global.state.currentRole.name}" oninput="updatePreview(event, 'global.state.currentRole.name')">
+    <input type="text" id="roleName" placeholder="${_t('Role Name')}" value="${global.state.currentRole.name}" oninput="updatePreview('formRole', event, 'global.state.currentRole.name')">
     <h2>${_t('Role Color')}</h2>
     <p>${_t('Members use the color of their highest role in the role list.')}</p>
     <div class="roleColor">
-        <div class="big"></div>
+        <div class="big">
+            <div class="item" onclick="setRoleColor(event)" style="--color:#A8A8A8"></div>
+            <div class="item" onclick="" style="--color:#A8A8A8"></div>
+        </div>
         <div class="grid">
             <div class="item" onclick="setRoleColor(event)" style="--color:#1abc9c"></div>
             <div class="item" onclick="setRoleColor(event)" style="--color:#2ecc71"></div>
@@ -32,7 +35,7 @@
         </div>
     </div>
 </div>
-<div class="save-settings" style="display: none">
+<div id="formRole" class="save-settings" style="display: none">
     <p>${_t("Attention, il reste des modifications non enregistrées !")}</p>
     <div class="underlhover" onclick="reset()">${_t("Réinitialiser")}</div>
     <div class="btn green" onclick="Save('editRole')">${_t("Enregistrer les modifications")}</div>

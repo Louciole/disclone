@@ -9,9 +9,10 @@
       ${Subscribe('global.state.profileInfo.pronouns',()=>{return(global.state.profileInfo?.pronouns)},"pronouns")}
       <hr>
       <p>${Subscribe('global.state.profileInfo.description',()=>{return(global.state.profileInfo?.description ? "<h3>".concat(_t("ABOUT ME"),"</h3>",MDToHTML(global.state.profileInfo?.description)) : "")},"mdBlock")}</p>
-      <h3>${_t("DISCLONE MEMBER SINCE")}</h3>
-      ${Subscribe('global.state.profileInfo.inscription',()=>{return(getTimeStr(global.state.profileInfo?.inscription,{ locale: "fr-FR",hour: undefined, minute: undefined}))})}
-
+      <div class="userRoles">
+        ${Subscribe('global.state.profileInfo', ()=>{return(global.state.isServer ? fillWith("role-display",global.state.currentServer.members[global.state.profileInfo.id].roles) : "")})}
+        ${Subscribe('global.state.profileInfo', ()=>{return(global.state.isServer ?  "<div class='attributeRole' onclick='toggleFM(".concat("\"addRole\"",")'>+</div>") : "")})}
+      </div>
     </div>
   </div>
 </div>

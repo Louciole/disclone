@@ -1,8 +1,10 @@
 <div class="inline" style="width: 100%">
-    <div class="pfp red" onclick="toggleProfileInfo(${element},event)" data-target="style" data-content="()=>{return 'background-image:url(/static/attachments/'+global.users[element]?.pfp+');'}" style="background-image:url(/static/attachments/${global.users[element]?.pfp}">
+    <div class="pfp red" onclick="toggleProfileInfo(${element.id},event)" data-target="style" data-content="()=>{return 'background-image:url(/static/attachments/'+global.users[element.id]?.pfp+');'}" style="background-image:url(/static/attachments/${global.users[element]?.pfp}">
         <div class="activity-wrapper">
-            ${Subscribe("global.users["+element+"].status.icon",()=>{return("<div class='activity "+global.users[element].status.icon)+"'></div>"},"grow")}
+            ${Subscribe("global.users["+element.id+"].status.icon",()=>{return("<div class='activity "+global.users[element.id].status.icon)+"'></div>"},"grow")}
         </div>
     </div>
-    <div style="width: 100%;overflow: hidden;white-space: nowrap;text-overflow: ellipsis;cursor:pointer" onclick="toggleProfileInfo(${element},event)">${global.users[element].display}</div>
+    <div class="name" onclick="toggleProfileInfo(${element.id},event)" ${global.state.currentServer.members[element.id].roles.length != 0 ? "style='--text2:" + global.state.currentServer.roles[global.state.currentServer.members[element.id].roles[0]].color + "'" : ""}>
+        ${global.users[element.id].display}
+    </div>
 </div>

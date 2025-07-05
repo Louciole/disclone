@@ -110,9 +110,17 @@ create table if not exists role (
     id bigserial NOT NULL PRIMARY KEY,
     server integer NOT NULL,
     name varchar(24) NOT NULL,
-    color varchar(7) DEFAULT '#000000'
+    color varchar(7) DEFAULT '#A8A8A8'
 );
+
 create table if not exists room (
     id bigserial NOT NULL PRIMARY KEY,
     server integer
+);
+
+create table if not exists role_attribution (
+    id bigserial NOT NULL PRIMARY KEY,
+    account integer NOT NULL,
+    role integer NOT NULL,
+    server integer NOT NULL
 );

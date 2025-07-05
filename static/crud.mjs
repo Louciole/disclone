@@ -617,9 +617,19 @@ export function loadServer(id){
         const resp = JSON.parse(this.responseText)
         const serv = lookFor(id,global.servers)
         serv["dirs"] = {"channels" : resp.channels, "cat" : resp.cat}
-        serv["members"] = resp.members
-        serv["roles"] = resp.roles
-        loadUsers(resp.members)
+
+        serv["members"] = {}
+        let userList = []
+        for (let member of resp.members){
+            serv["members"][member.id] = member
+            userList.push(member.id)
+        }
+        serv["roles"] = {}
+        for (let role of resp.roles){
+            serv["roles"][role.id] = role
+        }
+
+        loadUsers(userList)
         orderServDirs(serv)
     };
     xhr("getServContent?servID=".concat(id.toString()),onload,"GET",false)
@@ -687,3 +697,12 @@ function setRoleColor(event){
     xhr("editServer?id="+global.state.currentServer.id+"&property=role&field=color&value="+encodeURIComponent(color)+"&targetId="+global.state.currentRole.id, onload)
 }
 window.setRoleColor = setRoleColor
+
+function attributeRole(roleId){
+    const onload = function() {
+
+    }
+
+    xhr("editServer?id="+global.state.currentServer.id+"&property=role&action=attribute&value="+roleId+"&targetId="+global.state.profileInfo.id, onload)
+}
+window.attributeRole = attributeRole

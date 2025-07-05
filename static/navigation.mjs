@@ -82,8 +82,12 @@ function insertStandardEmoji(event,target){
 }
 window.insertStandardEmoji = insertStandardEmoji
 
-function updatePreview(event, defaultValue, evaluation=undefined){
-    const save_menu = document.querySelector(".save-settings")
+function updatePreview(formID, event, defaultValue, evaluation=undefined){
+    if(global.state["currentForm"]?.id !== formID){
+        global.state["currentForm"] = undefined
+    }
+
+    const save_menu = document.getElementById(formID)
     if(global.state["currentForm"]){
         if(!global.state["currentForm"][event.currentTarget.id] ){
             global.state["currentForm"][event.currentTarget.id] = {value: "", modified :false, defaultValue: eval(defaultValue)}
@@ -115,7 +119,7 @@ function updatePreview(event, defaultValue, evaluation=undefined){
         }
     }else if (event.currentTarget.value !== eval(defaultValue)){
         console.log(event.currentTarget.value)
-        global.state["currentForm"] = { [event.currentTarget.id] : {value: event.currentTarget.value, modified :true, defaultValue: eval(defaultValue)}, modified: 1}
+        global.state["currentForm"] = { [event.currentTarget.id] : {value: event.currentTarget.value, modified :true, defaultValue: eval(defaultValue)}, modified: 1, id: formID}
         save_menu.style.display="flex"
         if(evaluation){
             const pre = evaluation.title && event.currentTarget.value!=="" ? evaluation.title : ""
@@ -176,6 +180,7 @@ window.changeDropdown = changeDropdown
 function goToServer(event,id){
     global.state.currentServer = lookFor(id,global.servers)
     global.state.activeConv = undefined
+    global.state.isServer = true
     loadServer(id)
     goTo('sec-selector','serverSelector',{'category':'currentTab' ,'event': event},true,()=> goToChannel(global.state.currentServer.dirs.channels[0].id))
 

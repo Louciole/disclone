@@ -225,7 +225,10 @@ class Disclone(Server):
                 content["roles"] = self.db.getAll("role", servID,"server")
                 content["members"] = self.db.getFilters("accessserver", ["server", "=", servID])
                 for i in range(0, len(content["members"])):
-                    content["members"][i] = content["members"][i]["account"]
+                    userRoles = self.db.getFilters("role_attribution", ["server", "=", servID, "and", "account", "=", content["members"][i]["account"]])
+                    for j in range (0,len(userRoles)):
+                        userRoles[j] = userRoles[j]["role"]
+                    content["members"][i] = {"id": content["members"][i]["account"], "roles": userRoles}
             else:
                 content["messages"] = self.db.getFilters("message", ["place", "=", channelID, "order by timestamp"])
             return json.dumps(content, default=str)
@@ -456,6 +459,11 @@ class Disclone(Server):
             if action == "delete":
                 self.db.deleteSomething("role", targetId)
                 return
+
+            if action == "attribute":
+                id = self.db.insertDict("role_attribution", {"account": targetId, "role": value, "server":id}, getId=True)
+                return str(id)
+
 
             self.db.edit("role", targetId, field, value)
         elif property == "name":

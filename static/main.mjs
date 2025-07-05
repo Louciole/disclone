@@ -85,6 +85,7 @@ export function postWS(){
     const userList = JSON.stringify(Object.keys(global.users).map(cle => parseInt(cle)))
     xhr("subscribe?client="+global.state.clientID+"&cat=user&items="+userList,undefined)
     console.log("Client ready", global)
+    window.dispatchEvent(new Event('load'));
 }
 
 function statusText(){

@@ -2,12 +2,12 @@
 
 <div class="channel-name">
     <h2>${_t("Nom Du Salon")}</h2>
-    <input id="name-input" type="text" placeholder="${_t('nom du salon')}" value="${global.state.modaltarget.innerText}" oninput="updatePreview(event, 'global.state.modaltarget.innerText')">
+    <input id="name-input" type="text" placeholder="${_t('nom du salon')}" value="${global.state.modaltarget.innerText}" oninput="updatePreview('formChannel' ,event, 'global.state.modaltarget.innerText')">
 </div>
 
 <hr>
 
-<div class="save-settings" style="display: none">
+<div id="formChannel" class="save-settings" style="display: none">
     <p>${_t("Attention, il reste des modifications non enregistrées !")}</p>
     <div class="underlhover" onclick="reset()">${_t("Réinitialiser")}</div>
     <div class="btn green" onclick="Save('editChannel')">${_t("Enregistrer les modifications")}</div>
