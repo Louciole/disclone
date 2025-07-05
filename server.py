@@ -461,6 +461,9 @@ class Disclone(Server):
                 return
 
             if action == "attribute":
+                if self.db.getFilters("role_attribution", ["account", "=", targetId, "and", "role", "=", value, "and", "server", "=", id]):
+                    raise HTTPError(self.response, 403, "already attributed")
+
                 id = self.db.insertDict("role_attribution", {"account": targetId, "role": value, "server":id}, getId=True)
                 return str(id)
 

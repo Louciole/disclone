@@ -3204,6 +3204,8 @@ p.edited {
     border: solid 1px var(--text2bis);
     max-height: 15rem;
     overflow-y: auto;
+    position: fixed;
+    flex-direction: column;
 }
 
 #addRole > div{
@@ -3220,6 +3222,7 @@ p.edited {
 .userRoles {
     display: flex;
     gap: 0.3rem;
+    flex-wrap: wrap;
 }
 
 .userRoles .attributeRole{
@@ -3242,6 +3245,12 @@ p.edited {
     border-radius: 3px;
     align-items: center;
     justify-content: center;
+    gap: 0.3rem;
+}
+
+.userRoles > div{
+    display: flex;
+    flex-wrap: wrap;
     gap: 0.3rem;
 }
 

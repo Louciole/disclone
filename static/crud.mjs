@@ -700,7 +700,13 @@ window.setRoleColor = setRoleColor
 
 function attributeRole(roleId){
     const onload = function() {
+        if (this.status !== 200) {
+            return;
+        }
 
+        addElement("global.state.currentServer.members[global.state.profileInfo.id].roles", roleId)
+        const elt = document.getElementById("addRole")
+        elt.style.display = "none"
     }
 
     xhr("editServer?id="+global.state.currentServer.id+"&property=role&action=attribute&value="+roleId+"&targetId="+global.state.profileInfo.id, onload)

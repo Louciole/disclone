@@ -225,3 +225,11 @@ function toggleProfileInfo(id,event){
 
 }
 window.toggleProfileInfo = toggleProfileInfo
+
+function showAddRole(event){
+    const elt = document.getElementById("addRole")
+    elt.style.display = "flex"
+    elt.style.bottom = window.innerHeight - event.currentTarget.getBoundingClientRect().top + 10 + "px"
+    elt.style.left = event.currentTarget.getBoundingClientRect().left + "px"
+}
+window.showAddRole = showAddRole
