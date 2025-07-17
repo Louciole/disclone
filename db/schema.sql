@@ -21,7 +21,8 @@ create table status(
 create table if not exists server (
     id bigserial NOT NULL PRIMARY KEY,
     name varchar(44) NOT NULL,
-    owner integer NOT NULL
+    owner integer NOT NULL,
+    pfp text
 );
 
 create table if not exists accessServer (

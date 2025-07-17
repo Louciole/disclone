@@ -109,6 +109,7 @@ section{
     justify-content: center;
     cursor: pointer;
     transition: all 200ms;
+    overflow: hidden;
 }
 
 #main-selector .item:hover {
@@ -3261,4 +3262,8 @@ p.edited {
     text-overflow: ellipsis;
     cursor:pointer;
     color: var(--text2);
+}
+
+.serveur img {
+    width: 100%;
 }

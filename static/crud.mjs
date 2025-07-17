@@ -47,7 +47,7 @@ export function loadServers(){
         const response = JSON.parse(this.responseText)
         global.servers = response
         for (let i in response) {
-            addServer(response[i].name, response[i].id)
+            addServer(response[i].name, response[i].id, response[i])
         }
     };
     xhr("getUserServers",onload)
@@ -579,10 +579,17 @@ function uploadProfileImage(field="pfp"){
     const onImgLoaded = function(result) {
         const onload = function () {
             console.log(this.responseText)
+            if (global.state.uploadImage === "serverAvatar") {
+                global.state.uploadImage = ""
+            }
         }
         console.log(result, {"value":result})
 
-        xhr("change?element=".concat(field), onload,"POST",true,{"value":result})
+        if (global.state.uploadImage === "serverAvatar"){
+            xhr("editServer?property=pfp&id=".concat(global.state.currentServer.id), onload,"POST",true,{"value":result})
+        }else{
+            xhr("change?element=".concat(field), onload,"POST",true,{"value":result})
+        }
     }
     imageDataToB64(imageData,onImgLoaded)
 }

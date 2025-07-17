@@ -411,7 +411,6 @@ class Disclone(Server):
                 self.db.edit("status", uid, "expiration", None)
             self.sendStatusUpdates(uid)
         elif element == "pfp":
-            print("COUCOU", uid, element, value)
             self.db.edit("disclone_account", uid, element, self.saveFile(value))
         else:
             self.db.edit("disclone_account", uid, element, value)
@@ -471,6 +470,8 @@ class Disclone(Server):
             self.db.edit("role", targetId, field, value)
         elif property == "name":
             self.db.edit("server", id, property, value)
+        elif property == "pfp":
+            self.db.edit("server", uid, "pfp", self.saveFile(value))
 
 
     @Server.expose
