@@ -18,7 +18,7 @@ window.logout = logout
 
 
 
-function updateElement(selector,value=undefined){
+export function updateElement(selector,value=undefined){
     const subscriptions = document.querySelectorAll(`[class^="${selector.replaceAll('.','-').replaceAll('[','🪟').replaceAll(']','🥹')}"]`)
     for (let sub of subscriptions){
         if(sub.dataset.repaint){

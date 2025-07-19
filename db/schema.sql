@@ -125,3 +125,10 @@ create table if not exists role_attribution (
     role integer NOT NULL,
     server integer NOT NULL
 );
+
+create table if not exists offline_notifs (
+    id bigserial NOT NULL PRIMARY KEY,
+    account integer NOT NULL,
+    conversation integer NOT NULL,
+    number integer NOT NULL DEFAULT 1
+);

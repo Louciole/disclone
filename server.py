@@ -31,7 +31,7 @@ class Disclone(Server):
     @Server.expose
     def channels(self, uid="me"):
         self.checkJwt()
-        return (self.file(PATH + "/static/main.html"))
+        return self.file(PATH + "/static/main.html")
 
     @Server.expose
     def default(self, target, **kwargs):
@@ -238,6 +238,7 @@ class Disclone(Server):
         uid = self.getUser()
         user = self.db.getSomething("disclone_account", uid)
         self.getUsersStatus([user],detailed=True)
+        user["notifs"] = self.db.getAll("offline_notifs", uid, "account")
         return json.dumps(user, default=str)
 
     @Server.expose
@@ -265,12 +266,28 @@ class Disclone(Server):
         if reply and reply!="undefined" and reply!="null" :
             message["reply"] = reply
 
+
+
         self.db.insertDict("message", message)
         members = self.db.getAll("accessconversation", conv["id"], "conversation")
         for user in members:
             if user["account"] != uid:
                 self.sendNotification(user["account"], {"type": "message", "content": message})
+
+                notif  = self.db.getFilters("offline_notifs", ["account", "=", user['account'], "and", "conversation", "=", conv["id"]])
+                if notif != []:
+                    self.db.edit("offline_notifs", notif[0]["id"], "number", notif[0]["number"] + 1)
+                else :
+                    self.db.insertDict("offline_notifs", {"account": user['account'] , "conversation": conv["id"]})
+
         return json.dumps(attachmentList)
+
+    @Server.expose
+    def consultNotifs(self, notifId):
+        uid = self.getUser()
+        if not self.db.getFilters("offline_notifs", ["account", "=", uid, "and", "id", "=", notifId]):
+            raise HTTPError(self.response, 403, "forbidden")
+        self.db.deleteSomething("offline_notifs", notifId)
 
     @Server.expose
     def editMessage(self, message, content):

@@ -3264,6 +3264,15 @@ p.edited {
     color: var(--text2);
 }
 
+.mobile #content{
+    display: none;
+}
+
+.mobile #sec-column{
+    width: 100%;
+}
+
+
 .serveur img {
     width: 100%;
 }

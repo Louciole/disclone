@@ -14,6 +14,14 @@ global.state.currentTab = document.getElementById("logo")
 const notifElt = document.getElementById("notif")
 const { hostname, port } = window.location;
 global.state.location = { host:hostname, port:port, short:port ? hostname + ":" + port : hostname }
+function isMobileDevice() {
+    return /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
+global.state.isMobile = isMobileDevice()
+if (global.state.isMobile) {
+    global.state.dom.classList.add("mobile")
+}
 
 window.addEventListener('unload', () => {
     if (global.state?.socket.readyState !== WebSocket.CLOSED) {
@@ -85,7 +93,7 @@ export function postWS(){
     const userList = JSON.stringify(Object.keys(global.users).map(cle => parseInt(cle)))
     xhr("subscribe?client="+global.state.clientID+"&cat=user&items="+userList,undefined)
     console.log("Client ready", global)
-    window.dispatchEvent(new Event('load'));
+    hideLoadingScreen()
 }
 
 function statusText(){
@@ -370,7 +378,8 @@ loadServers()
 loadEmojis()
 initDrag()
 
-window.addEventListener('load', () => {
+
+function hideLoadingScreen() {
     const loadingScreen = document.getElementById('loading-screen');
 
     // Fade out the loading screen
@@ -380,4 +389,8 @@ window.addEventListener('load', () => {
     loadingScreen.addEventListener('transitionend', () => {
         loadingScreen.style.display = 'none';
     });
+}
+
+window.addEventListener('load', () => {
+    hideLoadingScreen()
 });

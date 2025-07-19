@@ -1,5 +1,13 @@
 import {addServer, getRelevantUser} from "./main.mjs"
-import {addElement, deleteElement, setElement, difference, pushElement, deleteVal} from "./framework/sakura.mjs"
+import {
+    addElement,
+    deleteElement,
+    setElement,
+    difference,
+    pushElement,
+    deleteVal,
+    updateElement
+} from "./framework/sakura.mjs"
 import {initWebSockets} from "./framework/websockets.mjs"
 import global from "./framework/global.mjs"
 import {xhr} from "./framework/templating.mjs";
@@ -60,6 +68,7 @@ export function loadConvs(){
             global.privateConvs[key.id] = key // HACK
             global.convs[key.id] = global.privateConvs[key.id]
             addElement("global.privateConvs", key);
+            updateElement("global.convs", global.convs)
         }
         goTo('sec-column',"column-perso",undefined, true,()=>{goTo('sec-selector',"privateMessage")})
 
