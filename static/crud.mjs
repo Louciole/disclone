@@ -91,6 +91,7 @@ export function loadUsers(keys){
     };
     xhr("getUsersInfo?users="+JSON.stringify(diff), onload, "GET",false)
 }
+window.loadUsers = loadUsers
 
 export function loadConv(key){
     const onload = function() {
@@ -599,6 +600,8 @@ function uploadProfileImage(field="pfp"){
         }else{
             xhr("change?element=".concat(field), onload,"POST",true,{"value":result})
         }
+        closeMenu('#resize-image')
+        closeMenu('#loadImage')
     }
     imageDataToB64(imageData,onImgLoaded)
 }

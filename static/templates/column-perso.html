@@ -1,7 +1,7 @@
 <div id="sec-selector"></div>
 <div id="profile">
   <div id="profil" onclick="toggleFM('profil-menu')">
-    <div class="global-user-pfp pfp red" data-target="style" data-content="()=>{return 'background-image:url(/static/attachments/'+global.user?.pfp+');'}">
+    <div class="global-user-pfp pfp red" data-target="style" data-content="()=>{return 'background-image:url(/static/attachments/'+global.user?.pfp+');'}" style="background-image:url(/static/attachments/${global.user?.pfp}">
       <div class="activity-wrapper">
         ${Subscribe('global.user.status.icon',()=>{return "<div class='activity " + (global.user?.status?.icon ?? "green") + "'></div>"}, "grow")}
       </div>

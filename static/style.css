@@ -3276,3 +3276,8 @@ p.edited {
 .serveur img {
     width: 100%;
 }
+
+.member-list-header h3{
+    font-size: 0.8rem;
+    margin: 0;
+}

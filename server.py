@@ -488,7 +488,7 @@ class Disclone(Server):
         elif property == "name":
             self.db.edit("server", id, property, value)
         elif property == "pfp":
-            self.db.edit("server", uid, "pfp", self.saveFile(value))
+            self.db.edit("server", id, "pfp", self.saveFile(value))
 
 
     @Server.expose

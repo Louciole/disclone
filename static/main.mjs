@@ -221,7 +221,7 @@ function sendMessage(event){
             handleMessageGroup(message)
             pushElement('global.convs['.concat(global.state.activeConv,'].messages'), message)
             target.value = ''
-            resizeHeight(event)
+            resizeHeight(event, target)
             cancelReply()
         }
 
@@ -235,9 +235,12 @@ function sendMessage(event){
 }
 window.sendMessage = sendMessage
 
-function resizeHeight(event){
-    const lines = 1 + (event.currentTarget.value.match(/\n/g) || []).length;
-    event.currentTarget.rows = lines > 25 ? 25 : lines;
+function resizeHeight(event, target = undefined){
+    if (!target){
+        target = event.currentTarget
+    }
+    const lines = 1 + (target.value?.match(/\n/g) || []).length;
+    target.rows = lines > 25 ? 25 : lines;
 }
 window.resizeHeight = resizeHeight
 

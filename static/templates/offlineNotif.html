@@ -1,6 +1,6 @@
 <div class="container">
     <div class="item serveur" onclick="goTo('sec-selector','privateMessage',{'category':'currentTab' ,'event': event},false); goToConv(${element.conversation})"></div>
     <div class="indicator smol"></div>
-    <span class="global-convs tooltip left" data-content="()=>{return global.users[notMe(global.convs[${element.conversation}].members)].display}"></span>
+    <span class="global-convs tooltip left" data-content="()=>{loadUsers([notMe(global.convs[${element.conversation}].members)]); return global.users[notMe(global.convs[${element.conversation}].members)].display}"></span>
     <div class="outlined notifIndicator">${element.number}</div>
 </div>
