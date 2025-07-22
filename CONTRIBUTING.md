@@ -5,7 +5,7 @@ Thank you for considering contributing to Disclone! Your help is invaluable in m
 - GitLab: [GitLab Link](https://gitlab.com/Louciole/disclone/)
 - GitHub [Mirror]: [GitHub Link](https://github.com/Louciole/disclone)
 - Issues: [GitLab Issues](https://gitlab.com/Louciole/disclone/-/issues)
-- Documentation: [Sakura Docs](https://gitlab.com/Louciole/sakura-docs)
+- Documentation: [Sakura Docs](https://louciole.gitlab.io/sakura-docs/)
 - Documentation Repo: [GitLab](https://gitlab.com/Louciole/sakura-docs)
 
 ---
@@ -21,7 +21,7 @@ Thank you for considering contributing to Disclone! Your help is invaluable in m
 
 ## ✅ Task List
 
-Check out our to-do list on Smooth Projects: [Smooth Projects Link](https://smoop.carbonlab.dev/project?uid=6&&access=read-only)
+Check out our to-do list on Smooth Projects: [Smooth Projects Link](https://smoop.carbonlab.dev/project?uid=11&&access=read-only)
 
 ---
 

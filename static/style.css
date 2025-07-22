@@ -1688,6 +1688,7 @@ input[type="text"]{
     display: flex;
     flex-direction: column;
     overflow-y: visible;
+    max-height: calc(100% - 7rem);
 }
 
 .column{

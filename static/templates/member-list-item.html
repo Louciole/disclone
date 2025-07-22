@@ -1,5 +1,5 @@
 <div class="inline" style="width: 100%">
-    <div class="pfp red" onclick="toggleProfileInfo(${element.id},event)" data-target="style" data-content="()=>{return 'background-image:url(/static/attachments/'+global.users[element.id]?.pfp+');'}" style="background-image:url(/static/attachments/${global.users[element]?.pfp}">
+    <div class="pfp red" onclick="toggleProfileInfo(${element.id},event)" data-target="style" data-content="()=>{return 'background-image:url(/static/attachments/'+global.users[element.id].pfp+');'}" style="background-image:url(/static/attachments/${global.users[element.id].pfp}">
         <div class="activity-wrapper">
             ${Subscribe("global.users["+element.id+"].status.icon",()=>{return("<div class='activity "+global.users[element.id].status.icon)+"'></div>"},"grow")}
         </div>
