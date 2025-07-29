@@ -1,0 +1,14 @@
+<h1>${_t("Avatar")}</h1>
+<div class="avatar-display" id="avatar-display">
+</div>
+<div class="avatar-selector">
+    <div class="steps">
+        ${initAvatarSteps()}
+    </div>
+    <div class="elements">
+        ${avatarVariations()}
+    </div>
+</div>
+<div class="btn blue" onclick="">${_t("Save")}</div>
+
+${initAvatarDisplay("avatar-display") ? '': ''}

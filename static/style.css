@@ -3282,3 +3282,50 @@ p.edited {
     font-size: 0.8rem;
     margin: 0;
 }
+
+.avatar-selector {
+    height: fit-content;
+    border-radius: 0rem 0rem 1rem 1rem;
+    background: var(--text2bis);
+    margin-bottom: 1rem;
+}
+
+
+.avatar-selector .steps{
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    overflow-y: hidden;
+    overflow-x: scroll;
+}
+
+.avatar-selector .step{
+    width: fit-content;
+    height: 2rem;
+    align-items: center;
+    justify-content: center;
+    margin: 0 1rem;
+    cursor: pointer;
+}
+
+.avatar-display{
+    height: 50svh;
+    border-radius: 1rem 1rem 0rem 0rem;
+    background: var(--text);
+}
+
+.avatar-selector .elements{
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    height: fit-content;
+}
+
+.avatar-selector .elements > div{
+    height: 4rem;
+    cursor: pointer;
+}
+
+.avatar-selector .elements > div > img{
+    height: 100%;
+}
