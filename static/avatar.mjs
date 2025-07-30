@@ -2,6 +2,7 @@ import global from "/static/framework/global.mjs"
 
 global.state.avatar = {}
 global.state.avatar.layers = {
+    "hairLow": {"1.1": "#1d5979"},
     "body": {"1.1": "#9c7a60"},
     "eyes": {"1.1": "#181212"},
     "clothes1": {"1.1": "#e3e0d2"},
@@ -10,10 +11,10 @@ global.state.avatar.layers = {
     "mouth": {"1.1": "#4b2e28"},
     "eyebrows": {"1.1": "#232f5e"},
     "hairLow2": {"1.1": "#1c2042"},
-    "hairLow": {"1.1": "#1d5979"},
-    "hairside": {"1.1": "#dd9299"},
-    "hairMain": {"1.1": "#4f3878"},
     "hairUp": {"1.1": "#51753c"},
+    "hairMain": {"1.1": "#4f3878"},
+    "hairside": {"1.1": "#dd9299"},
+    "hairFront": {"1.1": "#652538"},
 }
 global.state.avatar.currentVariation = {
     "body": "",
@@ -28,6 +29,7 @@ global.state.avatar.currentVariation = {
     "hairside": "",
     "hairMain": "",
     "hairUp": "",
+    "hairFront": "",
 }
 
 const steps = [
@@ -43,6 +45,7 @@ const steps = [
     {name: 'hairside', nullable: true},
     {name: 'hairMain', nullable: true},
     {name: 'hairUp', nullable: true},
+    {name: 'hairFront', nullable: true},
 ];
 
 function loadImage(src) {
