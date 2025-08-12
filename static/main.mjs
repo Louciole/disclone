@@ -22,6 +22,11 @@ function isMobileDevice() {
 global.state.isMobile = isMobileDevice()
 if (global.state.isMobile) {
     global.state.dom.classList.add("mobile")
+
+    const onload = function(){
+        console.log(this.responseText)
+    }
+    xhr("/static/mobileUiManifest.js", onload)
 }
 
 window.addEventListener('unload', () => {
