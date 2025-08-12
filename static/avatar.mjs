@@ -11,7 +11,7 @@ global.state.avatar.layers = {
     "eyebrows": {"1.1": "#232f5e"},
     "hairLow2": {"1.1": "#1c2042"},
     "hairLow": {"1.1": "#1d5979"},
-    "hairside": {"1.1": "#dd9299"},
+    "hairSide": {"1.1": "#dd9299"},
     "hairMain": {"1.1": "#4f3878"},
     "hairUp": {"1.1": "#51753c"},
 }
@@ -25,13 +25,13 @@ global.state.avatar.currentVariation = {
     "eyebrows": "",
     "hairLow2": "",
     "hairLow": "",
-    "hairside": "",
+    "hairSide": "",
     "hairMain": "",
     "hairUp": "",
 }
 
 const steps = [
-    {name: 'body', nullable: true},
+    {name: 'body', nullable: false},
     {name: 'eyes', nullable: true},
     {name: 'clothes1', nullable: true},
     {name: 'clothes2', nullable: true},
@@ -40,7 +40,7 @@ const steps = [
     {name: 'eyebrows', nullable: true},
     {name: 'hairLow2', nullable: true},
     {name: 'hairLow', nullable: true},
-    {name: 'hairside', nullable: true},
+    {name: 'hairSide', nullable: true},
     {name: 'hairMain', nullable: true},
     {name: 'hairUp', nullable: true},
 ];
@@ -56,6 +56,7 @@ function loadImage(src) {
 
 window.initAvatar = function () {
     const canvas = document.createElement('canvas');
+    canvas.id = 'avatarCanvas';
     canvas.width = 500;
     canvas.height = 500;
     const ctx = canvas.getContext('2d');
@@ -79,6 +80,30 @@ window.initAvatar = function () {
     return promise.then(() => {
         return canvas;
     });
+}
+
+async function drawAvatar(canvas) {
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    for (const [layer, variations] of Object.entries(global.state.avatar.layers)) {
+        let variation
+        let variationId = global.state.avatar.currentVariation[layer]
+        if (variationId === '') {
+            variationId = '1.1'
+            variation = variations['1.1'];
+        } else if (variationId === "none") {
+            debugger
+            continue; // skip if no variation is selected
+        }else{
+            variation = variations[variationId];
+        }
+        await loadImage(`/static/images/avatars/${layer}/${variationId}.png`).then(img => {
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        });
+    }
 }
 
 window.initAvatarDisplay = function(containerId, avatar = null) {
@@ -123,15 +148,28 @@ window.avatarVariations = function() {
     if (selected.nullable) {
         options.push({
             id: 'none',
-            selected: global.state.avatar.currentVariation[global.state.avatar.currentLayer.name] === 'none'
+            selected: global.state.avatar.currentVariation[global.state.avatar.currentLayer.name] === 'none',
+            action: "changeAvatarPreview('none')"
         });
     }
 
     for (let id of Object.keys(layer)) {
         options.push({
             id: id,
-            selected: global.state.avatar.currentVariation[global.state.avatar.currentLayer.name] === id
+            selected: global.state.avatar.currentVariation[global.state.avatar.currentLayer.name] === id,
+            action: "changeAvatarPreview('" + id + "')"
         });
     }
     return fillWith('avatarVariationPreview', options)
+}
+
+
+window.changeAvatarPreview =  function (id) {
+    global.state.avatar.currentVariation[global.state.avatar.currentLayer.name] = id;
+    drawAvatar(document.getElementById('avatarCanvas'))
+}
+
+window.goToAvatarStep = function (step) {
+    const elt = document.getElementById('avatar-variations');
+    elt.innerHTML = avatarVariations();
 }
