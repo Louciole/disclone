@@ -463,6 +463,24 @@ class Disclone(Server):
                 return
 
             self.db.edit("textual_channel", targetId, field, value)
+        if property == "dashboard":
+            op = self.db.getSomething("op_servs", id, "server")
+            if not op:
+                raise HTTPError(self.response, 403, "forbidden")
+
+            if action == "create":
+                self.db.insertDict("serv_dashboard", {"name": "new dashboard", "server": id})
+                return
+
+            chan = self.db.getSomething("serv_dashboard", targetId)
+            if not chan or chan["server"] != int(id) or field == "server":
+                raise HTTPError(self.response, 403, "forbidden")
+
+            if action == "delete":
+                self.db.deleteSomething("serv_dashboard", targetId)
+                return
+
+            self.db.edit("serv_dashboard", targetId, field, value)
         elif property == "role":
             if action == "create":
                 id = self.db.insertDict("role", {"name": "new role", "server": id}, getId=True)
@@ -541,6 +559,32 @@ class Disclone(Server):
             self.db.insertDict("accessserver", {"account": uid, "server": res["server"]})
             raise HTTPRedirect(self.response, "/channels")
         raise HTTPError(self.response, 404, "Not Found")
+
+
+    @Server.expose
+    def getDashboard(self, server,service_id):
+        uid = self.getUser()
+        op = self.db.getSomething("op_servs", server)
+        if not op:
+            raise HTTPError(self.response, 403, "forbidden")
+        #check access rights to server
+
+
+        #check sufficent role
+
+        #if disclone get from self
+        if service_id == "disclone":
+            self.db.cur.execute("SELECT COUNT(*) FROM disclone_account", ())
+            board = {"users": self.db.cur.fetchone()}
+            return board
+        #if uniauth get from uniauth
+        elif service_id == "uniauth":
+            self.uniauth.cur.execute("SELECT COUNT(*) FROM account", ())
+            board = {"users": self.db.cur.fetchone()}
+            return board
+        #else get from unibridge
+        else:
+            pass
 
     def sendStatusUpdates(self, uid):
         query = "select active_client.id, userid, server, idle from active_client,subscription where (subscription.account = %s and active_client.id = subscription.client) OR (active_client.id = %s);"

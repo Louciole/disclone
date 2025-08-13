@@ -132,3 +132,16 @@ create table if not exists offline_notifs (
     conversation integer NOT NULL,
     number integer NOT NULL DEFAULT 1
 );
+
+create table if not exists op_servs (
+    id bigserial NOT NULL PRIMARY KEY,
+    server integer NOT NULL
+);
+
+create table if not exists serv_dashboard (
+    id bigserial NOT NULL PRIMARY KEY,
+    name varchar(255) NOT NULL,
+    server integer NOT NULL,
+    category integer,
+    place float NOT NULL DEFAULT 0.1
+);

@@ -1,0 +1,21 @@
+<div>
+    <h1>Admin Channel</h1>
+    <p>See an app dashboard</p>
+    <div class="dropdown" id="services-dropdown">
+        <div class="dropdown-button" onclick="toggleDropdown(event)">
+            <div class="dropdown-text">✉️ Disclone</div>
+            <div class="icon-wrapper">
+                <img class="icon down" src="/static/icons/material/down.svg"/>
+                <img class="icon up" src="/static/icons/material/up.svg"/>
+            </div>
+        </div>
+        <ul class="dropdown-menu">
+            <li class="lang-fr" onclick="">🔒️ Uniauth</li>
+            <li class="selected lang-en" onclick="">✉️ Disclone</li>
+            <li class="lang-eo" onclick="">️📒‍ Synapse</li>
+        </ul>
+    </div>
+    <div id="dashboard">
+       ${getDashboard('disclone')}
+    </div>
+</div>
