@@ -490,7 +490,7 @@ class Disclone(Server):
             if not op:
                 raise HTTPError(self.response, 403, "forbidden")
 
-            if not self.checkAccessRights(uid, server, "dashboard-create"):
+            if not self.checkAccessRights(uid, id, "dashboard-create"):
                 raise HTTPError(self.response, 403, "forbidden")
 
             if action == "create":
@@ -588,7 +588,7 @@ class Disclone(Server):
     @Server.expose
     def getDashboard(self, server,service_id):
         uid = self.getUser()
-        op = self.db.getSomething("op_servs", server)
+        op = self.db.getSomething("op_servs", server, "server")
         if not op:
             raise HTTPError(self.response, 403, "forbidden")
 
