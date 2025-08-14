@@ -607,7 +607,17 @@ class Disclone(Server):
             return json.dumps(board, default=str)
         #else get from unibridge
         else:
-            pass
+            data = self.uniauth.getAll("unibridge", service_id, "source")
+            if not data:
+                raise HTTPError(self.response, 404, "Not Found")
+            board = {}
+            for i in range(0, len(data)):
+                related = data[i].get("related_table")
+                if related:
+                    board[data[i]["name"]] = self.uniauth.getUnibridgeNotifs(related)
+                else:
+                    board[data[i]["name"]] = data[i]["value"]
+            return json.dumps(board, default=str)
 
     def sendStatusUpdates(self, uid):
         query = "select active_client.id, userid, server, idle from active_client,subscription where (subscription.account = %s and active_client.id = subscription.client) OR (active_client.id = %s);"

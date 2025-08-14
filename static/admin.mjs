@@ -16,12 +16,23 @@ function getDashboard(service_id){
     if (request.status === 200) {
         const dashboard = JSON.parse(request.responseText);
         console.log("Dashboard loaded:", dashboard);
-        return `<div class="dashboard-category">
+        let dashboardContent = ""
+
+        global.dashboard = dashboard;
+        if (dashboard.users) {
+            dashboardContent +=`<div class="dashboard-category">
             <h1>Users</h1>
             <div class="dashboard-content">
                 ${dashboard.users.count}
             </div>
 </div>`
+        }
+
+        if (dashboard.waitlist) {
+            dashboardContent += getTemplate("dashboard-elt-waitlist");
+        }
+
+        return dashboardContent
     } else {
         console.error("Failed to load dashboard:", request.status, request.statusText);
     }

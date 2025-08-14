@@ -3357,6 +3357,15 @@ p.edited {
     padding: 0 1.2rem;
 }
 
+#dashboard .scrollable{
+    height: 50svh;
+}
+
+#dashboard .scrollable .item{
+    display: flex;
+    flex-direction: row;
+}
+
 .dashboard-category h1{
     font-size: 1rem;
     font-weight: 400;
