@@ -638,7 +638,8 @@ export function loadServer(id){
         if (resp.op) {
             serv.op = resp.op
         }
-        serv["dirs"] = {"channels" : resp.channels, "dashboards" : resp.dashboards, "cat" : resp.cat}
+        const dashboards = resp.dashboards ? resp.dashboards : []
+        serv["dirs"] = {"channels" : resp.channels, "dashboards" : dashboards , "cat" : resp.cat}
 
         serv["members"] = {}
         let userList = []

@@ -222,8 +222,8 @@ class Disclone(Server):
             if not channelID:
                 content["channels"] = self.db.getAll("textual_channel", servID,"server")
                 op = self.db.getSomething("op_servs", servID, "server")
-                if op:
-                    content["dashboards"] = self.db.getAll("serv_dashboard", servID,"server")
+                if op and self.checkAccessRights(uid, servID, "dashboard-read"):
+                    content["dashboards"] = self.db.getAll("serv_dashboard", servID, "server")
                     content["op"] = True
                 content["cat"] = self.db.getAll("server_cat", servID,"server")
                 content["roles"] = self.db.getAll("role", servID,"server")
@@ -440,12 +440,30 @@ class Disclone(Server):
         if not self.db.getFilters("accessserver", ["account", "=", uid, "and", "server", "=", server]):
             return False
 
-        if action == "edit":
-            if self.db.getSomething("server", server)["owner"] != uid:
-                return False
-            #TODO make it for real
+        serverInfos = self.db.getSomething("server", server)
+        if serverInfos["owner"] == uid:
+            return True
+
+        userRights = self.getRights(server, uid)
+
+        if action not in userRights:
+            return False
 
         return True
+
+    def getRights(self, serverId, uid):
+        serverRoles = self.db.getAll("role", serverId, "server")
+        # make a set of roles based on their ids
+        serverRoles = {role["id"]: role for role in serverRoles}
+        userRoles = self.db.getFilters("role_attribution", ["account", "=", uid, "and", "server", "=", serverId])
+        userRights = {}
+
+        for role in userRoles:
+            if serverRoles[role["role"]]:
+                for right in serverRoles[role["role"]]["permissions"]:
+                    userRights[right] = right
+
+        return userRights
 
     @Server.expose
     def editServer(self, property, id, value=None, field=None, action=None, targetId=None):
@@ -470,6 +488,9 @@ class Disclone(Server):
         if property == "dashboard":
             op = self.db.getSomething("op_servs", id, "server")
             if not op:
+                raise HTTPError(self.response, 403, "forbidden")
+
+            if not self.checkAccessRights(uid, server, "dashboard-create"):
                 raise HTTPError(self.response, 403, "forbidden")
 
             if action == "create":
@@ -570,10 +591,9 @@ class Disclone(Server):
         op = self.db.getSomething("op_servs", server)
         if not op:
             raise HTTPError(self.response, 403, "forbidden")
-        #check access rights to server
 
-
-        #check sufficent role
+        if not self.checkAccessRights(uid, server, "dashboard-read"):
+            raise HTTPError(self.response, 403, "forbidden")
 
         #if disclone get from self
         if service_id == "disclone":
