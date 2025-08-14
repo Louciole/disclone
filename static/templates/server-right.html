@@ -1,0 +1,10 @@
+<div class="permission">
+    <div class="inline space-between">
+        <h3>${element.name}</h3>
+        <label class="switch">
+            <input type="checkbox" onchange="editRolePerm(event, '${element.name}')" ${global.state.currentRole.permissions[element.name] === '' ? 'checked' : ''}>
+            <span class="slider"></span>
+        </label>
+    </div>
+    <p>${element.description}</p>
+</div>

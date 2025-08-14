@@ -221,6 +221,10 @@ class Disclone(Server):
             content = {}
             if not channelID:
                 content["channels"] = self.db.getAll("textual_channel", servID,"server")
+                op = self.db.getSomething("op_servs", servID, "server")
+                if op:
+                    content["dashboards"] = self.db.getAll("serv_dashboard", servID,"server")
+                    content["op"] = True
                 content["cat"] = self.db.getAll("server_cat", servID,"server")
                 content["roles"] = self.db.getAll("role", servID,"server")
                 content["members"] = self.db.getFilters("accessserver", ["server", "=", servID])
@@ -501,7 +505,6 @@ class Disclone(Server):
                 id = self.db.insertDict("role_attribution", {"account": targetId, "role": value, "server":id}, getId=True)
                 return str(id)
 
-
             self.db.edit("role", targetId, field, value)
         elif property == "name":
             self.db.edit("server", id, property, value)
@@ -576,12 +579,12 @@ class Disclone(Server):
         if service_id == "disclone":
             self.db.cur.execute("SELECT COUNT(*) FROM disclone_account", ())
             board = {"users": self.db.cur.fetchone()}
-            return board
+            return json.dumps(board, default=str)
         #if uniauth get from uniauth
         elif service_id == "uniauth":
             self.uniauth.cur.execute("SELECT COUNT(*) FROM account", ())
-            board = {"users": self.db.cur.fetchone()}
-            return board
+            board = {"users": self.uniauth.cur.fetchone()}
+            return json.dumps(board, default=str)
         #else get from unibridge
         else:
             pass

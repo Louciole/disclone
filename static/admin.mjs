@@ -1,17 +1,30 @@
 import {xhr} from "./framework/templating.mjs";
+import global from "./framework/global.mjs";
+import {loadChan} from "./crud.mjs";
+import {goTo} from "./framework/navigation.mjs";
+
+
+function setDashboard(service_id) {
+    const dashboardContainer = document.getElementById("dashboard");
+    dashboardContainer.innerHTML = getDashboard(service_id);
+}
+window.setDashboard = setDashboard
 
 function getDashboard(service_id){
-    const onload = function() {
-        if (this.status === 200) {
-            const dashboard = JSON.parse(this.responseText);
-            console.log("Dashboard loaded:", dashboard);
-            // You can process the dashboard data here
-        } else {
-            console.error("Failed to load dashboard:", this.status, this.statusText);
-        }
-    }
 
-    xhr(`/getDashboard?server${global.state.currentServer}&service_id=${service_id}`, onload)
+    const request = xhr(`/getDashboard?server=${global.state.currentServer.id}&service_id=${service_id}`, undefined, "GET", false);
+    if (request.status === 200) {
+        const dashboard = JSON.parse(request.responseText);
+        console.log("Dashboard loaded:", dashboard);
+        return `<div class="dashboard-category">
+            <h1>Users</h1>
+            <div class="dashboard-content">
+                ${dashboard.users.count}
+            </div>
+</div>`
+    } else {
+        console.error("Failed to load dashboard:", request.status, request.statusText);
+    }
 }
 window.getDashboard = getDashboard
 
@@ -19,3 +32,20 @@ function createDashboard(){
     xhr("editServer?id="+global.state.currentServer.id+"&property=dashboard&action=create",undefined)
 }
 window.createDashboard = createDashboard
+
+function goToDashboard(id){
+    let targetElt
+    if(global.state.activeConv){
+        targetElt = document.getElementById("channel".concat(global.state.activeConv))
+        targetElt.classList.remove("selected")
+    }
+
+    global.state.activeConv = undefined
+    // loadChan(id)
+
+    targetElt = document.getElementById("channel".concat(id))
+    targetElt.classList.add("selected")
+
+    goTo('content','admin-channel',undefined,false)
+}
+window.goToDashboard = goToDashboard

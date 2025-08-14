@@ -635,7 +635,10 @@ export function loadServer(id){
         console.log(this.responseText)
         const resp = JSON.parse(this.responseText)
         const serv = lookFor(id,global.servers)
-        serv["dirs"] = {"channels" : resp.channels, "cat" : resp.cat}
+        if (resp.op) {
+            serv.op = resp.op
+        }
+        serv["dirs"] = {"channels" : resp.channels, "dashboards" : resp.dashboards, "cat" : resp.cat}
 
         serv["members"] = {}
         let userList = []
@@ -665,6 +668,7 @@ function firstGreater(arr, target) {
 function orderServDirs(serv){
     serv?.dirs?.cat.sort((a, b) => a.place - b.place);
     serv?.dirs?.channels.sort((a, b) => a.place - b.place);
+    serv?.dirs?.dashboards.sort((a, b) => a.place - b.place);
 
     for (let cat of serv.dirs.cat){
         cat.channels = []
@@ -674,6 +678,15 @@ function orderServDirs(serv){
     for (let chan of serv.dirs.channels){
         if (chan.category){
             lookFor(chan.category,serv.dirs.cat).channels.push(chan)
+        }else{
+            //insert between categories
+            ordered.splice(firstGreater(ordered,chan.place), 0, chan);
+        }
+    }
+    for (let chan of serv.dirs.dashboards){
+        chan.type = "dashboard"
+        if (chan.category){
+            lookFor(chan.category,serv.dirs.cat).dashboards.push(chan)
         }else{
             //insert between categories
             ordered.splice(firstGreater(ordered,chan.place), 0, chan);

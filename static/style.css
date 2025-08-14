@@ -17,6 +17,7 @@ html{
     --orange: #FF9A00;
 
     --sb-size: 9px;
+    --sb-size-tiny: 4px;
 }
 
 @font-face {
@@ -1826,22 +1827,26 @@ input[type="text"]{
     box-shadow: 10px 10px 13px -11px rgb(0, 0, 0);
 }
 
-.scrollable::-webkit-scrollbar {
+.scrollable::-webkit-scrollbar, .scrollbar::-webkit-scrollbar {
     width: var(--sb-size)
 }
 
-.scrollable::-webkit-scrollbar-track {
+.scrollable::-webkit-scrollbar-track, .scrollbar::-webkit-scrollbar-track {
     background: var(--bg2);
     border-radius: 9px;
 }
 
-.scrollable::-webkit-scrollbar-thumb {
+.scrollable::-webkit-scrollbar-thumb, .scrollbar::-webkit-scrollbar-thumb {
     background: var(--bg4);
     border-radius: 9px;
 }
 
+.tiny.scrollbar::-webkit-scrollbar {
+    width: var(--sb-size-tiny)
+}
+
 @supports not selector(::-webkit-scrollbar) {
-    .scrollable {
+    .scrollable, .scrollbar {
         scrollbar-color: var(--bg4)
         var(--bg2);
     }
@@ -3273,7 +3278,6 @@ p.edited {
     width: 100%;
 }
 
-
 .serveur img {
     width: 100%;
 }
@@ -3288,6 +3292,7 @@ p.edited {
     border-radius: 0rem 0rem 1rem 1rem;
     background: var(--text2bis);
     margin-bottom: 1rem;
+    width: 500px;
 }
 
 
@@ -3296,6 +3301,7 @@ p.edited {
     flex-direction: row;
     align-items: flex-start;
     overflow-y: hidden;
+    max-width: 500px;
     overflow-x: scroll;
 }
 
@@ -3309,9 +3315,11 @@ p.edited {
 }
 
 .avatar-display{
-    height: 50svh;
+    height: 500px;
     border-radius: 1rem 1rem 0rem 0rem;
     background: var(--text);
+    overflow: clip;
+    width: 500px;
 }
 
 .avatar-selector .elements{
@@ -3319,13 +3327,113 @@ p.edited {
     align-items: center;
     flex-wrap: wrap;
     height: fit-content;
+    gap: 1rem;
+    padding: 1rem;
 }
 
 .avatar-selector .elements > div{
     height: 4rem;
     cursor: pointer;
+    background: var(--text);
+    border-radius: 7px;
+    opacity: 0.7;
+}
+
+.avatar-selector .elements > div.selected{
+    opacity: 1;
+    cursor: not-allowed;
+}
+
+.dashboard-category{
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--bg4);
+    background: var(--bg3);
+    gap: 1rem;
+    border-radius: 0.6rem;
+    width: fit-content;
+    padding: 0 1.2rem;
+}
+
+.dashboard-category h1{
+    font-size: 1rem;
+    font-weight: 400;
+}
+
+.dashboard-content{
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--green);
+}
+
+.tabs {
+    display: flex;
+    gap: 1rem;
+    border-bottom: 2px solid var(--text2);
+}
+
+.tabs h2{
+    font-size: 1rem;
+    color: var(--text2);
+    cursor: pointer;
+}
+
+.tabs .selected{
+    color: var(--accent2);
+}
+
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 22px;
+}
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: var(--bg3);
+    transition: .2s;
+    border-radius: 22px;
+}
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 18px; width: 18px;
+    left: 2px; bottom: 2px;
+    background-color: white;
+    transition: .2s;
+    border-radius: 50%;
+}
+input:checked + .slider {
+    background-color: var(--accent);
+}
+input:checked + .slider:before {
+    transform: translateX(18px);
 }
 
 .avatar-selector .elements > div > img{
     height: 100%;
+}
+
+.permission {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    padding: 2rem 0;
+    border-bottom: solid 2px var(--bg2);
+}
+
+.permission h3 {
+    font-size: 1rem;
+    color: var(--text2);
+    margin: 0;
+    padding: 0;
 }

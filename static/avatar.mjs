@@ -17,35 +17,35 @@ global.state.avatar.layers = {
     "hairFront": {"1.1": "#652538"},
 }
 global.state.avatar.currentVariation = {
-    "body": "",
-    "eyes": "",
-    "clothes1": "",
-    "clothes2": "",
-    "nose": "",
-    "mouth": "",
-    "eyebrows": "",
-    "hairLow2": "",
-    "hairLow": "",
-    "hairSide": "",
-    "hairMain": "",
-    "hairUp": "",
-    "hairFront": "",
+    "body": "1.1",
+    "eyes": "1.1",
+    "clothes1": "1.1",
+    "clothes2": "1.1",
+    "nose": "1.1",
+    "mouth": "1.1",
+    "eyebrows": "1.1",
+    "hairLow2": "1.1",
+    "hairLow": "1.1",
+    "hairSide": "1.1",
+    "hairMain": "1.1",
+    "hairUp": "1.1",
+    "hairFront": "1.1",
 }
 
 const steps = [
-    {name: 'body', nullable: false},
-    {name: 'eyes', nullable: true},
-    {name: 'clothes1', nullable: true},
-    {name: 'clothes2', nullable: true},
-    {name: 'nose', nullable: true},
-    {name: 'mouth', nullable: true},
-    {name: 'eyebrows', nullable: true},
-    {name: 'hairLow2', nullable: true},
-    {name: 'hairLow', nullable: true},
-    {name: 'hairSide', nullable: true},
-    {name: 'hairMain', nullable: true},
-    {name: 'hairUp', nullable: true},
-    {name: 'hairFront', nullable: true},
+    {name: 'body', nullable: false, id:0},
+    {name: 'eyes', nullable: true, id:1},
+    {name: 'clothes1', nullable: true, id:2},
+    {name: 'clothes2', nullable: true, id:3},
+    {name: 'nose', nullable: true, id:4},
+    {name: 'mouth', nullable: true, id:5},
+    {name: 'eyebrows', nullable: true, id:6},
+    {name: 'hairLow2', nullable: true, id:7},
+    {name: 'hairLow', nullable: true, id:8},
+    {name: 'hairSide', nullable: true, id:9},
+    {name: 'hairMain', nullable: true, id:10},
+    {name: 'hairUp', nullable: true, id:11},
+    {name: 'hairFront', nullable: true, id:12},
 ];
 
 function loadImage(src) {
@@ -97,7 +97,6 @@ async function drawAvatar(canvas) {
             variationId = '1.1'
             variation = variations['1.1'];
         } else if (variationId === "none") {
-            debugger
             continue; // skip if no variation is selected
         }else{
             variation = variations[variationId];
@@ -170,9 +169,12 @@ window.avatarVariations = function() {
 window.changeAvatarPreview =  function (id) {
     global.state.avatar.currentVariation[global.state.avatar.currentLayer.name] = id;
     drawAvatar(document.getElementById('avatarCanvas'))
+    const elt = document.getElementById('avatar-variations');
+    elt.innerHTML = avatarVariations();
 }
 
 window.goToAvatarStep = function (step) {
+    global.state.avatar.currentLayer = steps[step];
     const elt = document.getElementById('avatar-variations');
     elt.innerHTML = avatarVariations();
 }

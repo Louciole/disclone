@@ -111,7 +111,8 @@ create table if not exists role (
     id bigserial NOT NULL PRIMARY KEY,
     server integer NOT NULL,
     name varchar(24) NOT NULL,
-    color varchar(7) DEFAULT '#A8A8A8'
+    color varchar(7) DEFAULT '#A8A8A8',
+    permissions jsonb DEFAULT '{}'
 );
 
 create table if not exists room (

@@ -3,6 +3,7 @@ import {loadServers, loadUser, loadConvs, loadUsers, handleMessageGroup, sendTyp
 import global from "/static/framework/global.mjs"
 import {MDToHTML} from "/static/markdown/utils.mjs"; // DO NOT REMOVE
 import {} from "/static/admin.mjs"; // DO NOT REMOVE
+import {} from "/static/access.mjs"; // DO NOT REMOVE
 import {} from "/static/avatar.mjs"; // DO NOT REMOVE
 import { initDrag } from "./drag.mjs";
 import emojis from "/static/emojis.mjs";
