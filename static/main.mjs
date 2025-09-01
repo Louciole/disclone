@@ -1,4 +1,5 @@
-import {initNav, goTo} from "/static/framework/navigation.mjs"
+import {initNavigation, printWatermark, goTo} from "/static/framework/navigation.mjs"
+import {initWebSockets} from "./framework/websockets.mjs";
 import {loadServers, loadUser, loadConvs, loadUsers, handleMessageGroup, sendTyping, lookFor} from "/static/crud.mjs"
 import global from "/static/framework/global.mjs"
 import {MDToHTML} from "/static/markdown/utils.mjs"; // DO NOT REMOVE
@@ -11,62 +12,14 @@ import {addElement, pushElement, setElement} from "/static/framework/sakura.mjs"
 import {xhr} from "./framework/templating.mjs";
 import {initTranslations} from "./translations/translation.mjs";
 
-window.global = global
-global.state.dom = document.querySelector("body")
+
 global.state.currentTab = document.getElementById("logo")
 const notifElt = document.getElementById("notif")
-const { hostname, port } = window.location;
-global.state.location = { host:hostname, port:port, short:port ? hostname + ":" + port : hostname }
-function isMobileDevice() {
-    return /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-}
+global.state.pendingConvMembers = {}
+global.users = {}
+global.convs = {}
+global.privateConvs = {}
 
-global.state.isMobile = isMobileDevice()
-if (global.state.isMobile) {
-    global.state.dom.classList.add("mobile")
-
-    const onload = function(){
-        console.log(this.responseText)
-    }
-    xhr("/static/mobileUiManifest.js", onload)
-}
-
-window.addEventListener('unload', () => {
-    if (global.state?.socket.readyState !== WebSocket.CLOSED) {
-        const message = {"type" : 'unregister', "clientID":global.state.clientID}
-        global.state.socket.send(JSON.stringify(message))
-        global.state.socket.close()
-    }
-});
-
-function print(...args){
-    const green ="#68f66e"
-    const blue ="#4284f5"
-    const yellow ="#fef972"
-    const red ="#ee6966"
-    const pink ="#fb7bfa"
-    const purple ="#6a76fa"
-
-    const colors = [green,blue,green,"white",green,blue,"white",yellow,blue,"white",yellow,"white",yellow,red,pink,purple];
-    console.log(`%c${args.join(' ')}`, ...colors.map(c => `color: ${c};`));
-    // console.log(colors.map(c => `%c${c}`).join(''), ...colors.map(c => `background: ${c};`));
-}
-
-print("                                            %c Disclone@Carbonlab.dev\n" +
-    "%c⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀        %c -----------------------------------\n" +
-    "%c⠀⠀⠀⠀⠀⠀⠀⢠⠀⠀⠀⠀⠀⠀⠀⠀⢰⣿⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀       %c  Credits%c: Lou !  \n" +
-    "%c⠀⠀⠀⠀⠀⠀⠀⠸⣷⣦⣀⠀⠀⠀⠀⠀⣿⣿⡇⠀⠀⠀⠀⠀⠀⠀⡀⠀⠀        %c Github%c: https://github.com/Louciole/disclone \n" +
-    "%c⠀⠀⠀⠀⠀⠀⠀⠀⠙⣿⣿⣿⣦⠀⠠⠾⠿⣿⣷⠀⠀⠀⠀⠀⣠⣤⣄⠀⠀⠀\n" +
-    "⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⠟⢉⣠⣤⣶⡆⠀⣠⣈⠀⢀⣠⣴⣿⣿⠋⠀⠀⠀⠀      %c Powered by Sakura ! \n" +
-    "%c⠀⢀⡀⢀⣀⣀⣠⣤⡄⢀⣀⡘⣿⣿⣿⣷⣼⣿⣿⣷⡄⠹⣿⡿⠁⠀⠀⠀⠀⠀\n" +
-    "%c⠀⠀⠻⠿⢿⣿⣿⣿⠁⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣟⣁⠀⠋⠀⠀⠀⠀⠀⠀⠀ \n" +
-    "⠀⠀⠀⠀⠀⠀⠈⠻⠀⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⢰⣄⣀⠀⠀⠀⠀⠀\n" +
-    "%c⠀⠀ ⠀⠀⠀⠀⣠⡀⠀⣴⣿⣿⣿⣿⣿⣿⣿⡿⢿⡿⠀⣾⣿⣿⣿⣿⣶⡄⠀ \n" +
-    "⠀⠀⠀⠀⠀⢀⣾⣿⣷⡀⠻⣿⣿⡿⠻⣿⣿⣿⣿⠀⠀⠈⠉⠉⠉⠀⠀⠀⠀⠀\n" +
-    "⠀⠀⠀⠀⣠⣾⡿⠟⠉⠉⠀⢀⡉⠁⠀⠛⠛⢉⣠⣴⣧⠀⠀⠀⠀⠀⠀⠀⠀⠀\n" +
-    "%c⠀⠀⠀⠈⠉⠉⠀⠀⠀⠀⠀⢸⣿⣿⡿⠉⠀⠙⠿⣿⣿⣧⡀⠀⠀⠀⠀⠀⠀⠀\n" +
-    "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠘⣿⣿⠁⠀⠀⠀⠀⠀⠙⠿⣷⠀⠀⠀⠀⠀⠀⠀\n" +
-    "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⠟⠀⠀⠀⠀⠀⠀⠀⠀⠃⠀⠀⠀⠀⠀⠀⠀")
 
 const onBlockedLoaded = function(){
     global.user.blocked = {}
@@ -371,12 +324,13 @@ function getUserStatus(id, customOnly=false){
 }
 window.getUserStatus = getUserStatus
 
-
+initWebSockets()
+initNavigation()
+printWatermark("Disclone@carbonlab.dev", "https://github.com/Louciole/disclone")
 await initTranslations()
 goTo('content',"friends",undefined,true,()=>{goTo('friends-block','main-friend')})
 loadTemplate("profile-info.html")
 loadConvs()
-initNav()
 loadUser()
 xhr("friends?action=getBlocked", onBlockedLoaded)
 xhr("friends?action=get", onFriendsLoaded)

@@ -1,6 +1,5 @@
 server{
     listen 80;
-    listen 443;
     server_name disclone.carbonlab.dev;
 
     location /static/ {

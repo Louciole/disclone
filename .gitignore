@@ -12,3 +12,5 @@ yarn.lock
 .parcel-cache/
 package.json
 /static/attachments/*
+/static/markdown/
+/static/framework/

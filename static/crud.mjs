@@ -159,7 +159,6 @@ export function loadUser(){
     request.onload = function() { // request successful
         setElement('global.user', JSON.parse(request.responseText))
         global.users[global.user.id] = global.user
-        initWebSockets()
     };
 
     request.onerror = function() {
