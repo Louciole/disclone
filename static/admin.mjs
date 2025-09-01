@@ -4,9 +4,14 @@ import {loadChan} from "./crud.mjs";
 import {goTo} from "./framework/navigation.mjs";
 
 
-function setDashboard(service_id) {
+function setDashboard(service_id, tool = false) {
     const dashboardContainer = document.getElementById("dashboard");
-    dashboardContainer.innerHTML = getDashboard(service_id);
+
+    if (tool) {
+        dashboardContainer.innerHTML = getTemplate("dashboard-tool-" + service_id);
+    }else{
+        dashboardContainer.innerHTML = getDashboard(service_id);
+    }
 }
 window.setDashboard = setDashboard
 

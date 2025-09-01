@@ -619,6 +619,18 @@ class Disclone(Server):
                     board[data[i]["name"]] = data[i]["value"]
             return json.dumps(board, default=str)
 
+
+    @Server.expose
+    def sendEmail(self, server, to, subject, body):
+        op = self.db.getSomething("op_servs", server, "server")
+        if not op:
+            raise HTTPError(self.response, 403, "forbidden")
+
+        if not self.checkAccessRights(uid, server, "dashboard-read"):
+            raise HTTPError(self.response, 403, "forbidden")
+
+
+
     def sendStatusUpdates(self, uid):
         query = "select active_client.id, userid, server, idle from active_client,subscription where (subscription.account = %s and active_client.id = subscription.client) OR (active_client.id = %s);"
         self.db.cur.execute(query, (uid, uid))

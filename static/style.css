@@ -3364,6 +3364,12 @@ p.edited {
 #dashboard .scrollable .item{
     display: flex;
     flex-direction: row;
+    gap: 1rem;
+    border-bottom: solid 1px var(--text2bis);
+}
+
+#dashboard .scrollable .item div{
+    user-select: all;
 }
 
 .dashboard-category h1{

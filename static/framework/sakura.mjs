@@ -1,18 +1,21 @@
-function logout(){
+function logout() {
     const url = "/logout";
-    let request = new XMLHttpRequest();
-    request.open('POST', url, true);
-    request.onload = function() { // request successful
-        if (request.response === 302){
-            window.location.href = request.response.headers.get('location');
-        }
-    };
-
-    request.onerror = function() {
-        console.log("request failed")
-    };
-
-    request.send();
+    fetch(url, {
+        method: 'POST',
+        redirect: 'manual'
+    })
+        .then(response => {
+            const location = response.headers.get('location');
+            if (response.status === 302 && location) {
+                window.location.href = location;
+            } else {
+                // fallback: reload page or handle error
+                window.location.reload();
+            }
+        })
+        .catch(() => {
+            console.log("request failed");
+        });
 }
 window.logout = logout
 

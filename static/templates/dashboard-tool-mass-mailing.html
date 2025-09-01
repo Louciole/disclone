@@ -1,0 +1,67 @@
+<h2>Welcome to mass mailing tool</h2>
+<p>Use this tool to send emails to the users.</p>
+<div class="inline">
+    <div>
+        <div class="inline">
+            <h4>Address</h4>
+            <input type="text" id="mailing-source" placeholder="address"/>
+        </div>
+        <div class="inline">
+            <h4>Subject</h4>
+            <input type="text" id="mailing-subject" placeholder="Subject"/>
+        </div>
+    </div>
+    <div>
+        <div class="receivers-list">
+            <h4>Receivers</h4>
+            <textarea id="mailing-receivers" placeholder="one email per line"></textarea>
+        </div>
+    </div>
+</div>
+<div class="inline">
+    <div>
+        <h4>HTML Body</h4>
+        <textarea id="mailing-body" placeholder="Email body"></textarea>
+    </div>
+    <div>
+        <h4>Text Body</h4>
+        <textarea id="mailing-text" placeholder="Email text"></textarea>
+    </div>
+</div>
+<script>
+    sendEmails = () => {
+        const source = document.getElementById("mailing-source").value;
+        const subject = document.getElementById("mailing-subject").value;
+        const receivers = document.getElementById("mailing-receivers").value.split("\n").map(r => r.trim()).filter(r => r.length > 0);
+        const body = document.getElementById("mailing-body").value;
+        const text = document.getElementById("mailing-text").value;
+
+        if (!source || !subject || receivers.length === 0 || (!body && !text)) {
+            alert("Please fill all fields");
+            return;
+        }
+
+        xhr()
+
+        let request = new XMLHttpRequest();
+        request.open('POST', "/sendMassEmail", true);
+        request.setRequestHeader('Content-Type', 'application/json');
+        request.onload = function() {
+            console.log("request success", request.responseText);
+            alert("Emails sent successfully");
+        }
+        request.onerror = function() {
+            console.log("request failed")
+            alert("Failed to send emails");
+        };
+
+        request.send(JSON.stringify({
+            source,
+            subject,
+            receivers,
+            body,
+            text
+        }));
+    }
+</script>
+<div class="btn blue" onclick="">Send email(s)</div>
