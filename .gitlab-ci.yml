@@ -1,21 +1,10 @@
-
-pages:
-  stage: deploy
-  image: alpine:latest
-  script:
-    - echo 'Nothing to do...'
-  artifacts:
-    paths:
-    - public
-  only:
-    - front-archive
-
 test:
   stage: test
-  image: python:3.10-slim-bookworm
+  image: python:3.11-slim-bookworm
   script:
     - echo 'Running tests...'
     - apt-get update && apt-get install -y git && apt-get install -y gcc
+    - sudo apt install -y libpq-dev
     - python -m pip install -r requirements.txt
     - python -m pip install git+https://gitlab.com/Louciole/sakura.git/
     - python -m sakura test

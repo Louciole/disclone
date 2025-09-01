@@ -6,14 +6,6 @@
 🏀 Roadmap : https://smoop.carbonlab.dev/project?uid=11&&access=read-only <br>
 🏡 Home : https://gitlab.com/Louciole/disclone
 
-## Frontend ! 
-In the enchanted forest of Disclone, nestled amidst ancient trees, lies a hidden archive. It beckons to adventurers, promising the secrets of forgotten magic. Guided by whispers of wind, they find the portal and enter a realm of wonders. There, a standalone frontend awaits, a fusion of ancient wisdom and modern marvels. As they explore its depths, they become guardians of knowledge, entrusted with preserving Disclone's magic for eternity.
-
-Repo :
-[Gitlab](https://gitlab.com/Louciole/disclone/-/tree/front-archive?ref_type=heads)
-
-Deployment : 
-    https://louciole.gitlab.io/disclone/
 
 ## 🏎️ getting started
 
