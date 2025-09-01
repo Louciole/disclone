@@ -4,7 +4,7 @@ test:
   script:
     - echo 'Running tests...'
     - apt-get update && apt-get install -y git && apt-get install -y gcc
-    - sudo apt install -y libpq-dev
+    - apt install -y libpq-dev
     - python -m pip install -r requirements.txt
     - python -m pip install git+https://gitlab.com/Louciole/sakura.git/
     - python -m sakura test
