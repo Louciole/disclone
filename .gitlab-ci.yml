@@ -5,6 +5,8 @@ test:
     - echo 'Running tests...'
     - apt-get update && apt-get install -y git && apt-get install -y gcc
     - apt install -y libpq-dev
-    - python -m pip install -r requirements.txt
-    - python -m pip install git+https://gitlab.com/Louciole/sakura.git/
-    - python -m sakura test
+    - python -m venv venv
+    - source venv/bin/activate
+    - pip install -r requirements.txt
+    - pip install git+https://gitlab.com/Louciole/sakura.git/
+    - sakura test
