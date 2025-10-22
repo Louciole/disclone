@@ -436,6 +436,16 @@ class Disclone(Server):
         else:
             self.db.edit("disclone_account", uid, element, value)
 
+
+    def checkModerationRights(self, user_id, action):
+        userRights = self.getModRights(user_id)
+
+        if action not in userRights:
+            return False
+        return True
+
+
+
     def checkAccessRights(self, uid, server, action):
         if not self.db.getFilters("accessserver", ["account", "=", uid, "and", "server", "=", server]):
             return False
@@ -450,6 +460,24 @@ class Disclone(Server):
             return False
 
         return True
+
+    def getModRights(self, user_id):
+        modServsQuery = self.db.cur.execute("SELECT *.id FROM op_servs", ())
+        modServs = self.db.cur.fetchall()
+
+        for modServ in modServs:
+            serverRoles = self.db.getAll("role", modServ, "server")
+            # make a set of roles based on their ids
+            serverRoles = {role["id"]: role for role in serverRoles}
+            userRoles = self.db.getFilters("role_attribution", ["account", "=", uid, "and", "server", "=", serverId])
+            userRights = {}
+
+            for role in userRoles:
+                if serverRoles[role["role"]]:
+                    for right in serverRoles[role["role"]]["permissions"]:
+                        userRights[right] = right
+
+        return userRights
 
     def getRights(self, serverId, uid):
         serverRoles = self.db.getAll("role", serverId, "server")

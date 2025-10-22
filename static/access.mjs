@@ -1,6 +1,13 @@
 import {xhr} from "./framework/templating.mjs";
 
 const rights = {
+    "channel-read": {'name': 'channel-read', 'category': 'server', 'description': 'See the channels'},
+    "channel-edit": {'name': 'channel-edit', 'category': 'server', 'description': 'Create/Rename/Delete and move the channels'},
+    "manage-roles": {'name': 'manage-roles', 'category': 'server', 'description': 'Create/Rename/Delete and edit the inferior roles'},
+    "manage-server": {'name': 'manage-server', 'category': 'server', 'description': 'Rename/Delete and manage the server'},
+    "send-messages": {'name': 'send-messages', 'category': 'textual', 'description': 'Send messages'},
+    "send-media": {'name': 'send-media', 'category': 'textual', 'description': 'Authorize members to send images and files'},
+    "ban": {'name': 'ban', 'category': 'disclone', 'description': 'Ban people from disclone'},
     "dashboard-read": {'name': 'dashboard-read', 'category': 'dashboard', 'description': 'See the dashboards'},
     "dashboard-create": {'name': 'dashboard-create' ,'category': 'dashboard', 'description': 'Create a new dashboard'}
 }
