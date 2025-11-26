@@ -7,7 +7,7 @@ import {
     pushElement,
     deleteVal,
     updateElement
-} from "./framework/sakura.mjs"
+} from "./framework/vesta.mjs"
 import {initWebSockets} from "./framework/websockets.mjs"
 import global from "./framework/global.mjs"
 import {xhr} from "./framework/templating.mjs";

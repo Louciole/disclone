@@ -1,4 +1,4 @@
-import {setElement} from "./framework/sakura.mjs";
+import {setElement} from "./framework/vesta.mjs";
 
 function getQuizResult(answersCount){
     let metric1 = 0

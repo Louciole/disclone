@@ -8,7 +8,7 @@ import {} from "/static/access.mjs"; // DO NOT REMOVE
 import {} from "/static/avatar.mjs"; // DO NOT REMOVE
 import { initDrag } from "./drag.mjs";
 import emojis from "/static/emojis.mjs";
-import {addElement, pushElement, setElement} from "/static/framework/sakura.mjs";
+import {addElement, pushElement, setElement} from "/static/framework/vesta.mjs";
 import {xhr} from "./framework/templating.mjs";
 import {initTranslations} from "./translations/translation.mjs";
 

@@ -1,6 +1,5 @@
 import global from "./framework/global.mjs"
 import {handleMessageGroup, lookFor} from "./crud.mjs";
-import {pushElement} from "./framework/sakura.mjs";
 import {xhr} from "./framework/templating.mjs";
 
 function deafen(){

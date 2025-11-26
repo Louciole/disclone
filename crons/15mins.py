@@ -1,4 +1,4 @@
-from sakura import Server
+from vesta import Server
 
 from datetime import datetime
 from os.path import abspath, dirname, join

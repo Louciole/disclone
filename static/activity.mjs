@@ -1,5 +1,5 @@
 import global from "./framework/global.mjs";
-import {setElement} from "./framework/sakura.mjs";
+import {setElement} from "./framework/vesta.mjs";
 
 export function initActivity(){
     global.state.dom.addEventListener("mousemove", (event) => resetIdle());

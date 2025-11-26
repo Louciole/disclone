@@ -1,6 +1,6 @@
 import global from "./framework/global.mjs"
 import {loadChan, loadConv, loadServer, lookFor} from "./crud.mjs";
-import {setElement} from "./framework/sakura.mjs";
+import {setElement} from "./framework/vesta.mjs";
 import {closeFM, goTo} from "./framework/navigation.mjs";
 
 let emptyStr = '' //DO NOT REMOVE

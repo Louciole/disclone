@@ -2530,7 +2530,7 @@ select {
     background-color: var(--bg5);
 }
 
-.refresh-button.rotating {
+.refresh-button.rotating img {
     animation: rotate 1s linear infinite;
 }
 

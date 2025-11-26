@@ -1,13 +1,14 @@
 import urllib.parse
 from unicodedata import category
 
-from sakura import Server, HTTPError, HTTPRedirect
+from vesta import Server, HTTPError, HTTPRedirect
 import json
 import re
 import signal
 import string
 import random
 import datetime
+import requests
 
 # websockets imports
 import asyncio
@@ -618,6 +619,31 @@ class Disclone(Server):
                 else:
                     board[data[i]["name"]] = data[i]["value"]
             return json.dumps(board, default=str)
+
+    @Server.expose
+    def refreshDashboard(self, service):
+        uid = self.getUser()
+
+        services = {"synapse": {"local": "http://locahost:9876/unibridgeRefresh",
+                                "prod": "https://synapse.carbonlab.dev/unibridgeRefresh"}
+                    }
+
+        if service not in services:
+            raise HTTPError(self.response, 404, "Not Found")
+
+        if self.config.get("server", "debug") == "false":
+            endpoint = services[service]["prod"]
+        else:
+            endpoint = services[service]["local"]
+
+        try:
+            response = requests.post(endpoint, timeout=10)
+            if response.status_code == 200:
+                return json.dumps({"status": "ok", "data": response.json()})
+            else:
+                return json.dumps({"status": "error", "code": response.status_code, "message": response.text})
+        except requests.RequestException as e:
+            return json.dumps({"status": "error", "message": str(e)})
 
 
     @Server.expose

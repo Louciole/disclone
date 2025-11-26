@@ -2,7 +2,7 @@ import {xhr} from "./framework/templating.mjs";
 import global from "./framework/global.mjs";
 import {loadChan} from "./crud.mjs";
 import {goTo} from "./framework/navigation.mjs";
-import {updateElement} from "./framework/sakura.mjs";
+import {updateElement} from "./framework/vesta.mjs";
 
 // Mapping des IDs de service vers leurs labels
 const dashboardLabels = {
@@ -61,16 +61,33 @@ function getDashboard(service_id){
 
         global.dashboard = dashboard;
         if (dashboard.users) {
+            let count
+            if (!dashboard.users.count){
+                count = Object.keys(dashboard.users).length
+            }else{
+                count = dashboard.users.count
+            }
             dashboardContent +=`<div class="dashboard-category">
             <h1>Users</h1>
             <div class="dashboard-content">
-                ${dashboard.users.count}
+                ${count}
             </div>
 </div>`
         }
 
         if (dashboard.waitlist) {
             dashboardContent += getTemplate("dashboard-elt-waitlist");
+        }
+
+        for (let key in dashboard) {
+            if (key.endsWith("_count")){
+                dashboardContent +=`<div class="dashboard-category">
+            <h1>${key.split("_")[0]}s</h1>
+            <div class="dashboard-content">
+                ${dashboard[key][0].count}
+            </div>
+</div>`
+            }
         }
 
         return dashboardContent
@@ -110,14 +127,7 @@ window.goToDashboard = goToDashboard
 
 function refreshDashboard() {
     const currentApp = global.state.currentDashboard || 'disclone';
-    const endpoint = getUnibridgeEndpoint(currentApp);
-
-    if (!endpoint) {
-        console.error('No endpoint found for:', currentApp);
-        return;
-    }
-
-    console.log(`Refreshing ${currentApp} via ${endpoint}`);
+    console.log(`Refreshing ${currentApp} via proxy`);
 
     // Afficher un indicateur de chargement (optionnel)
     const refreshBtn = document.getElementById('refresh-dashboard-btn');
@@ -125,65 +135,18 @@ function refreshDashboard() {
         refreshBtn.classList.add('rotating');
     }
 
-    fetch(endpoint, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
+    xhr('/refreshDashboard?service='+currentApp, ()=>{
+        console.log(`${currentApp} refresh successful`);
+
+        const dashboardContainer = document.getElementById("dashboard");
+        if (dashboardContainer) {
+            dashboardContainer.innerHTML = getDashboard(currentApp);
         }
-    })
-    .then(response => {
-        if (response.ok) {
-            console.log(`${currentApp} refresh successful`);
-            // Recharger le dashboard après le rafraîchissement
-            const dashboardContainer = document.getElementById("dashboard");
-            if (dashboardContainer) {
-                dashboardContainer.innerHTML = getDashboard(currentApp);
-            }
-        } else {
-            console.error(`${currentApp} refresh failed:`, response.status);
-        }
-    })
-    .catch(error => {
-        console.error(`Error refreshing ${currentApp}:`, error);
-    })
-    .finally(() => {
-        // Retirer l'indicateur de chargement
+
         if (refreshBtn) {
             refreshBtn.classList.remove('rotating');
         }
-    });
+    })
+
 }
 window.refreshDashboard = refreshDashboard;
-
-// Configuration pour les endpoints
-const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-
-export const UNIBRIDGE_ENDPOINTS = {
-    'uniauth': {
-        localhost: '',
-        production: ''
-    },
-    'disclone': {
-        localhost: '',
-        production: ''
-    },
-    'synapse': {
-        localhost: 'http://localhost:5002/unibridgeRefresh',
-        production: 'https://synapse.carbonlab.dev/unibridgeRefresh'
-    },
-    'mass-mailing': {
-        localhost: '',
-        production: ''
-    }
-};
-
-// Fonction helper pour obtenir l'endpoint approprié
-export function getUnibridgeEndpoint(appId) {
-    const endpoints = UNIBRIDGE_ENDPOINTS[appId];
-    if (!endpoints) {
-        console.error(`No endpoint configured for app: ${appId}`);
-        return null;
-    }
-    return isLocalhost ? endpoints.localhost : endpoints.production;
-}
-

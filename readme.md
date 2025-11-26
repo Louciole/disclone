@@ -1,6 +1,6 @@
 # Disclone.
 
-❓️A shitty Discord clone based on sakura. <br>  
+❓️A shitty Discord clone based on Vesta. <br>  
 🌍 Production : https://disclone.carbonlab.dev <br>
 🟢 Status : https://status.carbonlab.dev <br>
 🏀 Roadmap : https://smoop.carbonlab.dev/project?uid=6&access=read-only <br>
