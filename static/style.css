@@ -2506,6 +2506,43 @@ select {
     display: none;
 }
 
+.refresh-button {
+    background-color: var(--bg4);
+    color: var(--text);
+    border: none;
+    border-radius: 7px;
+    padding: 0.5rem 0.8rem;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.5rem;
+    height: 2.5rem;
+}
+
+.refresh-button:hover {
+    background-color: var(--bg3);
+}
+
+.refresh-button:active {
+    background-color: var(--bg5);
+}
+
+.refresh-button.rotating {
+    animation: rotate 1s linear infinite;
+}
+
+@keyframes rotate {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 .menu h3{
     font-size: 0.7rem;
     margin: 0.2rem;
