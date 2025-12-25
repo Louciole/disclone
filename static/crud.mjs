@@ -11,7 +11,7 @@ import {
 import {initWebSockets} from "./framework/websockets.mjs"
 import global from "./framework/global.mjs"
 import {xhr} from "./framework/templating.mjs";
-import {closeFM, goTo} from "./framework/navigation.mjs";
+import {goTo} from "./framework/navigation.mjs";
 
 function changeUsername(){
     const input = document.getElementById("username-input")
@@ -638,7 +638,9 @@ export function loadServer(id){
             serv.op = resp.op
         }
         const dashboards = resp.dashboards ? resp.dashboards : []
-        serv["dirs"] = {"channels" : resp.channels, "dashboards" : dashboards , "cat" : resp.cat}
+        const rooms = resp.rooms ? resp.rooms : []
+        const drives = resp.drives ? resp.drives : []
+        serv["dirs"] = {"channels" : resp.channels, "dashboards" : dashboards , "rooms" : rooms, "drives" : drives, "cat" : resp.cat}
 
         serv["members"] = {}
         let userList = []
@@ -669,6 +671,8 @@ function orderServDirs(serv){
     serv?.dirs?.cat.sort((a, b) => a.place - b.place);
     serv?.dirs?.channels.sort((a, b) => a.place - b.place);
     serv?.dirs?.dashboards.sort((a, b) => a.place - b.place);
+    serv?.dirs?.rooms.sort((a, b) => a.place - b.place);
+    serv?.dirs?.drives.sort((a, b) => a.place - b.place);
 
     for (let cat of serv.dirs.cat){
         cat.channels = []
@@ -676,11 +680,31 @@ function orderServDirs(serv){
 
     let ordered = Object.values(serv.dirs.cat)
     for (let chan of serv.dirs.channels){
+        chan.type = "textual"
         if (chan.category){
             lookFor(chan.category,serv.dirs.cat).channels.push(chan)
         }else{
             //insert between categories
             ordered.splice(firstGreater(ordered,chan.place), 0, chan);
+        }
+    }
+    for (let room of serv.dirs.rooms){
+        room.type = "vocal"
+        room.name = room.name || "Salon vocal"
+        if (room.category){
+            lookFor(room.category,serv.dirs.cat).channels.push(room)
+        }else{
+            //insert between categories
+            ordered.splice(firstGreater(ordered,room.place), 0, room);
+        }
+    }
+    for (let drive of serv.dirs.drives){
+        drive.type = "drive"
+        if (drive.category){
+            lookFor(drive.category,serv.dirs.cat).channels.push(drive)
+        }else{
+            //insert between categories
+            ordered.splice(firstGreater(ordered,drive.place), 0, drive);
         }
     }
     for (let chan of serv.dirs.dashboards){
@@ -704,8 +728,11 @@ function createInvitation(){
 }
 window.createInvitation = createInvitation
 
-function createChan(){
-    xhr("editServer?id="+global.state.currentServer.id+"&property=channel&action=create",undefined)
+function createChan(type = 'textual'){
+    const channelType = type || 'textual';
+    xhr("editServer?id="+global.state.currentServer.id+"&property=channel&action=create&channelType="+channelType,undefined)
+    const menu = document.getElementById('create-channel')
+    if(menu) menu.style.display = 'none'
 }
 window.createChan = createChan
 
@@ -744,3 +771,140 @@ function attributeRole(roleId){
     xhr("editServer?id="+global.state.currentServer.id+"&property=role&action=attribute&value="+roleId+"&targetId="+global.state.profileInfo.id, onload)
 }
 window.attributeRole = attributeRole
+
+// Minimal API Keys actions used by the devs-settings template
+function createApiKey(){
+    const name = document.getElementById('api-key-name').value.trim()
+    const perms = []
+
+    if(!name){
+        // simple client-side validation
+        alert('Please provide a name for the API key')
+        return
+    }
+
+    const payload = {name: name, permissions: perms}
+    const onload = function(){
+        // Expecting server to return the newly created key object: {id, name, key, created, permissions}
+        try{
+            const newKey = JSON.parse(this.responseText)
+            // mark visible so it is shown unmasked once
+            newKey.visible = true
+            addElement('global.user.apiKeys', newKey)
+
+            // show modal with the raw key value
+            const val = newKey.key || ''
+            const preview = document.getElementById('new-api-key-value')
+            if(preview){ preview.textContent = val; preview.style.cursor = 'pointer'; preview.onclick = copyCreatedKey }
+            const modal = document.getElementById('createdKeyModal')
+            if(modal) modal.style.display = 'block'
+
+            // clear input
+            const inp = document.getElementById('api-key-name')
+            if(inp) inp.value = ''
+        }catch(e){
+            console.log('createApiKey: invalid response', this.responseText)
+        }
+    }
+
+    xhr('createApiKey', onload, 'POST', true, payload)
+}
+window.createApiKey = createApiKey
+
+function revokeKey(id){
+    if(!confirm(''+_t('Are you sure you want to revoke this API key?'))){
+        return
+    }
+    const onload = function(){
+        // remove from global.user.apiKeys
+        if(!global.user || !global.user.apiKeys) return
+        for(let i = 0; i < global.user.apiKeys.length; i++){
+            if(global.user.apiKeys[i].id.toString() === id.toString()){
+                deleteElement('global.user.apiKeys', i)
+                break
+            }
+        }
+    }
+    xhr('revokeApiKey?id='+encodeURIComponent(id), onload)
+}
+window.revokeKey = revokeKey
+
+function regenerateKey(id){
+    if(!confirm(''+_t('Regenerate this API key ? The previous value will stop working.'))){
+        return
+    }
+    const onload = function(){
+        try{
+            const resp = JSON.parse(this.responseText)
+            // resp should contain the new key string and maybe metadata
+            const newKeyValue = resp.key || resp
+
+            if(!global.user || !global.user.apiKeys) return
+            for(let i=0;i<global.user.apiKeys.length;i++){
+                if(global.user.apiKeys[i].id.toString() === id.toString()){
+                    // update value and mark visible once
+                    global.user.apiKeys[i].key = newKeyValue
+                    global.user.apiKeys[i].visible = true
+                    // show modal with new value
+                    const preview = document.getElementById('new-api-key-value')
+                    if(preview) { preview.textContent = newKeyValue; preview.style.cursor = 'pointer'; preview.onclick = copyCreatedKey }
+                    const modal = document.getElementById('createdKeyModal')
+                    if(modal) modal.style.display = 'block'
+                    // update element so subscribers react
+                    setElement('global.user.apiKeys['+i+'].key', newKeyValue)
+                    setElement('global.user.apiKeys['+i+'].visible', true)
+                    break
+                }
+            }
+        }catch(e){
+            console.log('regenerateKey: invalid response', this.responseText)
+        }
+    }
+    xhr('regenerateApiKey?id='+encodeURIComponent(id), onload)
+}
+window.regenerateKey = regenerateKey
+
+// Copy-to-clipboard helper for the created/regenerated key preview
+function copyCreatedKey(){
+    const preview = document.getElementById('new-api-key-value')
+    if(!preview) return
+    const text = preview.textContent ? preview.textContent.trim() : ''
+    if(!text) return
+
+    navigator.clipboard.writeText(text).then(()=>{ showCopyFeedback(preview) }).catch(()=>{ fallbackCopy(text, preview) })
+
+}
+window.copyCreatedKey = copyCreatedKey
+
+
+function showCopyFeedback(anchor){
+    // small transient feedback element
+    const f = document.createElement('div')
+    f.className = 'muted'
+    f.style.marginTop = '8px'
+    f.textContent = _t('Copied to clipboard')
+    anchor.parentElement.appendChild(f)
+    setTimeout(()=>{ try{ f.remove() }catch(e){} }, 1500)
+}
+
+function loadUserApiKeys(){
+    const onload = function(){
+        try{
+            const keys = JSON.parse(this.responseText)
+            // ensure structure and default visibility
+            if(!global.user) global.user = {}
+            global.user.apiKeys = keys.map(function(k){
+                k.visible = false
+                // ensure created is a string
+                if(k.created) k.created = k.created.toString()
+                return k
+            })
+            // trigger reactive update
+            setElement('global.user.apiKeys', global.user.apiKeys)
+        }catch(e){
+            console.log('loadUserApiKeys: invalid response', this.responseText)
+        }
+    }
+    xhr('getUserApiKeys', onload)
+}
+window.loadUserApiKeys = loadUserApiKeys

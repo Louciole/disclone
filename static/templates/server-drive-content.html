@@ -1,0 +1,42 @@
+<div class="selected-info">
+    <div class="title">
+        <img class="icon" src="/static/icons/material/folder.svg"/>
+        ${Subscribe("global.convs["+global.state.activeConv+"].name", ()=>{return global.convs[global.state.activeConv].name})}
+    </div>
+    <div>
+        <img class="icon"  onclick="createNewDriveFolder()" src="/static/icons/material/folder.svg"/>
+        <img class="icon" onclick="uploadDriveFile()" src="/static/icons/material/add.svg"/>
+        <img class="icon" onclick="toggleMenu('member-list',true,'member-list-wrapper')" src="/static/icons/material/group.svg" style="margin-right: 0.8rem;">
+        <img class="icon" src="/static/icons/material/inbox.svg" style="margin-right: 0.8rem;">
+        <img class="icon" src="/static/icons/material/help.svg">
+    </div>
+
+</div>
+
+<div class="inline" style="width: 100%;height: calc(100svh - 3rem);">
+    <div style="display: flex;flex-direction: column;width:100%;height: 100%;padding: 1rem;">
+        <div style="display: flex; align-items: center; margin-bottom: 1rem;">
+            ${Subscribe('global.driveCurrentFolder['.concat(global.state.activeConv,']'), ()=>{
+                const currentFolder = global.driveCurrentFolder[global.state.activeConv];
+                if (currentFolder && currentFolder.length > 0) {
+                    return `<div class="icon-wrapper" onclick="navigateDriveFolderUp()">
+                        <img class="icon" src="/static/icons/material/reply.svg"/>
+                        <span class="tooltip bottom">${_t("Go back")}</span>
+                    </div>
+                    <span style="margin-left: 0.5rem;">${_t("Current folder")}: ${currentFolder[currentFolder.length - 1].name}</span>`;
+                }
+                return '<h3>' + _t("Files and folders") + '</h3>';
+            })}
+        </div>
+        <div id="drive-files-list" class="" style="flex: 1; overflow-y: auto;">
+            ${Subscribe('global.driveFolders['.concat(global.state.activeConv,']'), ()=>{
+                const folders = global.driveFolders[global.state.activeConv] || [];
+                const files = global.driveFiles[global.state.activeConv] || [];
+                return fillWith('drive-folder-item', folders) + fillWith('drive-file-item', files);
+            },"drive-files-list")}
+        </div>
+    </div>
+</div>
+
+<input type="file" id="drive-file-input" style="display: none;" onchange="handleDriveFileSelect(event)"/>
+

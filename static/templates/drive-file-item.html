@@ -1,0 +1,26 @@
+<div class="drive-file-item" data-file-id="${element.id}">
+    <div class="file-icon">
+        <img class="icon" src="/static/icons/material/file.svg"/>
+    </div>
+    <div class="file-info">
+        <div class="file-name">${element.filename}</div>
+        <div class="file-meta">
+            <span>${formatFileSize(element.size)}</span>
+            <span> • </span>
+            <span>${element.uploader_name || 'Unknown'}</span>
+            <span> • </span>
+            <span>${formatDate(element.uploaded_at)}</span>
+        </div>
+    </div>
+    <div class="file-actions">
+        <div class="icon-wrapper" onclick="downloadDriveFile(${element.id}, '${element.filename}')">
+            <img class="icon" src="/static/icons/material/download.svg"/>
+            <span class="tooltip bottom">${_t("Download")}</span>
+        </div>
+        <div class="icon-wrapper" onclick="deleteDriveFile(${element.id})">
+            <img class="icon" src="/static/icons/material/trash.svg"/>
+            <span class="tooltip bottom">${_t("Delete")}</span>
+        </div>
+    </div>
+</div>
+

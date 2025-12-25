@@ -10,7 +10,7 @@
     <hr>
     <div class="cat">
         <div class="item" onclick="openMenu('server-params')"><p>${_t("Paramètres du serveur")}</p><img class="icon" src="/static/icons/material/settings.svg"></div>
-        <div class="item" onclick="createChan()"><p>${_t("Créer un salon")}</p><img class="icon" src="/static/icons/material/add.svg"></div>
+        <div class="item" onclick="openMenu('create-channel')"><p>${_t("Créer un salon")}</p><img class="icon" src="/static/icons/material/add.svg"></div>
         <div class="item"><p>${_t("Créer une catégorie")}</p><img class="icon" src="/static/icons/material/add.svg"></div>
         <div class="item" style="${checkServRights('dashboard-create') ? '' : 'display:none'}" onclick="createDashboard()"><p>${_t("Créer un Dashboard")}</p><img class="icon" src="/static/icons/material/add.svg"></div>
     </div>
@@ -20,3 +20,36 @@
 <div class="modale" id="edit-channel-modale">
     <div class="item" onclick="openMenu('channels-params')">${_t("Edit channel")}</div>
 </div>
+<section class="menu-wrapper" id="create-channel" style="display:none" onclick="event.target === event.currentTarget && (event.currentTarget.style.display='none')">
+    <div class="menu" onclick="event.stopPropagation()">
+        <div class="close" onclick="document.getElementById('create-channel').style.display='none'">+</div>
+        <div class="step">
+            <h2>Créer un salon</h2>
+            <p>Choisis le type de salon que tu souhaites créer.</p>
+            <div class="category" onclick="createChan('textual')">
+                <img class="icon" src="/static/icons/material/hashtag.svg"/>
+                <div>
+                    <h4>Salon textuel</h4>
+                    <p style="font-size: 0.875rem; color: var(--text-secondary); margin: 0;">Envoie des messages, images, GIFs, emojis et plus</p>
+                </div>
+                <div class="icon">></div>
+            </div>
+            <div class="category" onclick="createChan('vocal')">
+                <img class="icon" src="/static/icons/material/volume.svg"/>
+                <div>
+                    <h4>Salon vocal</h4>
+                    <p style="font-size: 0.875rem; color: var(--text-secondary); margin: 0;">Parle avec les membres du serveur en vocal</p>
+                </div>
+                <div class="icon">></div>
+            </div>
+            <div class="category" onclick="createChan('drive')">
+                <img class="icon" src="/static/icons/material/folder.svg"/>
+                <div>
+                    <h4>Salon de stockage</h4>
+                    <p style="font-size: 0.875rem; color: var(--text-secondary); margin: 0;">Partage et stocke des fichiers avec ton équipe</p>
+                </div>
+                <div class="icon">></div>
+            </div>
+        </div>
+    </div>
+</section>

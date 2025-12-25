@@ -1,0 +1,15 @@
+<div class="selected-info">
+    <div class="title">
+        <img class="icon" src="/static/icons/material/volume.svg"/>
+        ${Subscribe("global.convs["+global.state.activeConv+"].name", ()=>{return global.convs[global.state.activeConv].name})}
+    </div>
+</div>
+
+<div class="inline" style="width: 100%;height: calc(100svh - 3rem);">
+    <div style="display: flex;flex-direction: column;align-items: center;width:100%;height: 100%;justify-content: center;">
+        <img class="icon" src="/static/icons/material/volume.svg" style="width: 120px; height: 120px; opacity: 0.3;"/>
+        <h2 style="margin-top: 2rem; color: var(--text-secondary);">${_t("Salon vocal")}</h2>
+        <p style="color: var(--text-secondary); margin-top: 1rem;">${_t("Les salons vocaux seront bientôt disponibles")}</p>
+    </div>
+</div>
+

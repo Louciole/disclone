@@ -1,0 +1,59 @@
+<h1>${_t("API Keys")}</h1>
+
+<div class="inline gap">
+    <div class="half vertical">
+        <h3>${_t("Create a new API key")}</h3>
+        <label>
+            <input type="text" id="api-key-name" placeholder="${_t('Key name')}" />
+        </label>
+
+        <hr>
+
+        <div style="height: 12px"></div>
+        <div class="btn green" onclick="createApiKey()">${_t("Create key")}</div>
+        <p class="muted">${_t("Keep your API keys secret. The key will be shown only once after creation.")}</p>
+    </div>
+
+    <div class="half vertical">
+        <h3>${_t("Existing keys")}</h3>
+        <div id="api-keys-list">
+            ${Subscribe('global.user.apiKeys', ()=>{
+                return (global.user.apiKeys && global.user.apiKeys.length) ? global.user.apiKeys.map(function(k){
+                    return `
+                        <div class="api-key-item">
+                            <div class="api-key-meta">
+                                <div class="name">${k.name}</div>
+                                <div class="created">${k.created || ''}</div>
+                            </div>
+                            <div class="api-key-value">${k.visible ? k.key : '••••••••'}</div>
+                            <div class="actions">
+                                <div class="underlhover" onclick="revokeKey('${k.id}')">${_t('Revoke')}</div>
+                                <div class="underlhover" onclick="regenerateKey('${k.id}')">${_t('Regenerate')}</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('') : `<div class="muted">${_t('No API keys yet.')}</div>`;
+            })}
+        </div>
+
+        <div id="createdKeyModal" class="modale" style="display:none">
+            <div class="modal-content">
+                <h3>${_t("New API key")}</h3>
+                <p class="muted">${_t("This value will be shown only once. Save it now.")}</p>
+                <div class="api-key-preview" id="new-api-key-value">••••••••</div>
+                <div class="underlhover" onclick="closeCreatedKeyModal()">${_t("Close")}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Minimal local styles to match existing UI tokens */
+.api-key-item{display:flex;align-items:center;justify-content:space-between;padding:8px;border:1px solid #eee;margin-bottom:8px;border-radius:6px}
+.api-key-meta{flex:1}
+.api-key-value{flex:1;text-align:center;font-family:monospace}
+.actions{display:flex;gap:8px}
+.modal-content{background:#fff;padding:16px;border-radius:8px}
+</style>
+
+${window.loadUserApiKeys()}

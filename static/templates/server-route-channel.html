@@ -1,1 +1,2 @@
-${element.type === 'dashboard' ? fillWith('server-dashboard-channel', [element]) : fillWith('server-textual-channel', [element])}
+${element.type === 'dashboard' ? fillWith('server-dashboard-channel', [element]) : element.type === 'vocal' ? fillWith('server-vocal-channel', [element]) : element.type === 'drive' ? fillWith('server-drive-channel', [element]) : fillWith('server-textual-channel', [element])}
+

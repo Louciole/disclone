@@ -9,6 +9,7 @@ import string
 import random
 import datetime
 import requests
+import base64
 
 # websockets imports
 import asyncio
@@ -217,11 +218,13 @@ class Disclone(Server):
     def getServContent(self, servID, channelID=None):
         uid = self.getUser()
         #TODO handle access rights
-        serv = self.db.getFilters("accessserver", ["account", "=", uid])
+        serv = self.db.getFilters("accessserver", ["account", "=", uid, "and", "server", "=", servID])
         if serv:
             content = {}
             if not channelID:
                 content["channels"] = self.db.getAll("textual_channel", servID,"server")
+                content["rooms"] = self.db.getAll("vocal_channel", servID,"server")
+                content["drives"] = self.db.getAll("drive_channel", servID,"server")
                 op = self.db.getSomething("op_servs", servID, "server")
                 if op and self.checkAccessRights(uid, servID, "dashboard-read"):
                     content["dashboards"] = self.db.getAll("serv_dashboard", servID, "server")
@@ -252,6 +255,427 @@ class Disclone(Server):
         user = self.db.getSomething("disclone_account", uid)
         self.getUsersStatus([user],detailed=True)
         return json.dumps(user, default=str)
+
+    @Server.expose
+    def uploadDriveOnBehalf(self, API_KEY, email, filename, file):
+        key = self.db.getSomething("api_key", API_KEY, "key")
+        if not key:
+            raise HTTPError(self.response, 403, "forbidden")
+
+        key_user = self.db.getSomething("disclone_account", key["owner"])
+        if not key_user or not self.isAdmin(key_user["id"]):
+            raise HTTPError(self.response, 403, "forbidden")
+
+        user = self.uniauth.getUserCredentials(email)
+        if not user:
+            user =  self.uniauth.getSomething("additional_mail", email, "email")
+            if not user:
+                raise HTTPError(self.response, 403, "forbidden")
+            uid = user["account"]
+        else:
+            uid = user["id"]
+
+        print("Uploading file on behalf of user", uid, filename)
+        personal_server = self.db.getSomething("personal_server", uid, "owner")
+        if not personal_server:
+            raise HTTPError(self.response, 403, "no personal server found")
+
+        first_drive = self.db.getFilters("drive_channel", ["server", "=", personal_server["id"], "order by place asc limit 1"])
+        if not first_drive or first_drive == []:
+            raise HTTPError(self.response, 403, "no drive channel found")
+
+        # Upload the file to the first drive channel
+        self.uploadDrive(uid, first_drive[0]["id"], (filename, file))
+
+    @Server.expose
+    def uploadDriveFile(self, drive_id, filename, file, parent_folder=None):
+        """
+        Upload a file to a drive channel (authenticated user endpoint).
+
+        Args:
+            drive_id: ID of the drive channel
+            filename: Name of the file
+            file: Base64 encoded file content (with or without data URI prefix)
+            parent_folder: Optional ID of parent folder
+
+        Returns:
+            JSON with file_id
+        """
+        uid = self.getUser()
+
+        # Verify access to the drive channel
+        drive = self.db.getSomething("drive_channel", drive_id)
+        if not drive:
+            raise HTTPError(self.response, 404, "Drive channel not found")
+
+        # Check if user has access to the server
+        access = self.db.getFilters("accessserver", ["account", "=", uid, "and", "server", "=", drive["server"]])
+        if not access:
+            raise HTTPError(self.response, 403, "No access to this drive")
+
+        # If parent_folder is specified, verify it exists and belongs to the same drive
+        if parent_folder and parent_folder != "null":
+            parent_folder = int(parent_folder)
+            parent = self.db.getSomething("drive_folder", parent_folder)
+            if not parent or parent["drive_channel"] != int(drive_id):
+                raise HTTPError(self.response, 404, "Parent folder not found or doesn't belong to this drive")
+        else:
+            parent_folder = None
+
+        # Upload the file
+        file_id = self.uploadDrive(uid, drive_id, (filename, file), parent_folder)
+        return json.dumps({"file_id": file_id, "filename": filename})
+
+    @Server.expose
+    def getDriveFiles(self, drive_id, parent_folder=None):
+        """
+        Get all files in a drive channel (or within a parent folder).
+
+        Args:
+            drive_id: ID of the drive channel
+            parent_folder: Optional ID of parent folder (None for root level)
+
+        Returns:
+            JSON list of files with metadata
+        """
+        uid = self.getUser()
+
+        # Verify access to the drive channel
+        drive = self.db.getSomething("drive_channel", drive_id)
+        if not drive:
+            raise HTTPError(self.response, 404, "Drive channel not found")
+
+        # Check if user has access to the server
+        access = self.db.getFilters("accessserver", ["account", "=", uid, "and", "server", "=", drive["server"]])
+        if not access:
+            raise HTTPError(self.response, 403, "No access to this drive")
+
+        # Get files
+        if parent_folder and parent_folder != "null":
+            files = self.db.getAll("drive_file", int(parent_folder), "parent_folder")
+        else:
+            # Get root level files (where parent_folder is NULL)
+            files = self.db.getFilters("drive_file", ["drive_channel", "=", drive_id, "and", "parent_folder", "is", None])
+
+        # Add uploader info for each file
+        for file in files:
+            uploader = self.db.getSomething("disclone_account", file["uploader"])
+            if uploader:
+                file["uploader_name"] = uploader["display"]
+                file["uploader_username"] = uploader["username"]
+
+        return json.dumps(files, default=str)
+
+    @Server.expose
+    def downloadDriveFile(self, file_id):
+        """
+        Download a file from a drive channel.
+
+        Args:
+            file_id: ID of the file in drive_file table
+
+        Returns:
+            The file content
+        """
+        uid = self.getUser()
+
+        # Get file info
+        file_info = self.db.getSomething("drive_file", file_id)
+        if not file_info:
+            raise HTTPError(self.response, 404, "File not found")
+
+        # Get drive channel
+        drive = self.db.getSomething("drive_channel", file_info["drive_channel"])
+        if not drive:
+            raise HTTPError(self.response, 404, "Drive channel not found")
+
+        # Check if user has access to the server
+        access = self.db.getFilters("accessserver", ["account", "=", uid, "and", "server", "=", drive["server"]])
+        if not access:
+            raise HTTPError(self.response, 403, "No access to this file")
+
+        # Return the file as binary
+        import os
+        import mimetypes
+
+        filepath = self.path + "/static/attachments/" + file_info["filepath"]
+
+        if not os.path.exists(filepath):
+            raise HTTPError(self.response, 404, "File not found on disk")
+
+        # Detect MIME type
+        mime_type, _ = mimetypes.guess_type(file_info["filename"])
+        if not mime_type:
+            mime_type = "application/octet-stream"
+
+        # Read file in binary mode
+        with open(filepath, 'rb') as f:
+            file_content = f.read()
+
+        # Set proper headers for download
+        self.response.headers.append(('Content-Type', mime_type))
+        self.response.headers.append(('Content-Disposition', f'attachment; filename="{file_info["filename"]}"'))
+        self.response.headers.append(('Content-Length', str(len(file_content))))
+
+
+        return file_content
+
+    @Server.expose
+    def deleteDriveFile(self, file_id):
+        """
+        Delete a file from a drive channel.
+
+        Args:
+            file_id: ID of the file in drive_file table
+
+        Returns:
+            Success message
+        """
+        import os
+
+        uid = self.getUser()
+
+        # Get file info
+        file_info = self.db.getSomething("drive_file", file_id)
+        if not file_info:
+            raise HTTPError(self.response, 404, "File not found")
+
+        # Get drive channel
+        drive = self.db.getSomething("drive_channel", file_info["drive_channel"])
+        if not drive:
+            raise HTTPError(self.response, 404, "Drive channel not found")
+
+        # Check if user has access to the server
+        access = self.db.getFilters("accessserver", ["account", "=", uid, "and", "server", "=", drive["server"]])
+        if not access:
+            raise HTTPError(self.response, 403, "No access to this file")
+
+        # Only uploader or server owner can delete
+        server_info = self.db.getSomething("server", drive["server"])
+        if file_info["uploader"] != uid and server_info["owner"] != uid:
+            # Check if user has admin/edit rights
+            if not self.checkAccessRights(uid, drive["server"], "edit"):
+                raise HTTPError(self.response, 403, "Only uploader or server admins can delete files")
+
+        # Delete the physical file
+        filepath = self.path + "/static/attachments/" + file_info["filepath"]
+        try:
+            if os.path.exists(filepath):
+                os.remove(filepath)
+        except Exception as e:
+            print(f"Error deleting file {filepath}: {e}")
+
+        # Delete from database
+        self.db.deleteSomething("drive_file", file_id)
+
+        return json.dumps({"status": "ok", "message": "File deleted successfully"})
+
+    @Server.expose
+    def createDriveFolder(self, drive_id, foldername, parent_folder=None):
+        """
+        Create a folder in a drive channel.
+
+        Args:
+            drive_id: ID of the drive channel
+            foldername: Name of the folder
+            parent_folder: Optional ID of parent folder (None for root level)
+
+        Returns:
+            JSON with folder_id
+        """
+        uid = self.getUser()
+
+        # Verify access to the drive channel
+        drive = self.db.getSomething("drive_channel", drive_id)
+        if not drive:
+            raise HTTPError(self.response, 404, "Drive channel not found")
+
+        # Check if user has access to the server
+        access = self.db.getFilters("accessserver", ["account", "=", uid, "and", "server", "=", drive["server"]])
+        if not access:
+            raise HTTPError(self.response, 403, "No access to this drive")
+
+        # If parent_folder is specified, verify it exists and belongs to the same drive
+        if parent_folder and parent_folder != "null":
+            parent_folder = int(parent_folder)
+            parent = self.db.getSomething("drive_folder", parent_folder)
+            if not parent or parent["drive_channel"] != int(drive_id):
+                raise HTTPError(self.response, 404, "Parent folder not found or doesn't belong to this drive")
+        else:
+            parent_folder = None
+
+        # Create the folder
+        folder_id = self.db.insertDict("drive_folder", {
+            "drive_channel": drive_id,
+            "foldername": foldername,
+            "parent_folder": parent_folder,
+            "creator": uid
+        }, getId=True)
+
+        return json.dumps({"folder_id": folder_id, "foldername": foldername})
+
+    @Server.expose
+    def getDriveFolders(self, drive_id, parent_folder=None):
+        """
+        Get all folders in a drive channel (or within a parent folder).
+
+        Args:
+            drive_id: ID of the drive channel
+            parent_folder: Optional ID of parent folder (None for root level)
+
+        Returns:
+            JSON list of folders with metadata
+        """
+        uid = self.getUser()
+
+        # Verify access to the drive channel
+        drive = self.db.getSomething("drive_channel", drive_id)
+        if not drive:
+            raise HTTPError(self.response, 404, "Drive channel not found")
+
+        # Check if user has access to the server
+        access = self.db.getFilters("accessserver", ["account", "=", uid, "and", "server", "=", drive["server"]])
+        if not access:
+            raise HTTPError(self.response, 403, "No access to this drive")
+
+        # Get folders
+        if parent_folder and parent_folder != "null":
+            folders = self.db.getAll("drive_folder", int(parent_folder), "parent_folder")
+        else:
+            # Get root level folders (where parent_folder is NULL)
+            folders = self.db.getFilters("drive_folder", ["drive_channel", "=", drive_id, "and", "parent_folder", "is", None])
+
+        # Add creator info for each folder
+        for folder in folders:
+            creator = self.db.getSomething("disclone_account", folder["creator"])
+            if creator:
+                folder["creator_name"] = creator["display"]
+                folder["creator_username"] = creator["username"]
+
+        return json.dumps(folders, default=str)
+
+    @Server.expose
+    def deleteDriveFolder(self, folder_id):
+        """
+        Delete a folder from a drive channel (and all its contents).
+
+        Args:
+            folder_id: ID of the folder in drive_folder table
+
+        Returns:
+            Success message
+        """
+        import os
+
+        uid = self.getUser()
+
+        # Get folder info
+        folder_info = self.db.getSomething("drive_folder", folder_id)
+        if not folder_info:
+            raise HTTPError(self.response, 404, "Folder not found")
+
+        # Get drive channel
+        drive = self.db.getSomething("drive_channel", folder_info["drive_channel"])
+        if not drive:
+            raise HTTPError(self.response, 404, "Drive channel not found")
+
+        # Check if user has access to the server
+        access = self.db.getFilters("accessserver", ["account", "=", uid, "and", "server", "=", drive["server"]])
+        if not access:
+            raise HTTPError(self.response, 403, "No access to this folder")
+
+        # Only creator or server owner can delete
+        server_info = self.db.getSomething("server", drive["server"])
+        if folder_info["creator"] != uid and server_info["owner"] != uid:
+            # Check if user has admin/edit rights
+            if not self.checkAccessRights(uid, drive["server"], "edit"):
+                raise HTTPError(self.response, 403, "Only creator or server admins can delete folders")
+
+        # Get all files in this folder and delete them
+        files_in_folder = self.db.getAll("drive_file", folder_id, "parent_folder")
+        for file_info in files_in_folder:
+            filepath = self.path + "/static/attachments/" + file_info["filepath"]
+            try:
+                if os.path.exists(filepath):
+                    os.remove(filepath)
+            except Exception as e:
+                print(f"Error deleting file {filepath}: {e}")
+
+        # Delete folder from database (CASCADE will handle files and subfolders)
+        self.db.deleteSomething("drive_folder", folder_id)
+
+        return json.dumps({"status": "ok", "message": "Folder deleted successfully"})
+
+    def uploadDrive(self, user_id, drive_id, file, parent_folder=None):
+        """
+        Upload a file to a drive channel.
+
+        Args:
+            user_id: ID of the user uploading the file
+            drive_id: ID of the drive channel
+            file: Tuple containing (filename, base64_encoded_content)
+            parent_folder: Optional ID of parent folder
+
+        Returns:
+            ID of the created drive_file entry
+        """
+        import mimetypes
+
+        # Extract filename and content from tuple
+        filename, content = file
+
+        # Add dataURI prefix if not present
+        if not content.startswith("data:"):
+            # Detect MIME type from filename extension
+            mime_type, _ = mimetypes.guess_type(filename)
+            if not mime_type:
+                mime_type = "application/octet-stream"  # default for unknown types
+
+            # Add the data URI prefix
+            content = f"data:{mime_type};base64,{content}"
+
+        filenameParts = filename.rsplit('.')
+        name = filenameParts[0]
+        extension = filenameParts[1] if len(filenameParts) > 1 else ''
+
+        # Category is set to the drive_id to organize files by drive
+        filepath = self.saveFile(content, name=name, ext=extension, category=f"drive_{drive_id}")
+
+        # Calculate file size (approximate from base64)
+        # Remove data URI prefix if present
+        if "," in content:
+            content_data = content.split(",")[1]
+        else:
+            content_data = content
+
+        # Base64 encoded size is roughly 4/3 of original size
+        file_size = int(len(content_data) * 3 / 4)
+
+        # Insert file record into database
+        file_id = self.db.insertDict("drive_file", {
+            "drive_channel": drive_id,
+            "filename": filename,
+            "filepath": filepath,
+            "size": file_size,
+            "uploader": user_id,
+            "parent_folder": parent_folder
+        }, getId=True)
+
+        return file_id
+
+    def isAdmin(self, uid):
+        # admins are users with admin status in op servs
+        users_op_servs = self.db.cur.execute("SELECT * FROM op_servs, accessServer WHERE op_servs.server = accessServer.server AND accessServer.account = %s", (uid,)).fetchall()
+
+        if not users_op_servs:
+            return False
+
+        for user_op_serv in users_op_servs:
+            id = user_op_serv["server"]
+            if self.checkAccessRights(uid, id, "disclone_admin"):
+                return True
+
+        return False
 
     def onWSAuth(self,uid):
         self.sendStatusUpdates(uid)
@@ -467,25 +891,51 @@ class Disclone(Server):
         return userRights
 
     @Server.expose
-    def editServer(self, property, id, value=None, field=None, action=None, targetId=None):
+    def editServer(self, property, id, value=None, field=None, action=None, targetId=None, channelType=None):
         uid = self.getUser()
         if field == "id" or field == "owner" or not self.checkAccessRights(uid, id, "edit"):
             raise HTTPError(self.response, 403, "forbidden")
 
         if property == "channel":
             if action == "create":
-                self.db.insertDict("textual_channel", {"name": "new channel", "server": id})
+                # Déterminer le type de channel à créer
+                channel_type = channelType if channelType else "textual"
+
+                if channel_type == "vocal":
+                    self.db.insertDict("room", {"server": id})
+                elif channel_type == "drive":
+                    self.db.insertDict("drive_channel", {"name": "new storage", "server": id})
+                else:  # textual par défaut
+                    self.db.insertDict("textual_channel", {"name": "new channel", "server": id})
                 return
 
             chan = self.db.getSomething("textual_channel", targetId)
-            if not chan or chan["server"] != int(id) or field == "server":
-                raise HTTPError(self.response, 403, "forbidden")
-
-            if action == "delete":
-                self.db.deleteSomething("textual_channel", targetId)
+            if chan and chan["server"] == int(id) and field != "server":
+                if action == "delete":
+                    self.db.deleteSomething("textual_channel", targetId)
+                    return
+                self.db.edit("textual_channel", targetId, field, value)
                 return
 
-            self.db.edit("textual_channel", targetId, field, value)
+            # Vérifier si c'est un drive channel
+            chan = self.db.getSomething("drive_channel", targetId)
+            if chan and chan["server"] == int(id) and field != "server":
+                if action == "delete":
+                    self.db.deleteSomething("drive_channel", targetId)
+                    return
+                self.db.edit("drive_channel", targetId, field, value)
+                return
+
+            # Vérifier si c'est un room (vocal)
+            chan = self.db.getSomething("room", targetId)
+            if chan and chan["server"] == int(id):
+                if action == "delete":
+                    self.db.deleteSomething("room", targetId)
+                    return
+                # Les rooms n'ont pas de nom pour l'instant dans le schema
+                return
+
+            raise HTTPError(self.response, 403, "forbidden")
         if property == "dashboard":
             op = self.db.getSomething("op_servs", id, "server")
             if not op:
@@ -645,6 +1095,16 @@ class Disclone(Server):
         except requests.RequestException as e:
             return json.dumps({"status": "error", "message": str(e)})
 
+    @Server.expose
+    def createPersonalServer(self, server):
+        uid = self.getUser()
+        server = self.db.getSomething("server", server)
+        if not server or server["owner"] != uid:
+            raise HTTPError(self.response, 403, "forbidden")
+
+        if self.db.getSomething("personal_server", uid, "owner"):
+            raise HTTPError(self.response, 403, "You already have a personal server")
+        self.db.insertDict("personal_server", {"owner": uid, "server": server["id"]})
 
     @Server.expose
     def sendEmail(self, server, to, subject, body):
@@ -656,6 +1116,76 @@ class Disclone(Server):
             raise HTTPError(self.response, 403, "forbidden")
 
 
+
+    @Server.expose
+    def createApiKey(self, name="", permissions="[]"):
+        """Create a new API key for the authenticated user.
+        Expects optional name and permissions (JSON list or a list) and returns a JSON object with the new key and metadata.
+        """
+        uid = self.getUser()
+        # normalize permissions param
+        try:
+            if isinstance(permissions, str):
+                permissions_parsed = json.loads(permissions)
+            else:
+                permissions_parsed = permissions
+        except Exception:
+            permissions_parsed = []
+
+        # generate a unique key
+        new_key = ''.join(random.choices(B62, k=40))
+        # ensure uniqueness
+        while self.db.getSomething("api_key", new_key, "key"):
+            new_key = ''.join(random.choices(B62, k=40))
+
+        key_id = self.db.insertDict("api_key", {"key": new_key, "owner": uid, "name": name}, getId=True)
+        created = datetime.datetime.now()
+
+        # Return some metadata (note: name/permissions are now returned; name is persisted in DB)
+        resp = {"id": key_id, "name": name, "key": new_key, "created": str(created), "permissions": permissions_parsed}
+        return json.dumps(resp)
+
+    @Server.expose
+    def revokeApiKey(self, id):
+        """Revoke (delete) an API key by its id. Only the owner can revoke their key."""
+        uid = self.getUser()
+        keyrow = self.db.getSomething("api_key", id)
+        if not keyrow:
+            raise HTTPError(self.response, 404, "Not Found")
+        if keyrow.get("owner") != uid:
+            raise HTTPError(self.response, 403, "forbidden")
+
+        self.db.deleteSomething("api_key", id)
+        return "ok"
+
+    @Server.expose
+    def regenerateApiKey(self, id):
+        """Generate a new key value for an existing API key entry. Only the owner may regenerate."""
+        uid = self.getUser()
+        keyrow = self.db.getSomething("api_key", id)
+        if not keyrow:
+            raise HTTPError(self.response, 404, "Not Found")
+        if keyrow.get("owner") != uid:
+            raise HTTPError(self.response, 403, "forbidden")
+
+        new_key = ''.join(random.choices(B62, k=40))
+        while self.db.getSomething("api_key", new_key, "key"):
+            new_key = ''.join(random.choices(B62, k=40))
+
+        self.db.edit("api_key", id, "key", new_key)
+        # return the new key value
+        return json.dumps({"key": new_key})
+
+    @Server.expose
+    def getUserApiKeys(self):
+        """Return the API keys for the authenticated user. The raw key value is not exposed here."""
+        uid = self.getUser()
+        keys = self.db.getAll("api_key", uid, "owner")
+        # remove the raw key value before returning
+        for k in keys:
+            if 'key' in k:
+                k.pop('key')
+        return json.dumps(keys, default=str)
 
     def sendStatusUpdates(self, uid):
         query = "select active_client.id, userid, server, idle from active_client,subscription where (subscription.account = %s and active_client.id = subscription.client) OR (active_client.id = %s);"
