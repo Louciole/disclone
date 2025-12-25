@@ -146,3 +146,9 @@ create table if not exists serv_dashboard (
     category integer,
     place float NOT NULL DEFAULT 0.1
 );
+
+create table if not exists API_key (
+    id bigserial NOT NULL PRIMARY KEY,
+    key varchar(64) UNIQUE NOT NULL,
+    owner integer NOT NULL
+);

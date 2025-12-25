@@ -253,6 +253,39 @@ class Disclone(Server):
         self.getUsersStatus([user],detailed=True)
         return json.dumps(user, default=str)
 
+    @Server.expose
+    def uploadDriveOnBehalf(self, API_KEY, email):
+        key = self.db.getSomething("API_key", API_KEY, "key")
+        if not key:
+            raise HTTPError(self.response, 403, "forbidden")
+
+        key_user = self.db.getSomething("disclone_account", key["owner"])
+        if not key_user or not self.isAdmin(key_user["id"]):
+            raise HTTPError(self.response, 403, "forbidden")
+
+        user = self.db.getSomething("disclone_account", email, "username")
+        if not user:
+            raise HTTPError(self.response, 403, "forbidden")
+        uid = user["id"]
+
+
+    def uploadDrive(self, uid):
+        uid = self.getUser()
+        pass
+
+    def isAdmin(self, uid):
+        # admins are users with admin status in op servs
+        users_op_servs = self.db.execute("SELECT * FROM op_servs, accessServer WHERE op_servs.server = accessServer.server AND accessServer.account = %s", (uid,))
+        op = self.db.getSomething("op_servs", id, "server")
+        if not op:
+            raise HTTPError(self.response, 403, "forbidden")
+
+        if not self.checkAccessRights(uid, id, "disclone_admin"):
+            raise HTTPError(self.response, 403, "forbidden")
+
+
+        pass
+
     def onWSAuth(self,uid):
         self.sendStatusUpdates(uid)
 
