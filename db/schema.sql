@@ -1,4 +1,4 @@
-create table disclone_account(
+create table if not exists disclone_account(
     id int NOT NULL PRIMARY KEY,
     display varchar(24) DEFAULT 'Disclone User',
     username varchar(24) NOT NULL,
@@ -10,7 +10,7 @@ create table disclone_account(
     current_room integer
 );
 
-create table status(
+create table if not exists status(
    id int NOT NULL PRIMARY KEY,
    mode numeric not null default 0,
    emoji varchar,
@@ -30,6 +30,9 @@ create table if not exists accessServer (
     account integer NOT NULL,
     server integer NOT NULL
 );
+ALTER TABLE accessServer
+drop CONSTRAINT if exists SERVACC_SERV_CONSTRAINT;
+
 ALTER TABLE accessServer
 ADD CONSTRAINT SERVACC_SERV_CONSTRAINT FOREIGN KEY (server) REFERENCES server (id) ON UPDATE CASCADE;
 
@@ -150,5 +153,6 @@ create table if not exists serv_dashboard (
 create table if not exists API_key (
     id bigserial NOT NULL PRIMARY KEY,
     key varchar(64) UNIQUE NOT NULL,
-    owner integer NOT NULL
+    owner integer NOT NULL,
+    name varchar(255) DEFAULT ''
 );

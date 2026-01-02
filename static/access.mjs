@@ -2,7 +2,8 @@ import {xhr} from "./framework/templating.mjs";
 
 const rights = {
     "dashboard-read": {'name': 'dashboard-read', 'category': 'dashboard', 'description': 'See the dashboards'},
-    "dashboard-create": {'name': 'dashboard-create' ,'category': 'dashboard', 'description': 'Create a new dashboard'}
+    "dashboard-create": {'name': 'dashboard-create' ,'category': 'dashboard', 'description': 'Create a new dashboard'},
+    "disclone-admin": {'name': 'disclone-admin' ,'category': 'disclone', 'description': 'Administrate Disclone, create admin API-keys'},
 }
 window.rights = rights;
 

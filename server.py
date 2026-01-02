@@ -9,6 +9,7 @@ import string
 import random
 import datetime
 import requests
+import base64
 
 # websockets imports
 import asyncio
@@ -217,7 +218,7 @@ class Disclone(Server):
     def getServContent(self, servID, channelID=None):
         uid = self.getUser()
         #TODO handle access rights
-        serv = self.db.getFilters("accessserver", ["account", "=", uid])
+        serv = self.db.getFilters("accessserver", ["account", "=", uid, "and", "server", "=", servID])
         if serv:
             content = {}
             if not channelID:
@@ -254,8 +255,8 @@ class Disclone(Server):
         return json.dumps(user, default=str)
 
     @Server.expose
-    def uploadDriveOnBehalf(self, API_KEY, email):
-        key = self.db.getSomething("API_key", API_KEY, "key")
+    def uploadDriveOnBehalf(self, API_KEY, email, file):
+        key = self.db.getSomething("api_key", API_KEY, "key")
         if not key:
             raise HTTPError(self.response, 403, "forbidden")
 
@@ -263,28 +264,39 @@ class Disclone(Server):
         if not key_user or not self.isAdmin(key_user["id"]):
             raise HTTPError(self.response, 403, "forbidden")
 
-        user = self.db.getSomething("disclone_account", email, "username")
+        user = self.uniauth.getUserCredentials(email)
         if not user:
             raise HTTPError(self.response, 403, "forbidden")
+
         uid = user["id"]
+
+        print("Uploading file on behalf of user", uid, file)
+        # retreivig personal server
+        # taking first drive channel in ORDER
+        # saving file
+        # adding file to the channel
+        file = base64.b64decode(file)
+
+        self.saveFile(file, name, ext)
+
 
 
     def uploadDrive(self, uid):
         uid = self.getUser()
-        pass
 
     def isAdmin(self, uid):
         # admins are users with admin status in op servs
-        users_op_servs = self.db.execute("SELECT * FROM op_servs, accessServer WHERE op_servs.server = accessServer.server AND accessServer.account = %s", (uid,))
-        op = self.db.getSomething("op_servs", id, "server")
-        if not op:
-            raise HTTPError(self.response, 403, "forbidden")
+        users_op_servs = self.db.cur.execute("SELECT * FROM op_servs, accessServer WHERE op_servs.server = accessServer.server AND accessServer.account = %s", (uid,)).fetchall()
 
-        if not self.checkAccessRights(uid, id, "disclone_admin"):
-            raise HTTPError(self.response, 403, "forbidden")
+        if not users_op_servs:
+            return False
 
+        for user_op_serv in users_op_servs:
+            id = user_op_serv["server"]
+            if self.checkAccessRights(uid, id, "disclone_admin"):
+                return True
 
-        pass
+        return False
 
     def onWSAuth(self,uid):
         self.sendStatusUpdates(uid)
@@ -689,6 +701,76 @@ class Disclone(Server):
             raise HTTPError(self.response, 403, "forbidden")
 
 
+
+    @Server.expose
+    def createApiKey(self, name="", permissions="[]"):
+        """Create a new API key for the authenticated user.
+        Expects optional name and permissions (JSON list or a list) and returns a JSON object with the new key and metadata.
+        """
+        uid = self.getUser()
+        # normalize permissions param
+        try:
+            if isinstance(permissions, str):
+                permissions_parsed = json.loads(permissions)
+            else:
+                permissions_parsed = permissions
+        except Exception:
+            permissions_parsed = []
+
+        # generate a unique key
+        new_key = ''.join(random.choices(B62, k=40))
+        # ensure uniqueness
+        while self.db.getSomething("api_key", new_key, "key"):
+            new_key = ''.join(random.choices(B62, k=40))
+
+        key_id = self.db.insertDict("api_key", {"key": new_key, "owner": uid, "name": name}, getId=True)
+        created = datetime.datetime.now()
+
+        # Return some metadata (note: name/permissions are now returned; name is persisted in DB)
+        resp = {"id": key_id, "name": name, "key": new_key, "created": str(created), "permissions": permissions_parsed}
+        return json.dumps(resp)
+
+    @Server.expose
+    def revokeApiKey(self, id):
+        """Revoke (delete) an API key by its id. Only the owner can revoke their key."""
+        uid = self.getUser()
+        keyrow = self.db.getSomething("api_key", id)
+        if not keyrow:
+            raise HTTPError(self.response, 404, "Not Found")
+        if keyrow.get("owner") != uid:
+            raise HTTPError(self.response, 403, "forbidden")
+
+        self.db.deleteSomething("api_key", id)
+        return "ok"
+
+    @Server.expose
+    def regenerateApiKey(self, id):
+        """Generate a new key value for an existing API key entry. Only the owner may regenerate."""
+        uid = self.getUser()
+        keyrow = self.db.getSomething("api_key", id)
+        if not keyrow:
+            raise HTTPError(self.response, 404, "Not Found")
+        if keyrow.get("owner") != uid:
+            raise HTTPError(self.response, 403, "forbidden")
+
+        new_key = ''.join(random.choices(B62, k=40))
+        while self.db.getSomething("api_key", new_key, "key"):
+            new_key = ''.join(random.choices(B62, k=40))
+
+        self.db.edit("api_key", id, "key", new_key)
+        # return the new key value
+        return json.dumps({"key": new_key})
+
+    @Server.expose
+    def getUserApiKeys(self):
+        """Return the API keys for the authenticated user. The raw key value is not exposed here."""
+        uid = self.getUser()
+        keys = self.db.getAll("api_key", uid, "owner")
+        # remove the raw key value before returning
+        for k in keys:
+            if 'key' in k:
+                k.pop('key')
+        return json.dumps(keys, default=str)
 
     def sendStatusUpdates(self, uid):
         query = "select active_client.id, userid, server, idle from active_client,subscription where (subscription.account = %s and active_client.id = subscription.client) OR (active_client.id = %s);"
