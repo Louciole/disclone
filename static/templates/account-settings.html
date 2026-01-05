@@ -25,6 +25,19 @@
     </div>
 </div>
 <hr>
+<h3>${_t("EMAIL ADDRESSES")}</h3>
+<div class="vertical" style="margin-top: 1rem;">
+    <h4>${_t("Additional Emails")}</h4>
+    <p>${_t("You can add multiple email addresses to your account.")}</p>
+    <div class="scrollable" style="max-height: 200px; margin-top: 0.5rem;">
+        ${Subscribe("global.user.additional_emails", () => fillWith("email-card", global.user.additional_emails), 'column')}
+    </div>
+    <div class="inline space-between" style="margin-top: 1rem;">
+        <input type="email" id="new-email-input" placeholder="${_t('Enter a new email address')}" style="flex: 1; margin-right: 1rem;">
+        <div class="btn blue" onclick="addEmail()">${_t("Add Email")}</div>
+    </div>
+</div>
+<hr>
 <h3>${_t("ACCOUNT DELETION")}</h3>
 <p>${_t("Attention la suppression concerne TOUS les services carbonlab")}</p>
 <div class="btn red" onclick="goodbye()">${_t("Delete account")}</div>

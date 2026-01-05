@@ -247,6 +247,7 @@ class Disclone(Server):
         user = self.db.getSomething("disclone_account", uid)
         self.getUsersStatus([user],detailed=True)
         user["notifs"] = self.db.getAll("offline_notifs", uid, "account")
+        user["additional_emails"] = self.uniauth.getAll("additional_mail", uid, "account")
         return json.dumps(user, default=str)
 
     @Server.expose
@@ -862,6 +863,47 @@ class Disclone(Server):
             self.db.edit("disclone_account", uid, element, self.saveFile(value))
         else:
             self.db.edit("disclone_account", uid, element, value)
+
+    @Server.expose
+    def addEmail(self, email):
+        uid = self.getUser()
+
+        # Basic email validation
+        email = email.strip().lower()
+        if not re.match(r'^[^\s@]+@[^\s@]+\.[^\s@]+$', email):
+            return json.dumps({"error": "Invalid email address"})
+
+        # Check if email already exists in main accounts
+        existing_user = self.uniauth.getUserCredentials(email)
+        if existing_user:
+            return json.dumps({"error": "This email is already registered to an account"})
+
+        # Check if email already exists in additional emails
+        existing_additional = self.uniauth.getSomething("additional_mail", email, "email")
+        if existing_additional:
+            return json.dumps({"error": "This email is already added to an account"})
+
+        # Insert the new email
+        email_id = self.uniauth.insertDict("additional_mail", {
+            "account": uid,
+            "email": email
+        }, getId=True)
+
+        return json.dumps({"id": email_id, "email": email, "account": uid})
+
+    @Server.expose
+    def removeEmail(self, id):
+        uid = self.getUser()
+
+        # Check if the email belongs to the current user
+        email_entry = self.uniauth.getSomething("additional_mail", id)
+        if not email_entry or email_entry["account"] != uid:
+            return json.dumps({"error": "Email not found or access denied"})
+
+        # Delete the email
+        self.uniauth.deleteSomething("additional_mail", id)
+
+        return json.dumps({"success": True})
 
     def checkAccessRights(self, uid, server, action):
         if not self.db.getFilters("accessserver", ["account", "=", uid, "and", "server", "=", server]):

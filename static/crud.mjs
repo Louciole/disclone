@@ -908,3 +908,57 @@ function loadUserApiKeys(){
     xhr('getUserApiKeys', onload)
 }
 window.loadUserApiKeys = loadUserApiKeys
+
+function addEmail(){
+    const input = document.getElementById("new-email-input")
+    const emailValue = input.value.trim()
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(emailValue)) {
+        input.setCustomValidity("Invalid email address.");
+        input.reportValidity()
+        return
+    } else {
+        input.setCustomValidity("");
+    }
+
+    const onload = function() {
+        const response = JSON.parse(this.responseText)
+        if (response.error) {
+            alert(response.error)
+        } else {
+            // Add the new email to the list
+            if (!global.user.additional_emails) {
+                global.user.additional_emails = []
+            }
+            pushElement('global.user.additional_emails', response)
+            input.value = ''
+        }
+    };
+    xhr("/addEmail?email=".concat(encodeURIComponent(emailValue)), onload, "POST")
+}
+window.addEmail = addEmail
+
+function removeEmail(emailId){
+    if (!confirm('Are you sure you want to remove this email address?')) {
+        return
+    }
+
+    const onload = function() {
+        const response = JSON.parse(this.responseText)
+        if (response.error) {
+            alert(response.error)
+        } else {
+            // Remove the email from the list
+            if (global.user.additional_emails) {
+                const index = global.user.additional_emails.findIndex(e => e.id === emailId)
+                if (index !== -1) {
+                    deleteVal('global.user.additional_emails', index)
+                }
+            }
+        }
+    };
+    xhr("/removeEmail?id=".concat(emailId), onload, "POST")
+}
+window.removeEmail = removeEmail
