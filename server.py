@@ -697,7 +697,9 @@ class Disclone(Server):
 
 
 
-        self.db.insertDict("message", message)
+        msgId = self.db.insertDict("message", message, getId=True)
+        message["id"] = msgId
+
         members = self.db.getAll("accessconversation", conv["id"], "conversation")
         for user in members:
             if user["account"] != uid:

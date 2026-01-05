@@ -248,6 +248,10 @@ function getAnswerBlock(element){
     if(element.messages[0].reply){
         const og = lookFor(element.messages[0].reply, global.convs[global.state.activeConv].messages)
 
+        if (!og){ // FIXME when sending a message you dont get the id of your message back so the reply block is broken if the users responds
+            return ""
+        }
+
         return `<div class="inline reply">
 <div class="replyLineBox">
     <div class="replyLine">

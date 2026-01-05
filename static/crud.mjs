@@ -68,8 +68,8 @@ export function loadConvs(){
             global.privateConvs[key.id] = key // HACK
             global.convs[key.id] = global.privateConvs[key.id]
             addElement("global.privateConvs", key);
-            updateElement("global.convs", global.convs)
         }
+        updateElement("global.convs", global.convs)
         goTo('sec-column',"column-perso",undefined, true,()=>{goTo('sec-selector',"privateMessage")})
 
     };

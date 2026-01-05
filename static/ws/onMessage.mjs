@@ -1,6 +1,8 @@
 import global from "../framework/global.mjs";
 import {xhr} from "../framework/templating.mjs";
-import {postWS} from "../main.mjs";
+import {displayNotif, postWS} from "../main.mjs";
+import {setElement, pushElement, deleteElement, addElement} from "../framework/vesta.mjs";
+import {handleMessageGroup} from "../crud.mjs";
 
 export function onMessage(event) {
     console.log("Received message from Python server:", event.data);
