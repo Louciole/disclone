@@ -11,6 +11,7 @@ import emojis from "/static/emojis.mjs";
 import {addElement, pushElement, setElement} from "/static/framework/vesta.mjs";
 import {xhr} from "./framework/templating.mjs";
 import {initTranslations} from "./translations/translation.mjs";
+import CallManager from "/static/webrtc.mjs";
 
 
 global.state.currentTab = document.getElementById("logo")
@@ -53,6 +54,9 @@ const onInvitationsLoaded = function(){
 export function postWS(){
     const userList = JSON.stringify(Object.keys(global.users).map(cle => parseInt(cle)))
     xhr("subscribe?client="+global.state.clientID+"&cat=user&items="+userList,undefined)
+
+    global.state.callManager = new CallManager();
+
     console.log("Client ready", global)
     hideLoadingScreen()
 }
@@ -328,7 +332,6 @@ function getUserStatus(id, customOnly=false){
 }
 window.getUserStatus = getUserStatus
 
-initWebSockets()
 initNavigation()
 printWatermark("Disclone@carbonlab.dev", "https://github.com/Louciole/disclone")
 await initTranslations()
@@ -359,6 +362,74 @@ function hideLoadingScreen() {
         loadingScreen.style.display = 'none';
     });
 }
+
+
+function showIncomingCallNotification(callData) {
+    // TODO USE A TEMPLATE INSTEAD OF CREATING ELEMENTS LIKE A SAVAGE
+    const isVideo = callData.call_type === 'video';
+    const callTypeText = isVideo ? _t("appel vidéo") : _t("appel vocal");
+
+    const initiator = callData.participants[0];
+    const initiatorName = global.users[initiator]?.display || 'Un utilisateur';
+
+    const notification = document.createElement('div');
+    notification.className = 'incoming-call-notification';
+    notification.innerHTML = `
+        <div class="incoming-call-content">
+            <img class="icon large" src="/static/icons/material/${isVideo ? 'videocam' : 'call'}.svg"/>
+            <h3>${initiatorName}</h3>
+            <p>${callTypeText} ${_t("entrant")}</p>
+            <div class="incoming-call-actions">
+                <button class="btn-accept" onclick="acceptCall(${callData.id}, ${isVideo})">
+                    <img class="icon" src="/static/icons/material/call.svg"/>
+                    ${_t("Accepter")}
+                </button>
+                <button class="btn-decline" onclick="declineCall(${callData.id})">
+                    <img class="icon" src="/static/icons/material/call_end.svg"/>
+                    ${_t("Refuser")}
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(notification);
+
+    const notifSound = document.getElementById('call-ringtone');
+    if (notifSound) {
+        notifSound.play().catch(e => console.log('Cannot play ringtone:', e));
+    }
+}
+window.showIncomingCallNotification = showIncomingCallNotification;
+
+window.acceptCall = async function(callId, hasVideo) {
+    const notification = document.querySelector('.incoming-call-notification');
+    if (notification) {
+        notification.remove();
+    }
+
+    const ringtone = document.getElementById('call-ringtone');
+    if (ringtone) {
+        ringtone.pause();
+        ringtone.currentTime = 0;
+    }
+
+    await joinCall(callId, hasVideo);
+};
+
+window.declineCall = function(callId) {
+    // Supprimer la notification
+    const notification = document.querySelector('.incoming-call-notification');
+    if (notification) {
+        notification.remove();
+    }
+
+    // Arrêter la sonnerie
+    const ringtone = document.getElementById('call-ringtone');
+    if (ringtone) {
+        ringtone.pause();
+        ringtone.currentTime = 0;
+    }
+};
 
 window.addEventListener('load', () => {
     hideLoadingScreen()

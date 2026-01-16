@@ -11,7 +11,7 @@ import {
 import {initWebSockets} from "./framework/websockets.mjs"
 import global from "./framework/global.mjs"
 import {xhr} from "./framework/templating.mjs";
-import {goTo} from "./framework/navigation.mjs";
+import {goTo, initNavigation} from "./framework/navigation.mjs";
 
 function changeUsername(){
     const input = document.getElementById("username-input")
@@ -159,6 +159,7 @@ export function loadUser(){
     request.onload = function() { // request successful
         setElement('global.user', JSON.parse(request.responseText))
         global.users[global.user.id] = global.user
+        initWebSockets()
     };
 
     request.onerror = function() {
@@ -652,6 +653,8 @@ export function loadServer(id){
         for (let role of resp.roles){
             serv["roles"][role.id] = role
         }
+
+        serv["type"]= resp.type
 
         loadUsers(userList)
         orderServDirs(serv)

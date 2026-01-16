@@ -1,5 +1,5 @@
 <h1>${_t("Vue d'ensemble du serveur")}</h1>
-<div class="inline">
+<div class="inline" style="gap:0.6rem">
     <div class="circle red big">
     </div>
     <div class="server-name">
@@ -10,7 +10,7 @@
 <hr>
 <h2>${_t("SERVER ICON")}</h2>
 <p>${_t("We recommend an image size of 512 x 512.")}</p>
-<div class="inline">
+<div class="inline" style="margin-top: 0.6rem;">
     <div class="btn blue" onclick="global.state.uploadImage = 'serverAvatar'; openMenu('loadImage')">
         ${_t("Change server's icon")}
     </div>
@@ -23,5 +23,6 @@
 </div>
 <hr>
 <h2>${_t("TYPE DE SERVEUR")}</h2>
-<div class="btn red" onclick="makePersonalServer()">${_t('convertir en serveur privé ')} (OWNER ONLY)
+<p>${_t("Each user can have a personal server, they are meant to be your own server, where you store your data and invite your friends")}</p>
+<div class="btn red ${global.state.currentServer.type=='personal'?'hidden':''}" style="margin-top:0.6rem" onclick="makePersonalServer()">${_t('convertir en serveur perso ')} (OWNER ONLY)
 </div>

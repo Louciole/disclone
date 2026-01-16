@@ -199,4 +199,18 @@ create table if not exists drive_file (
     parent_folder integer,
     uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (parent_folder) REFERENCES drive_folder(id) ON DELETE CASCADE
-)
+);
+
+create table if not exists call_session (
+    id bigserial NOT NULL PRIMARY KEY,
+    conversation_id integer NOT NULL,
+    participants jsonb NOT NULL DEFAULT '[]',
+    started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ended_at TIMESTAMP,
+    call_type varchar(10) NOT NULL DEFAULT 'audio',
+    mode varchar(10) NOT NULL DEFAULT 'p2p',
+    active boolean NOT NULL DEFAULT true
+);
+
+create index if not exists idx_call_session_conversation on call_session(conversation_id);
+create index if not exists idx_call_session_active on call_session(active);

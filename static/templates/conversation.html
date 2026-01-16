@@ -5,12 +5,23 @@
             <div class="circle red"></div>
             ${Subscribe("global.convs["+global.state.activeConv+"].name", ()=>{return getConvName(global.convs[global.state.activeConv], true)})}
         </div>
-        <div>
+        <div class="call-actions">
+            <div class="icon-wrapper" onclick="startVoiceCall(${global.state.activeConv})" title="${_t("Appel vocal")}">
+                <img class="icon" src="/static/icons/material/call.svg"/>
+                <span class="tooltip bottom">${_t("Appel vocal")}</span>
+            </div>
+            <div class="icon-wrapper" onclick="startVideoCall(${global.state.activeConv})" title="${_t("Appel vidéo")}">
+                <img class="icon" src="/static/icons/material/videocam.svg"/>
+                <span class="tooltip bottom">${_t("Appel vidéo")}</span>
+            </div>
             <div class="icon-wrapper" onclick="toggleFM('add-users')">
                 <img class="icon" src="/static/icons/material/groupadd.svg"/>
             </div>
         </div>
     </div>
+
+    <!-- Vue d'appel (masquée par défaut) -->
+    ${getTemplate('call-view')}
 
     <div class="scrollable bottom-margin">
         ${Subscribe('global.convs['.concat(global.state.activeConv,'].messages'),()=>fillWith('messageGroup',global.convs[global.state.activeConv].messageGroups||[]), undefined, {"repaint":()=>(repaintConv(sub, value))})}

@@ -70,6 +70,84 @@ export function onMessage(event) {
                         setElement('global.convs['+message.content.id+'].name', message.content.content)
                     }
                     break;
+
+                case "call_started":
+                    const callData = message.content.content;
+
+                    if (callData.participants[0] !== global.user.id) {
+                        if (callData.conversation_id === global.state.activeConv) {
+                            showIncomingCallNotification(callData);
+                        }
+                    }
+                    break;
+
+                case "call_participant_joined":
+                    const callManager = global.state.callManager;
+                    if (callManager && callManager.currentCall) {
+                        callManager.currentCall = message.content.content.call;
+
+                        if (message.content.content.mode_changed) {
+                            callManager.mode = message.content.content.call.mode;
+                        }
+
+                        callManager.updateCallUI();
+                    }
+                    break;
+
+                case "call_participant_left":
+                    const cm = global.state.callManager;
+                    if (cm && cm.currentCall) {
+                        cm.currentCall = message.content.content.call;
+                        cm.handlePeerDisconnection(message.content.content.user_id);
+                        cm.updateCallUI();
+                    }
+                    break;
+
+                case "call_ended":
+                    const callMgr = global.state.callManager;
+                    if (callMgr) {
+                        callMgr.cleanup();
+                    }
+                    break;
+
+                case "call_mode_switch":
+                    const mgr = global.state.callManager;
+                    if (mgr && mgr.currentCall &&
+                        mgr.currentCall.id === message.content.content.call_id) {
+                        mgr.handleModeSwitch(message.content.content.new_mode);
+                    }
+                    break;
+
+                case "callOffer":
+                    const offerMgr = global.state.callManager;
+                    if (offerMgr && offerMgr.currentCall) {
+                        offerMgr.handleOffer(
+                            message.content.content.from_user,
+                            message.content.content.signal
+                        );
+                    }
+                    break;
+
+                case "callAnswer":
+                    const answerMgr = global.state.callManager;
+                    if (answerMgr && answerMgr.currentCall) {
+                        answerMgr.handleAnswer(
+                            message.content.content.from_user,
+                            message.content.content.signal
+                        );
+                    }
+                    break;
+
+                case "callIce":
+                    const iceMgr = global.state.callManager;
+                    if (iceMgr && iceMgr.currentCall) {
+                        iceMgr.handleIceCandidate(
+                            message.content.content.from_user,
+                            message.content.content.signal
+                        );
+                    }
+                    break;
+
                 default:
                     break;
             }

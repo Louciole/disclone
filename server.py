@@ -17,6 +17,7 @@ import websockets
 import threading
 
 from os.path import abspath, dirname
+from callManager import CallManager
 
 B62 = string.digits + string.ascii_letters
 PATH = dirname(abspath(__file__))
@@ -26,6 +27,11 @@ class Disclone(Server):
     features = {"websockets": True, "errors": {404: "/static/404.html"}}
     clients = []
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(path=PATH, configFile="/server.ini", noStart=True)
+        self.callManager = CallManager(self.db)
+        self.start()
+
     @Server.expose
     def index(self):
         return self.file(PATH + "/static/home/home.html")
@@ -33,6 +39,7 @@ class Disclone(Server):
     @Server.expose
     def channels(self, uid="me"):
         self.checkJwt()
+        self.response.headers.append(('Permissions-Policy', 'microphone=(self), camera=(self), geolocation=()'))
         return self.file(PATH + "/static/main.html")
 
     @Server.expose
@@ -105,13 +112,163 @@ class Disclone(Server):
                         self.db.edit("active_client", data["clientID"], "idle", data["idle"])
                         client = self.db.getSomething("active_client", data["clientID"])
                         await self.sendStatusUpdatesAsync(client["userid"])
-                case "callIce" | "callAnswer" | "callOffer" | "callHangup" | "callParticipants" :
-                    for client in self.clients:
-                        if client != websocket:
-                            await client.send(message)
-                case "callJoin":
-                    room = self.calls.get(data["room"])
 
+                # ===== Gestion des appels WebRTC =====
+                case "callStart":
+                    # Démarrer un nouvel appel
+                    if self.checkWSAuth(websocket, data["clientID"]):
+                        client = self.db.getSomething("active_client", data["clientID"])
+                        conv_id = data.get("conversation_id")
+                        call_type = data.get("call_type", "audio")
+
+                        # Vérifier que l'utilisateur a accès à la conversation
+                        access = self.db.getFilters("accessconversation",
+                            ["conversation", "=", conv_id, "and", "account", "=", client["userid"]])
+
+                        if access:
+                            call = self.callManager.create_call(conv_id, client["userid"], call_type)
+
+                            # Notifier tous les membres de la conversation
+                            members = self.db.getAll("accessconversation", conv_id, "conversation")
+                            for member in members:
+                                await self.sendNotificationAsync(member["account"], {
+                                    "type": "call_started",
+                                    "content": call.to_dict()
+                                })
+
+                case "callJoin":
+                    # Rejoindre un appel existant
+                    if self.checkWSAuth(websocket, data["clientID"]):
+                        client = self.db.getSomething("active_client", data["clientID"])
+                        call_id = data.get("call_id")
+
+                        result = self.callManager.join_call(call_id, client["userid"])
+
+                        if result:
+                            call = result['call']
+                            # Notifier tous les participants
+                            for participant_id in call.participants:
+                                await self.sendNotificationAsync(participant_id, {
+                                    "type": "call_participant_joined",
+                                    "content": {
+                                        "call": call.to_dict(),
+                                        "user_id": client["userid"],
+                                        "mode_changed": result['mode_changed']
+                                    }
+                                })
+
+                            # Si changement de mode, notifier le switch P2P->SFU
+                            if result['mode_changed']:
+                                for participant_id in call.participants:
+                                    await self.sendNotificationAsync(participant_id, {
+                                        "type": "call_mode_switch",
+                                        "content": {
+                                            "call_id": call_id,
+                                            "old_mode": result['old_mode'],
+                                            "new_mode": result['new_mode']
+                                        }
+                                    })
+
+                case "callLeave":
+                    # Quitter un appel
+                    if self.checkWSAuth(websocket, data["clientID"]):
+                        client = self.db.getSomething("active_client", data["clientID"])
+                        call_id = data.get("call_id")
+
+                        result = self.callManager.leave_call(call_id, client["userid"])
+
+                        if result:
+                            if result['ended']:
+                                # L'appel est terminé, notifier tous
+                                call = result['call']
+                                members = self.db.getAll("accessconversation", call.conversation_id, "conversation")
+                                for member in members:
+                                    await self.sendNotificationAsync(member["account"], {
+                                        "type": "call_ended",
+                                        "content": {"call_id": call_id}
+                                    })
+                            else:
+                                call = result['call']
+                                # Notifier les participants restants
+                                for participant_id in call.participants:
+                                    await self.sendNotificationAsync(participant_id, {
+                                        "type": "call_participant_left",
+                                        "content": {
+                                            "call": call.to_dict(),
+                                            "user_id": client["userid"],
+                                            "mode_changed": result['mode_changed']
+                                        }
+                                    })
+
+                                # Si changement de mode SFU->P2P
+                                if result['mode_changed']:
+                                    for participant_id in call.participants:
+                                        await self.sendNotificationAsync(participant_id, {
+                                            "type": "call_mode_switch",
+                                            "content": {
+                                                "call_id": call_id,
+                                                "old_mode": result['old_mode'],
+                                                "new_mode": result['new_mode']
+                                            }
+                                        })
+
+                case "callOffer" | "callAnswer" | "callIce":
+                    # Signaling WebRTC - routage selon le mode
+                    if self.checkWSAuth(websocket, data["clientID"]):
+                        client = self.db.getSomething("active_client", data["clientID"])
+                        call_id = data.get("call_id")
+                        target_user = data.get("target_user")
+
+                        call = self.callManager.active_calls.get(call_id)
+
+                        if call:
+                            if call.mode == 'p2p':
+                                # Mode P2P: relay direct vers le destinataire
+                                if target_user:
+                                    await self.sendNotificationAsync(target_user, {
+                                        "type": data["type"],
+                                        "content": {
+                                            "call_id": call_id,
+                                            "from_user": client["userid"],
+                                            "signal": data.get("signal")
+                                        }
+                                    })
+                            else:
+                                # Mode SFU: broadcaster à tous les autres participants
+                                for participant_id in call.participants:
+                                    if participant_id != client["userid"]:
+                                        await self.sendNotificationAsync(participant_id, {
+                                            "type": data["type"],
+                                            "content": {
+                                                "call_id": call_id,
+                                                "from_user": client["userid"],
+                                                "signal": data.get("signal")
+                                            }
+                                        })
+
+                case "callHangup":
+                    # Raccrocher (alias de callLeave)
+                    if self.checkWSAuth(websocket, data["clientID"]):
+                        client = self.db.getSomething("active_client", data["clientID"])
+                        call_id = data.get("call_id")
+
+                        result = self.callManager.leave_call(call_id, client["userid"])
+
+                        if result and result.get('call'):
+                            call = result['call']
+                            # Notifier le départ
+                            for participant_id in call.participants:
+                                await self.sendNotificationAsync(participant_id, {
+                                    "type": "call_participant_left",
+                                    "content": {
+                                        "call": call.to_dict(),
+                                        "user_id": client["userid"]
+                                    }
+                                })
+
+                case "callJoin_legacy":
+                    # Ancien système - conservé pour compatibilité
+                    room = self.calls.get(data["room"])
                     if room:
                         self.calls["room"] = set()
 
@@ -200,6 +357,80 @@ class Disclone(Server):
             content["messages"] = self.db.getFilters("message", ["place", "=", convId, "order by timestamp"])
             return json.dumps(content, default=str)
 
+
+    @Server.expose
+    def startCall(self, conversation_id, call_type="audio"):
+        uid = self.getUser()
+
+        access = self.db.getFilters("accessconversation", ["conversation", "=", conversation_id, "and", "account", "=", uid])
+
+        if not access:
+            raise HTTPError(self.response, 403, "Forbidden - No access to this conversation")
+
+        conv = self.db.getSomething("conversation", conversation_id)
+        if not conv or not conv.get("private", True):
+            raise HTTPError(self.response, 403, "Calls are only available in private conversations")
+
+        call = self.callManager.create_call(conversation_id, uid, call_type)
+        return json.dumps(call.to_dict(), default=str)
+
+    @Server.expose
+    def joinCall(self, call_id):
+        uid = self.getUser()
+
+        call = self.callManager.active_calls.get(int(call_id))
+        if not call:
+            raise HTTPError(self.response, 404, "Call not found")
+
+        access = self.db.getFilters("accessconversation", ["conversation", "=", call.conversation_id, "and", "account", "=", uid])
+
+        if not access:
+            raise HTTPError(self.response, 403, "Forbidden - No access to this conversation")
+
+        result = self.callManager.join_call(int(call_id), uid)
+
+        if result:
+            return json.dumps({
+                'call': result['call'].to_dict(),
+                'mode_changed': result['mode_changed']
+            }, default=str)
+
+        raise HTTPError(self.response, 500, "Failed to join call")
+
+    @Server.expose
+    def leaveCall(self, call_id):
+        uid = self.getUser()
+
+        result = self.callManager.leave_call(int(call_id), uid)
+
+        if result:
+            response = {
+                'ended': result['ended'],
+                'mode_changed': result.get('mode_changed', False)
+            }
+            if not result['ended']:
+                response['call'] = result['call'].to_dict()
+
+            return json.dumps(response, default=str)
+
+        raise HTTPError(self.response, 404, "Call not found")
+
+    @Server.expose
+    def getCallState(self, conversation_id):
+        uid = self.getUser()
+
+        access = self.db.getFilters("accessconversation", ["conversation", "=", conversation_id, "and", "account", "=", uid])
+
+        if not access:
+            raise HTTPError(self.response, 403, "Forbidden")
+
+        call_state = self.callManager.get_call_state(int(conversation_id))
+
+        if call_state:
+            return json.dumps(call_state, default=str)
+
+        return json.dumps({"active": False}, default=str)
+
     @Server.expose
     def getChanContent(self, convId):
         uid = self.getUser()
@@ -231,6 +462,12 @@ class Disclone(Server):
                     content["op"] = True
                 content["cat"] = self.db.getAll("server_cat", servID,"server")
                 content["roles"] = self.db.getAll("role", servID,"server")
+
+                if self.db.getSomething("personal_server", uid, "owner"):
+                    content["type"] = "personal"
+                else:
+                    content["type"] = "standard"
+
                 content["members"] = self.db.getFilters("accessserver", ["server", "=", servID])
                 for i in range(0, len(content["members"])):
                     userRoles = self.db.getFilters("role_attribution", ["server", "=", servID, "and", "account", "=", content["members"][i]["account"]])
@@ -281,7 +518,7 @@ class Disclone(Server):
         if not personal_server:
             raise HTTPError(self.response, 403, "no personal server found")
 
-        first_drive = self.db.getFilters("drive_channel", ["server", "=", personal_server["id"], "order by place asc limit 1"])
+        first_drive = self.db.getFilters("drive_channel", ["server", "=", personal_server["server"], "order by place asc limit 1"])
         if not first_drive or first_drive == []:
             raise HTTPError(self.response, 403, "no drive channel found")
 
@@ -357,6 +594,9 @@ class Disclone(Server):
         else:
             # Get root level files (where parent_folder is NULL)
             files = self.db.getFilters("drive_file", ["drive_channel", "=", drive_id, "and", "parent_folder", "is", None])
+
+        if files == None:
+            files = []
 
         # Add uploader info for each file
         for file in files:

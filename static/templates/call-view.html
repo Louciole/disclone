@@ -1,0 +1,23 @@
+<div id="call-view" class="call-view" style="display: none;">
+    <div class="call-header">
+        <div class="call-title">
+            <img class="icon" src="/static/icons/material/call.svg"/>
+            <h3>${_t("Appel en cours")}</h3>
+        </div>
+    </div>
+
+    <div class="call-content">
+        <div id="remote-videos" class="remote-videos-grid">
+        </div>
+        <div id="remote-audio-container">
+        </div>
+
+        <div class="local-video-container">
+            <video id="local-video" autoplay playsinline muted></video>
+            <div class="video-name-label">${_t("Vous")}</div>
+        </div>
+    </div>
+    ${getTemplate('call-controls')}
+
+</div>
+
