@@ -1,4 +1,4 @@
-import {addServer, getRelevantUser} from "./main.mjs"
+import {getRelevantUser} from "./main.mjs"
 import {
     addElement,
     deleteElement,
@@ -11,7 +11,7 @@ import {
 import {initWebSockets} from "./framework/websockets.mjs"
 import global from "./framework/global.mjs"
 import {xhr} from "./framework/templating.mjs";
-import {goTo} from "./framework/navigation.mjs";
+import {goTo, initNavigation} from "./framework/navigation.mjs";
 
 function changeUsername(){
     const input = document.getElementById("username-input")
@@ -38,8 +38,7 @@ function newServer(){
     request.open('POST', "createServer", true);
     request.onload = function() {
         const serv = {name:"New Server",id:JSON.parse(request.responseText)}
-        global.servers[serv.id] = serv
-        addServer(serv.name, serv.id)
+        setElement(`global.servers[${serv.id}]`, serv)
     };
 
     request.onerror = function() {
@@ -54,9 +53,7 @@ export function loadServers(){
     const onload = function() {
         const response = JSON.parse(this.responseText)
         global.servers = response
-        for (let i in response) {
-            addServer(response[i].name, response[i].id, response[i])
-        }
+        setElement(`global.servers`, response)
     };
     xhr("getUserServers",onload)
 }
@@ -67,6 +64,7 @@ export function loadConvs(){
         for(let key of keys){
             global.privateConvs[key.id] = key // HACK
             global.convs[key.id] = global.privateConvs[key.id]
+            global.convs[key.id].ongoingCall = null; // Initialize call state
             addElement("global.privateConvs", key);
         }
         updateElement("global.convs", global.convs)
@@ -108,10 +106,16 @@ export function loadConv(key){
     let lastTimestamp = undefined
     global.convs[key].messageGroups = []
 
-    for(let message of global.convs[key].messages){
+    const messagesArray = global.convs[key].messages || []
+    global.convs[key].messages = {}  // Source of truth: all messages by ID
+
+    for(let message of messagesArray){
         message.body = message.body.replace(/</g, "&lt;")
 
         // si ça fait moins de 3 minutes de différence, que c'est la même personne et que la date n'a pas changée et que le message n'est pas une réponse
+        global.convs[key].messages[message.id] = message
+
+        // Group consecutive messages from same sender
         if(message.sender === lastSender && (new Date(message.timestamp)-new Date(lastTimestamp))/60000<3 && getTimeStr(message.timestamp, { locale: "fr-FR",hour: undefined, minute: undefined}) === getTimeStr(lastTimestamp, { locale: "fr-FR",hour: undefined, minute: undefined}) && !message.reply){
             global.convs[key].messageGroups[global.convs[key].messageGroups.length-1].messages.push(message)
         }else{
@@ -139,10 +143,16 @@ export function loadChan(key){
     let lastTimestamp = undefined
     global.convs[key].messageGroups = []
 
-    for(let message of global.convs[key].messages){
+    // Convert messages array to dict
+    const messagesArray = global.convs[key].messages || []
+    global.convs[key].messages = {}  // Source of truth: all messages by ID
+
+    for(let message of messagesArray){
         message.body = message.body.replace(/</g, "&lt;")
 
-        // si ça fait moins de 3 minutes de différence, que c'est la même personne et que la date n'a pas changée et que le message n'est pas une réponse
+        global.convs[key].messages[message.id] = message
+
+        // Group consecutive messages - messageGroups contain REFERENCES to messages dict objects
         if(message.sender === lastSender && (new Date(message.timestamp)-new Date(lastTimestamp))/60000<3 && getTimeStr(message.timestamp, { locale: "fr-FR",hour: undefined, minute: undefined}) === getTimeStr(lastTimestamp, { locale: "fr-FR",hour: undefined, minute: undefined}) && !message.reply){
             global.convs[key].messageGroups[global.convs[key].messageGroups.length-1].messages.push(message)
         }else{
@@ -159,6 +169,7 @@ export function loadUser(){
     request.onload = function() { // request successful
         setElement('global.user', JSON.parse(request.responseText))
         global.users[global.user.id] = global.user
+        initWebSockets()
     };
 
     request.onerror = function() {
@@ -246,21 +257,57 @@ export function lookFor(element, array){
     }
 }
 
-function newMessageGroup(conv, message){
-    global.convs[conv].messageGroups.push({"date": getTimeStr(message.timestamp, { locale: "fr-FR",hour: undefined, minute: undefined}), "messages":[message], "id":global.convs[conv].messageGroups.length})
+/**
+ * Get the last message ID from messages dict
+ * @param {number} convId - Conversation ID
+ * @returns {number|null} Last message ID or null if no messages
+ */
+function getLastMessageId(convId) {
+    const messages = global.convs[convId]?.messages
+    if (!messages) return null
+
+    const keys = Object.keys(messages)
+    if (keys.length === 0) return null
+
+    // Get the last key (messages are added in order, so last key = last message)
+    return parseInt(keys[keys.length - 1])
 }
 
+/**
+ * Create a new message group
+ * @param {number} conv - Conversation ID
+ * @param {object} message - Message object (reference will be stored, not a copy)
+ */
+function newMessageGroup(conv, message){
+    global.convs[conv].messageGroups.push({
+        "date": getTimeStr(message.timestamp, { locale: "fr-FR",hour: undefined, minute: undefined}),
+        "messages":[message],  // Array of REFERENCES to message objects
+        "id":global.convs[conv].messageGroups.length
+    })
+}
+
+/**
+ * Handle grouping of a new message
+ * Groups consecutive messages from the same sender within 3 minutes
+ * @param {object} message - Message object to group
+ */
 export function handleMessageGroup(message){
     console.log("handleMessageGroup",message)
     message.attachments = message.attachments ? JSON.parse(message.attachments) : []
-    if (global.convs[message.place].messages.length !== 0){
-        // si ça fait moins de 3 minutes de différence, que c'est la même personne que la date n'a pas changée ET que le message n'est pas une réponse
-        if(message.sender === global.convs[message.place].messages[global.convs[message.place].messages.length-1].sender && (new Date(message.timestamp)-new Date(global.convs[message.place].messages[global.convs[message.place].messages.length-1].timestamp))/60000<3 && getTimeStr(message.timestamp, { locale: "fr-FR",hour: undefined, minute: undefined}) === getTimeStr(global.convs[message.place].messages[global.convs[message.place].messages.length-1].timestamp, { locale: "fr-FR",hour: undefined, minute: undefined}) && !message.reply){
+
+    const lastMsgId = getLastMessageId(message.place)
+    if (lastMsgId !== null){
+        const lastMsg = global.convs[message.place].messages[lastMsgId]
+        // Group if same sender, < 3 min apart, same day, and not a reply
+        if(message.sender === lastMsg.sender && (new Date(message.timestamp)-new Date(lastMsg.timestamp))/60000<3 && getTimeStr(message.timestamp, { locale: "fr-FR",hour: undefined, minute: undefined}) === getTimeStr(lastMsg.timestamp, { locale: "fr-FR",hour: undefined, minute: undefined}) && !message.reply){
+            // Add reference to existing group
             global.convs[message.place].messageGroups[global.convs[message.place].messageGroups.length-1].messages.push(message)
         }else{
+            // Create new group
             newMessageGroup(message.place, message)
         }
     }else{
+        // First message - create new group
         newMessageGroup(message.place, message)
     }
 }
@@ -397,7 +444,7 @@ function createConv(event){
 
     global.state.pendingConvMembers[global.state.activeConv].splice(selfId,1)
     const members = global.state.pendingConvMembers[global.state.activeConv]
-    const conv = {"name":"New Conversation","members":members,"messageGroups":[],"messages":[],"private":false}
+    const conv = {"name":"New Conversation","members":members,"messageGroups":[],"messages":{},"private":false}
 
     const onload = function() {
         conv.id = parseInt(this.responseText)
@@ -590,6 +637,24 @@ function uploadProfileImage(field="pfp"){
             console.log(this.responseText)
             if (global.state.uploadImage === "serverAvatar") {
                 global.state.uploadImage = ""
+                try {
+                    const response = JSON.parse(this.responseText)
+                    if (response.pfp) {
+                        setElement('global.state.currentServer.pfp', response.pfp)
+                        updateElement("global.servers")
+                    }
+                } catch (e) {
+                    console.error("Failed to parse server pfp response:", e)
+                }
+            } else {
+                try {
+                    const response = JSON.parse(this.responseText)
+                    if (response.pfp) {
+                        setElement('global.user.pfp', response.pfp)
+                    }
+                } catch (e) {
+                    console.error("Failed to parse user pfp response:", e)
+                }
             }
         }
         console.log(result, {"value":result})
@@ -634,6 +699,18 @@ export function loadServer(id){
         console.log(this.responseText)
         const resp = JSON.parse(this.responseText)
         const serv = lookFor(id,global.servers)
+
+        // Preserve community server properties (languages, tags, description, etc.)
+        // These are loaded by getUserServers but not included in getServContent
+        const preservedProps = {
+            languages: serv.languages,
+            tags: serv.tags,
+            description: serv.description,
+            is_community: serv.is_community,
+            is_featured: serv.is_featured,
+            member_count: serv.member_count
+        };
+
         if (resp.op) {
             serv.op = resp.op
         }
@@ -653,8 +730,21 @@ export function loadServer(id){
             serv["roles"][role.id] = role
         }
 
+        serv["type"]= resp.type
+
+        // Restore preserved properties
+        Object.assign(serv, preservedProps);
+
         loadUsers(userList)
         orderServDirs(serv)
+
+        // Déclencher la réactivité Vesta en mettant à jour le global state
+        setElement(`global.servers[${id}]`, serv);
+
+        // Si c'est le serveur actuel, mettre à jour currentServer pour déclencher Subscribe
+        if (global.state.currentServer?.id === id) {
+            setElement('global.state.currentServer', serv);
+        }
     };
     xhr("getServContent?servID=".concat(id.toString()),onload,"GET",false)
 }
@@ -667,7 +757,7 @@ function firstGreater(arr, target) {
     }
 }
 
-function orderServDirs(serv){
+export function orderServDirs(serv){
     serv?.dirs?.cat.sort((a, b) => a.place - b.place);
     serv?.dirs?.channels.sort((a, b) => a.place - b.place);
     serv?.dirs?.dashboards.sort((a, b) => a.place - b.place);
@@ -730,9 +820,38 @@ window.createInvitation = createInvitation
 
 function createChan(type = 'textual'){
     const channelType = type || 'textual';
-    xhr("editServer?id="+global.state.currentServer.id+"&property=channel&action=create&channelType="+channelType,undefined)
-    const menu = document.getElementById('create-channel')
-    if(menu) menu.style.display = 'none'
+
+    const onChannelCreated = function() {
+        try {
+            const response = JSON.parse(this.responseText);
+            const newChannel = response.channel;
+            const channelTypeStr = response.type;
+
+            // Ajouter le type au canal
+            if (channelTypeStr === 'textual') {
+                newChannel.type = 'textual';
+                global.state.currentServer.dirs.channels.push(newChannel);
+            } else if (channelTypeStr === 'vocal') {
+                newChannel.type = 'vocal';
+                newChannel.name = newChannel.name || "Salon vocal";
+                global.state.currentServer.dirs.rooms.push(newChannel);
+            } else if (channelTypeStr === 'drive') {
+                newChannel.type = 'drive';
+                global.state.currentServer.dirs.drives.push(newChannel);
+            }
+
+            // Re-ordonner et mettre à jour l'affichage
+            orderServDirs(global.state.currentServer);
+
+        } catch (e) {
+            console.error("Error creating channel:", e);
+        }
+    };
+
+    xhr("editServer?id="+global.state.currentServer.id+"&property=channel&action=create&channelType="+channelType, onChannelCreated);
+
+    const menu = document.getElementById('create-channel');
+    if(menu) menu.style.display = 'none';
 }
 window.createChan = createChan
 
@@ -962,3 +1081,126 @@ function removeEmail(emailId){
     xhr("/removeEmail?id=".concat(emailId), onload, "POST")
 }
 window.removeEmail = removeEmail
+
+// ==================== Community Server Functions ====================
+
+function toggleCommunityServer() {
+    const checkbox = document.getElementById('is-community-checkbox');
+    const communitySettings = document.getElementById('community-settings');
+    const isCommunity = checkbox.checked;
+
+    if (communitySettings) {
+        communitySettings.style.display = isCommunity ? '' : 'none';
+    }
+
+    // Save to server
+    xhr(`editServer?id=${global.state.currentServer.id}&property=is_community&value=${isCommunity}`,
+        () => {
+            global.state.currentServer.is_community = isCommunity;
+            if (isCommunity) {
+                // Initialize tags if needed
+                if (!global.state.currentServer.tags) {
+                    setElement('global.state.currentServer.tags', []);
+                }
+            }
+        },
+        "POST", false);
+}
+window.toggleCommunityServer = toggleCommunityServer;
+
+function addLanguage() {
+    const select = document.getElementById('language-add-select');
+    const language = select.value;
+
+    if (!language) return;
+
+    const languages = global.state.currentServer?.languages || [];
+    const languagesList = typeof languages === 'string' ? JSON.parse(languages) : languages;
+
+    if (languagesList.includes(language)) {
+        alert('Cette langue est déjà ajoutée.');
+        select.value = '';
+        return;
+    }
+
+    languagesList.push(language);
+
+    xhr(`editServer?id=${global.state.currentServer.id}&property=languages&value=${encodeURIComponent(JSON.stringify(languagesList))}`,
+        () => {
+            // Utiliser setElement pour déclencher la réactivité Vesta
+            setElement('global.state.currentServer.languages', languagesList);
+            select.value = '';
+        },
+        "POST", false);
+}
+window.addLanguage = addLanguage;
+
+function removeLanguage(language) {
+    const languages = global.state.currentServer?.languages || [];
+    const languagesList = typeof languages === 'string' ? JSON.parse(languages) : languages;
+
+    const index = languagesList.indexOf(language);
+    if (index > -1) {
+        languagesList.splice(index, 1);
+    }
+
+    xhr(`editServer?id=${global.state.currentServer.id}&property=languages&value=${encodeURIComponent(JSON.stringify(languagesList))}`,
+        () => {
+            // Utiliser setElement pour déclencher la réactivité Vesta
+            setElement('global.state.currentServer.languages', languagesList);
+        },
+        "POST", false);
+}
+window.removeLanguage = removeLanguage;
+
+function addServerTag() {
+    const input = document.getElementById('new-tag-input');
+    const tag = input.value.trim();
+
+    if (!tag) return;
+
+    if (tag.length > 20) {
+        alert('Les tags ne peuvent pas dépasser 20 caractères.');
+        return;
+    }
+
+    const tags = global.state.currentServer?.tags || [];
+    const tagsList = typeof tags === 'string' ? JSON.parse(tags) : tags;
+
+    if (tagsList.includes(tag)) {
+        alert('Ce tag existe déjà.');
+        return;
+    }
+
+    if (tagsList.length >= 10) {
+        alert('Vous ne pouvez pas ajouter plus de 10 tags.');
+        return;
+    }
+
+    tagsList.push(tag);
+
+    xhr(`editServer?id=${global.state.currentServer.id}&property=tags&value=${encodeURIComponent(JSON.stringify(tagsList))}`,
+        () => {
+            // Utiliser setElement pour déclencher la réactivité Vesta
+            setElement('global.state.currentServer.tags', tagsList);
+            input.value = '';
+        },
+        "POST", false);
+}
+window.addServerTag = addServerTag;
+
+function removeServerTag(index) {
+    const tags = global.state.currentServer?.tags || [];
+    const tagsList = typeof tags === 'string' ? JSON.parse(tags) : tags;
+
+    tagsList.splice(index, 1);
+
+    xhr(`editServer?id=${global.state.currentServer.id}&property=tags&value=${encodeURIComponent(JSON.stringify(tagsList))}`,
+        () => {
+            // Utiliser setElement pour déclencher la réactivité Vesta
+            setElement('global.state.currentServer.tags', tagsList);
+        },
+        "POST", false);
+}
+window.removeServerTag = removeServerTag;
+

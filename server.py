@@ -17,6 +17,7 @@ import websockets
 import threading
 
 from os.path import abspath, dirname
+from callManager import CallManager
 
 B62 = string.digits + string.ascii_letters
 PATH = dirname(abspath(__file__))
@@ -25,6 +26,14 @@ PATH = dirname(abspath(__file__))
 class Disclone(Server):
     features = {"websockets": True, "errors": {404: "/static/404.html"}}
     clients = []
+    _admin_cache = None  # Cache for admin user IDs
+    _admin_cache_time = None  # Last cache update time
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(path=PATH, configFile="/server.ini", noStart=True)
+        self.callManager = CallManager(self.db)
+        self._refreshAdminCache()  # Initialize admin cache
+        self.start()
 
     @Server.expose
     def index(self):
@@ -33,6 +42,7 @@ class Disclone(Server):
     @Server.expose
     def channels(self, uid="me"):
         self.checkJwt()
+        self.response.headers.append(('Permissions-Policy', 'microphone=(self), camera=(self), geolocation=()'))
         return self.file(PATH + "/static/main.html")
 
     @Server.expose
@@ -105,13 +115,174 @@ class Disclone(Server):
                         self.db.edit("active_client", data["clientID"], "idle", data["idle"])
                         client = self.db.getSomething("active_client", data["clientID"])
                         await self.sendStatusUpdatesAsync(client["userid"])
-                case "callIce" | "callAnswer" | "callOffer" | "callHangup" | "callParticipants" :
-                    for client in self.clients:
-                        if client != websocket:
-                            await client.send(message)
-                case "callJoin":
-                    room = self.calls.get(data["room"])
 
+                # ===== Gestion des appels WebRTC =====
+                case "callStart":
+                    # Démarrer un nouvel appel
+                    if self.checkWSAuth(websocket, data["clientID"]):
+                        client = self.db.getSomething("active_client", data["clientID"])
+                        conv_id = data.get("conversation_id")
+                        call_type = data.get("call_type", "audio")
+
+                        # Vérifier que l'utilisateur a accès à la conversation
+                        access = self.db.getFilters("accessconversation",
+                            ["conversation", "=", conv_id, "and", "account", "=", client["userid"]])
+
+                        if access:
+                            call = self.callManager.create_call(conv_id, client["userid"], call_type)
+
+                            # Notifier tous les membres de la conversation
+                            members = self.db.getAll("accessconversation", conv_id, "conversation")
+
+                            # DEBUG: Log conversation members
+                            print(f"🔔 [call_started] Conv {conv_id}: {len(members)} members, initiated by user {client['userid']}")
+
+                            for member in members:
+                                member_id = member["account"]
+                                print(f"   → Sending call_started to user {member_id}")
+
+                                try:
+                                    await self.sendNotificationAsync(member_id, {
+                                        "type": "call_started",
+                                        "content": call.to_dict()
+                                    })
+                                    print(f"   ✅ Sent call_started to user {member_id}")
+                                except Exception as e:
+                                    print(f"   ❌ Error sending to user {member_id}: {e}")
+
+                case "callJoin":
+                    # Rejoindre un appel existant
+                    if self.checkWSAuth(websocket, data["clientID"]):
+                        client = self.db.getSomething("active_client", data["clientID"])
+                        call_id = data.get("call_id")
+
+                        result = self.callManager.join_call(call_id, client["userid"])
+
+                        if result:
+                            call = result['call']
+                            # Notifier tous les participants
+                            for participant_id in call.participants:
+                                await self.sendNotificationAsync(participant_id, {
+                                    "type": "call_participant_joined",
+                                    "content": {
+                                        "call": call.to_dict(),
+                                        "user_id": client["userid"],
+                                        "mode_changed": result['mode_changed']
+                                    }
+                                })
+
+                            # Si changement de mode, notifier le switch P2P->SFU
+                            if result['mode_changed']:
+                                for participant_id in call.participants:
+                                    await self.sendNotificationAsync(participant_id, {
+                                        "type": "call_mode_switch",
+                                        "content": {
+                                            "call_id": call_id,
+                                            "old_mode": result['old_mode'],
+                                            "new_mode": result['new_mode']
+                                        }
+                                    })
+
+                case "callLeave":
+                    # Quitter un appel
+                    if self.checkWSAuth(websocket, data["clientID"]):
+                        client = self.db.getSomething("active_client", data["clientID"])
+                        call_id = data.get("call_id")
+
+                        result = self.callManager.leave_call(call_id, client["userid"])
+
+                        if result:
+                            if result['ended']:
+                                # L'appel est terminé, notifier tous
+                                call = result['call']
+                                members = self.db.getAll("accessconversation", call.conversation_id, "conversation")
+                                for member in members:
+                                    await self.sendNotificationAsync(member["account"], {
+                                        "type": "call_ended",
+                                        "content": {"call_id": call_id}
+                                    })
+                            else:
+                                call = result['call']
+                                # Notifier les participants restants
+                                for participant_id in call.participants:
+                                    await self.sendNotificationAsync(participant_id, {
+                                        "type": "call_participant_left",
+                                        "content": {
+                                            "call": call.to_dict(),
+                                            "user_id": client["userid"],
+                                            "mode_changed": result['mode_changed']
+                                        }
+                                    })
+
+                                # Si changement de mode SFU->P2P
+                                if result['mode_changed']:
+                                    for participant_id in call.participants:
+                                        await self.sendNotificationAsync(participant_id, {
+                                            "type": "call_mode_switch",
+                                            "content": {
+                                                "call_id": call_id,
+                                                "old_mode": result['old_mode'],
+                                                "new_mode": result['new_mode']
+                                            }
+                                        })
+
+                case "callOffer" | "callAnswer" | "callIce":
+                    # Signaling WebRTC - routage selon le mode
+                    if self.checkWSAuth(websocket, data["clientID"]):
+                        client = self.db.getSomething("active_client", data["clientID"])
+                        call_id = data.get("call_id")
+                        target_user = data.get("target_user")
+
+                        call = self.callManager.active_calls.get(call_id)
+
+                        if call:
+                            if call.mode == 'p2p':
+                                # Mode P2P: relay direct vers le destinataire
+                                if target_user:
+                                    await self.sendNotificationAsync(target_user, {
+                                        "type": data["type"],
+                                        "content": {
+                                            "call_id": call_id,
+                                            "from_user": client["userid"],
+                                            "signal": data.get("signal")
+                                        }
+                                    })
+                            else:
+                                # Mode SFU: broadcaster à tous les autres participants
+                                for participant_id in call.participants:
+                                    if participant_id != client["userid"]:
+                                        await self.sendNotificationAsync(participant_id, {
+                                            "type": data["type"],
+                                            "content": {
+                                                "call_id": call_id,
+                                                "from_user": client["userid"],
+                                                "signal": data.get("signal")
+                                            }
+                                        })
+
+                case "callHangup":
+                    # Raccrocher (alias de callLeave)
+                    if self.checkWSAuth(websocket, data["clientID"]):
+                        client = self.db.getSomething("active_client", data["clientID"])
+                        call_id = data.get("call_id")
+
+                        result = self.callManager.leave_call(call_id, client["userid"])
+
+                        if result and result.get('call'):
+                            call = result['call']
+                            # Notifier le départ
+                            for participant_id in call.participants:
+                                await self.sendNotificationAsync(participant_id, {
+                                    "type": "call_participant_left",
+                                    "content": {
+                                        "call": call.to_dict(),
+                                        "user_id": client["userid"]
+                                    }
+                                })
+
+                case "callJoin_legacy":
+                    # Ancien système - conservé pour compatibilité
+                    room = self.calls.get(data["room"])
                     if room:
                         self.calls["room"] = set()
 
@@ -136,6 +307,177 @@ class Disclone(Server):
         uid = self.getUser()
         servers = self.db.getSomethingProxied("server", "accessserver", "account", uid)
         return json.dumps(servers)
+
+    @Server.expose
+    def getDiscoverableServers(self, search=None, tags=None, languages=None):
+        """
+        Get list of community servers for discovery page.
+
+        Args:
+            search: Optional search term for server name/description
+            tags: Optional JSON array of tags to filter by
+            languages: Optional JSON array of language codes to filter by
+
+        Returns:
+            JSON object with 'featured' and 'regular' server lists
+        """
+        uid = self.getUser()
+
+        # Constants
+        MAX_SEARCH_LENGTH = 100
+        MAX_TAGS_FILTER = 10
+
+        # Validate search
+        if search:
+            if len(search) > MAX_SEARCH_LENGTH:
+                raise HTTPError(self.response, 400, "Search query too long")
+            search = search.strip()
+
+        # Validate and parse languages
+        languages_list = []
+        if languages:
+            try:
+                languages_list = json.loads(languages) if isinstance(languages, str) else languages
+                if not isinstance(languages_list, list):
+                    raise HTTPError(self.response, 400, "Languages must be an array")
+            except json.JSONDecodeError:
+                raise HTTPError(self.response, 400, "Invalid JSON format for languages")
+
+        # Validate and parse tags
+        tags_list = []
+        if tags:
+            try:
+                tags_list = json.loads(tags) if isinstance(tags, str) else tags
+                if not isinstance(tags_list, list):
+                    raise HTTPError(self.response, 400, "Tags must be an array")
+                if len(tags_list) > MAX_TAGS_FILTER:
+                    raise HTTPError(self.response, 400, f"Too many tags (max {MAX_TAGS_FILTER})")
+                # Sanitize tags
+                tags_list = [tag.strip().lower() for tag in tags_list if tag.strip()]
+            except json.JSONDecodeError:
+                raise HTTPError(self.response, 400, "Invalid JSON format for tags")
+
+        # Base query for community servers
+        filters = ["is_community", "=", True]
+
+        # Get all community servers first
+        all_servers = self.db.getFilters("server", filters)
+
+        # Filter by search term in Python (safer than complex SQL with parentheses)
+        if search:
+            search_lower = search.lower()
+            filtered_servers = []
+            for server in all_servers:
+                name = (server.get('name') or '').lower()
+                description = (server.get('description') or '').lower()
+                if search_lower in name or search_lower in description:
+                    filtered_servers.append(server)
+            all_servers = filtered_servers
+
+        # Filter by languages if provided
+        if languages_list:
+            filtered_servers = []
+            for server in all_servers:
+                server_languages = server.get('languages', [])
+                if isinstance(server_languages, str):
+                    server_languages = json.loads(server_languages)
+                if any(lang in server_languages for lang in languages_list):
+                    filtered_servers.append(server)
+            all_servers = filtered_servers
+
+        # Filter by tags if provided
+        if tags_list:
+            filtered_servers = []
+            for server in all_servers:
+                server_tags = server.get('tags', [])
+                if isinstance(server_tags, str):
+                    server_tags = json.loads(server_tags)
+                # Check if any requested tag is in server tags
+                if any(tag in server_tags for tag in tags_list):
+                    filtered_servers.append(server)
+            all_servers = filtered_servers
+
+        # Separate featured and regular servers
+        featured = [s for s in all_servers if s.get('is_featured', False)]
+        regular = [s for s in all_servers if not s.get('is_featured', False)]
+
+        # Sort featured by member count
+        featured.sort(key=lambda x: x.get('member_count', 0), reverse=True)
+
+        # Sort regular by member count
+        regular.sort(key=lambda x: x.get('member_count', 0), reverse=True)
+
+        # Mark servers user is already in
+        user_server_ids = [s['id'] for s in self.db.getSomethingProxied("server", "accessserver", "account", uid)]
+
+        for server in featured + regular:
+            server['is_joined'] = server['id'] in user_server_ids
+
+        # Limits
+        MAX_FEATURED_SERVERS = 10
+        MAX_REGULAR_SERVERS = 50
+
+        return json.dumps({
+            'featured': featured[:MAX_FEATURED_SERVERS],
+            'regular': regular[:MAX_REGULAR_SERVERS]
+        }, default=str)
+
+    @Server.expose
+    def joinCommunityServer(self, server_id):
+        """
+        Join a community server.
+
+        Args:
+            server_id: ID of the server to join
+
+        Returns:
+            Success message
+        """
+        uid = self.getUser()
+
+        # Check if server exists and is a community server
+        server = self.db.getSomething("server", server_id)
+        if not server:
+            raise HTTPError(self.response, 404, "Server not found")
+
+        if not server.get('is_community', False):
+            raise HTTPError(self.response, 403, "This server is not a community server")
+
+        # Check if already a member
+        existing = self.db.getFilters("accessserver", [
+            "account", "=", uid,
+            "and",
+            "server", "=", server_id
+        ])
+
+        if existing:
+            raise HTTPError(self.response, 400, "Already a member of this server")
+
+        # Add user to server
+        self.db.insertDict('accessserver', {'account': uid, 'server': server_id})
+
+        return json.dumps({"success": True, "server_id": server_id})
+
+    @Server.expose
+    def getAvailableTags(self):
+        """
+        Get list of all available tags from community servers.
+
+        Returns:
+            JSON array of unique tags
+        """
+        # Get all community servers
+        servers = self.db.getFilters("server", ["is_community", "=", True])
+
+        # Collect all unique tags
+        all_tags = set()
+        for server in servers:
+            tags = server.get('tags', [])
+            if isinstance(tags, str):
+                tags = json.loads(tags)
+            all_tags.update(tags)
+
+        return json.dumps(sorted(list(all_tags)))
 
     @Server.expose
     def createConv(self, name, members, private=False):
@@ -200,6 +542,93 @@ class Disclone(Server):
             content["messages"] = self.db.getFilters("message", ["place", "=", convId, "order by timestamp"])
             return json.dumps(content, default=str)
 
+
+    @Server.expose
+    def startCall(self, conversation_id, call_type="audio"):
+        uid = self.getUser()
+
+        access = self.db.getFilters("accessconversation", ["conversation", "=", conversation_id, "and", "account", "=", uid])
+
+        if not access:
+            raise HTTPError(self.response, 403, "Forbidden - No access to this conversation")
+
+        conv = self.db.getSomething("conversation", conversation_id)
+        if not conv:
+            raise HTTPError(self.response, 403, "Calls are only available in conversations")
+
+        call = self.callManager.create_call(conversation_id, uid, call_type)
+        return json.dumps(call.to_dict(), default=str)
+
+    @Server.expose
+    def joinCall(self, call_id):
+        uid = self.getUser()
+
+        call = self.callManager.active_calls.get(int(call_id))
+        if not call:
+            raise HTTPError(self.response, 404, "Call not found")
+
+        access = self.db.getFilters("accessconversation", ["conversation", "=", call.conversation_id, "and", "account", "=", uid])
+
+        if not access:
+            raise HTTPError(self.response, 403, "Forbidden - No access to this conversation")
+
+        result = self.callManager.join_call(int(call_id), uid)
+
+        if result:
+            response = {
+                'call': result['call'].to_dict(),
+                'mode_changed': result['mode_changed']
+            }
+            # Include old_mode and new_mode if mode changed
+            if result.get('old_mode'):
+                response['old_mode'] = result['old_mode']
+            if result.get('new_mode'):
+                response['new_mode'] = result['new_mode']
+
+            return json.dumps(response, default=str)
+
+        raise HTTPError(self.response, 500, "Failed to join call")
+
+    @Server.expose
+    def leaveCall(self, call_id):
+        uid = self.getUser()
+
+        result = self.callManager.leave_call(int(call_id), uid)
+
+        if result:
+            response = {
+                'ended': result['ended'],
+                'mode_changed': result.get('mode_changed', False)
+            }
+            if not result['ended']:
+                response['call'] = result['call'].to_dict()
+
+            # Include old_mode and new_mode if mode changed
+            if result.get('old_mode'):
+                response['old_mode'] = result['old_mode']
+            if result.get('new_mode'):
+                response['new_mode'] = result['new_mode']
+
+            return json.dumps(response, default=str)
+
+        raise HTTPError(self.response, 404, "Call not found")
+
+    @Server.expose
+    def getCallState(self, conversation_id):
+        uid = self.getUser()
+
+        access = self.db.getFilters("accessconversation", ["conversation", "=", conversation_id, "and", "account", "=", uid])
+
+        if not access:
+            raise HTTPError(self.response, 403, "Forbidden")
+
+        call_state = self.callManager.get_call_state(int(conversation_id))
+
+        if call_state:
+            return json.dumps(call_state, default=str)
+
+        return json.dumps({"active": False}, default=str)
+
     @Server.expose
     def getChanContent(self, convId):
         uid = self.getUser()
@@ -231,6 +660,12 @@ class Disclone(Server):
                     content["op"] = True
                 content["cat"] = self.db.getAll("server_cat", servID,"server")
                 content["roles"] = self.db.getAll("role", servID,"server")
+
+                if self.db.getSomething("personal_server", uid, "owner"):
+                    content["type"] = "personal"
+                else:
+                    content["type"] = "standard"
+
                 content["members"] = self.db.getFilters("accessserver", ["server", "=", servID])
                 for i in range(0, len(content["members"])):
                     userRoles = self.db.getFilters("role_attribution", ["server", "=", servID, "and", "account", "=", content["members"][i]["account"]])
@@ -248,7 +683,35 @@ class Disclone(Server):
         self.getUsersStatus([user],detailed=True)
         user["notifs"] = self.db.getAll("offline_notifs", uid, "account")
         user["additional_emails"] = self.uniauth.getAll("additional_mail", uid, "account")
+        user["isAdmin"] = self.isAdmin(uid)
         return json.dumps(user, default=str)
+
+    @Server.expose
+    def getDebugOTP(self, email):
+        """
+        Endpoint pour récupérer l'OTP en mode DEBUG uniquement
+        Utilisé pour les tests automatisés
+        """
+        if not self.config.getboolean("server", "DEBUG"):
+            raise HTTPError(self.response, 403, "This endpoint is only available in DEBUG mode")
+
+        # Récupérer l'OTP depuis la base de données verif_code
+        account = self.uniauth.getUserCredentials(email)
+        if not account:
+            raise HTTPError(self.response, 404, "User not found")
+
+        verif_code = self.uniauth.getSomething("verif_code", account["id"])
+        if not verif_code:
+            raise HTTPError(self.response, 404, "No verification code found for this user")
+
+        # Vérifier que le code n'est pas expiré
+        if verif_code["expiration"] < datetime.datetime.now():
+            raise HTTPError(self.response, 410, "Verification code has expired")
+
+        return json.dumps({
+            "code": verif_code["code"],
+            "expiration": verif_code["expiration"]
+        }, default=str)
 
     @Server.expose
     def uploadImage(self):
@@ -281,7 +744,7 @@ class Disclone(Server):
         if not personal_server:
             raise HTTPError(self.response, 403, "no personal server found")
 
-        first_drive = self.db.getFilters("drive_channel", ["server", "=", personal_server["id"], "order by place asc limit 1"])
+        first_drive = self.db.getFilters("drive_channel", ["server", "=", personal_server["server"], "order by place asc limit 1"])
         if not first_drive or first_drive == []:
             raise HTTPError(self.response, 403, "no drive channel found")
 
@@ -357,6 +820,9 @@ class Disclone(Server):
         else:
             # Get root level files (where parent_folder is NULL)
             files = self.db.getFilters("drive_file", ["drive_channel", "=", drive_id, "and", "parent_folder", "is", None])
+
+        if files == None:
+            files = []
 
         # Add uploader info for each file
         for file in files:
@@ -665,18 +1131,93 @@ class Disclone(Server):
         return file_id
 
     def isAdmin(self, uid):
-        # admins are users with admin status in op servs
-        users_op_servs = self.db.cur.execute("SELECT * FROM op_servs, accessServer WHERE op_servs.server = accessServer.server AND accessServer.account = %s", (uid,)).fetchall()
+        # Use cached admin list for performance (instead of DB query every time)
+        if self._admin_cache is None or self._shouldRefreshAdminCache():
+            self._refreshAdminCache()
 
-        if not users_op_servs:
-            return False
+        return uid in self._admin_cache
+
+    def _refreshAdminCache(self):
+        """Refresh the admin cache from database"""
+        import datetime
+
+        # Get all users with admin rights in op servers
+        users_op_servs = self.db.cur.execute(
+            "SELECT DISTINCT accessServer.account FROM op_servs, accessServer WHERE op_servs.server = accessServer.server",
+            ()
+        ).fetchall()
+
+        admin_ids = set()
 
         for user_op_serv in users_op_servs:
-            id = user_op_serv["server"]
-            if self.checkAccessRights(uid, id, "disclone_admin"):
+            uid = user_op_serv["account"]
+            # Check if user has disclone_admin right
+            if self._hasAdminRight(uid):
+                admin_ids.add(uid)
+
+        self._admin_cache = admin_ids
+        self._admin_cache_time = datetime.datetime.now()
+
+    def _hasAdminRight(self, uid):
+        """Check if user has disclone_admin right (helper for cache refresh)"""
+        users_op_servs = self.db.cur.execute(
+            "SELECT * FROM op_servs, accessServer WHERE op_servs.server = accessServer.server AND accessServer.account = %s",
+            (uid,)
+        ).fetchall()
+
+        for user_op_serv in users_op_servs:
+            server_id = user_op_serv["server"]
+            if self.checkAccessRights(uid, server_id, "disclone_admin"):
                 return True
 
         return False
+
+    def _shouldRefreshAdminCache(self):
+        """Check if admin cache should be refreshed (every 5 minutes)"""
+        import datetime
+
+        if self._admin_cache_time is None:
+            return True
+
+        # Refresh cache every 5 minutes
+        age = datetime.datetime.now() - self._admin_cache_time
+        return age.total_seconds() > 300  # 5 minutes
+
+    def invalidateAdminCache(self):
+        """Invalidate admin cache (call this when admin rights change)"""
+        self._admin_cache = None
+        self._admin_cache_time = None
+
+    @Server.expose
+    def setServerFeatured(self, server_id, featured):
+        """
+        Set a server as featured (admin only).
+
+        Args:
+            server_id: ID of the server
+            featured: "true" or "false"
+
+        Returns:
+            Success message
+        """
+        uid = self.getUser()
+
+        # Check if user is admin
+        if not self.isAdmin(uid):
+            raise HTTPError(self.response, 403, "Only admins can feature servers")
+
+        # Check if server exists and is a community server
+        server = self.db.getSomething("server", server_id)
+        if not server:
+            raise HTTPError(self.response, 404, "Server not found")
+
+        if not server.get('is_community', False):
+            raise HTTPError(self.response, 400, "Only community servers can be featured")
+
+        # Update featured status
+        self.db.edit("server", server_id, "is_featured", featured == "true")
+
+        return json.dumps({"success": True, "server_id": server_id, "is_featured": featured == "true"})
 
     def onWSAuth(self,uid):
         self.sendStatusUpdates(uid)
@@ -739,7 +1280,7 @@ class Disclone(Server):
 
         for member in members:
             if member["account"] != uid:
-                self.sendNotification(member,{"type":"message_edited", "content":{"id":message,"content":content}})
+                self.sendNotification(member["account"],{"type":"message_edited", "content":{"id":message,"content":content}})
 
     @Server.expose
     def deleteMessage(self, message):
@@ -758,7 +1299,7 @@ class Disclone(Server):
 
         for member in members:
             if member["account"] != uid:
-                self.sendNotification(member,{"type":"message_deleted", "content":{"id":messageId}})
+                self.sendNotification(member["account"],{"type":"message_deleted", "content":{"id":messageId}})
 
     @Server.expose
     def registerActivity(self, SDP):
@@ -860,7 +1401,9 @@ class Disclone(Server):
                 self.db.edit("status", uid, "expiration", None)
             self.sendStatusUpdates(uid)
         elif element == "pfp":
-            self.db.edit("disclone_account", uid, element, self.saveFile(value))
+            filename = self.saveFile(value)
+            self.db.edit("disclone_account", uid, element, filename)
+            return json.dumps({"pfp": filename}, default=str)
         else:
             self.db.edit("disclone_account", uid, element, value)
 
@@ -937,7 +1480,8 @@ class Disclone(Server):
     @Server.expose
     def editServer(self, property, id, value=None, field=None, action=None, targetId=None, channelType=None):
         uid = self.getUser()
-        if field == "id" or field == "owner" or not self.checkAccessRights(uid, id, "edit"):
+        forbidden_fields = ["id", "owner", "is_featured", "member_count"]
+        if field in forbidden_fields or not self.checkAccessRights(uid, id, "edit"):
             raise HTTPError(self.response, 403, "forbidden")
 
         if property == "channel":
@@ -946,12 +1490,17 @@ class Disclone(Server):
                 channel_type = channelType if channelType else "textual"
 
                 if channel_type == "vocal":
-                    self.db.insertDict("room", {"server": id})
+                    channel_id = self.db.insertDict("room", {"server": id}, getId=True)
+                    channel = self.db.getSomething("room", channel_id)
                 elif channel_type == "drive":
-                    self.db.insertDict("drive_channel", {"name": "new storage", "server": id})
+                    channel_id = self.db.insertDict("drive_channel", {"name": "new storage", "server": id}, getId=True)
+                    channel = self.db.getSomething("drive_channel", channel_id)
                 else:  # textual par défaut
-                    self.db.insertDict("textual_channel", {"name": "new channel", "server": id})
-                return
+                    channel_id = self.db.insertDict("textual_channel", {"name": "new channel", "server": id}, getId=True)
+                    channel = self.db.getSomething("textual_channel", channel_id)
+
+                # Retourner le canal créé avec son type
+                return json.dumps({"channel": channel, "type": channel_type}, default=str)
 
             chan = self.db.getSomething("textual_channel", targetId)
             if chan and chan["server"] == int(id) and field != "server":
@@ -1018,14 +1567,35 @@ class Disclone(Server):
                 if self.db.getFilters("role_attribution", ["account", "=", targetId, "and", "role", "=", value, "and", "server", "=", id]):
                     raise HTTPError(self.response, 403, "already attributed")
 
-                id = self.db.insertDict("role_attribution", {"account": targetId, "role": value, "server":id}, getId=True)
+                self.db.insertDict("role_attribution", {"account": targetId, "role": value, "server":id}, getId=True)
+                # Invalidate admin cache as role attribution might have changed admin rights
+                self.invalidateAdminCache()
                 return str(id)
 
             self.db.edit("role", targetId, field, value)
+            # Invalidate admin cache as role permissions might have changed
+            self.invalidateAdminCache()
         elif property == "name":
             self.db.edit("server", id, property, value)
         elif property == "pfp":
-            self.db.edit("server", id, "pfp", self.saveFile(value))
+            filename = self.saveFile(value)
+            self.db.edit("server", id, "pfp", filename)
+            return json.dumps({"pfp": filename}, default=str)
+        elif property == "is_community":
+            # Only server owner can change this
+            server = self.db.getSomething("server", id)
+            if server["owner"] != uid:
+                raise HTTPError(self.response, 403, "Only server owner can change community status")
+            self.db.edit("server", id, "is_community", value == "true")
+        elif property == "tags":
+            # Parse tags as JSON array
+            tags = json.loads(value) if isinstance(value, str) else value
+            self.db.edit("server", id, "tags", json.dumps(tags))
+        elif property == "languages":
+            languages = json.loads(value) if isinstance(value, str) else value
+            self.db.edit("server", id, "languages", json.dumps(languages))
+        elif property == "description":
+            self.db.edit("server", id, "description", value)
 
 
     @Server.expose

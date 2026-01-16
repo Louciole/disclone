@@ -1,0 +1,7 @@
+<div class="container">
+    <div class="item serveur" onclick="goToServer(event,${element.id})">
+        ${element?.pfp ? '<img src="/static/attachments/' + element.pfp + '">': getSlug(element.name)}
+    </div>
+    <div class="indicator"></div>
+    <span class="tooltip left">${element.name}</span>
+</div>

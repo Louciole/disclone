@@ -4,7 +4,7 @@ import {displayNotif, postWS} from "../main.mjs";
 import {setElement, pushElement, deleteElement, addElement} from "../framework/vesta.mjs";
 import {handleMessageGroup} from "../crud.mjs";
 
-export function onMessage(event) {
+export async function onMessage(event) {
     console.log("Received message from Python server:", event.data);
     const message = JSON.parse(event.data)
     switch (message.type){
@@ -26,7 +26,8 @@ export function onMessage(event) {
                     message.content.content["timestamp"] = timestamp
                     if(message.content.content.place === global.state.activeConv){
                         handleMessageGroup(message.content.content)
-                        pushElement('global.convs['.concat(message.content.content.place,'].messages'),message.content.content)
+
+                        addElement('global.convs['.concat(message.content.content.place,'].messages'), message.content.content)
                     }else{
                         displayNotif(message.content)
                     }
@@ -70,6 +71,123 @@ export function onMessage(event) {
                         setElement('global.convs['+message.content.id+'].name', message.content.content)
                     }
                     break;
+
+                case "message_edited":
+                    const editData = message.content.content;
+                    const messageId = editData.id.id; // Backend sends message object with id property
+                    const newContent = editData.content;
+                    const conversationId = editData.id.place;
+
+                    const conv = global.convs[conversationId];
+                    if (conv && conv.messages && conv.messages[messageId]) {
+                        setElement(`global.convs[${conversationId}].messages[${messageId}].body`, newContent);
+                        setElement(`global.convs[${conversationId}].messages[${messageId}].edited`, true);
+                    }
+                    break;
+
+                case "call_started":
+                    const callData = message.content.content;
+
+                    // Update conversation with ongoing call info
+                    if (callData.conversation_id) {
+                        setElement(`global.convs[${callData.conversation_id}].ongoingCall`, callData);
+                    }
+
+                    // Show notification if we're not the initiator
+                    if (callData.participants[0] !== global.user.id) {
+                        showIncomingCallNotification(callData);
+                    }
+                    break;
+
+                case "call_participant_joined":
+                    const callManager = global.state.callManager;
+                    const joinData = message.content.content;
+
+                    // Update conversation call state
+                    if (joinData.call && joinData.call.conversation_id) {
+                        setElement(`global.convs[${joinData.call.conversation_id}].ongoingCall`, joinData.call);
+                    }
+
+                    // Handle participant join for active call
+                    if (callManager && callManager.currentCall) {
+                        await callManager.handleParticipantJoined(
+                            joinData.call,
+                            joinData.user_id
+                        );
+                    }
+                    break;
+
+                case "call_participant_left":
+                    const cm = global.state.callManager;
+                    const leftData = message.content.content;
+
+                    // Update conversation call state
+                    if (leftData.call && leftData.call.conversation_id) {
+                        setElement(`global.convs[${leftData.call.conversation_id}].ongoingCall`, leftData.call);
+                    }
+
+                    // Handle participant leave for active call
+                    if (cm && cm.currentCall) {
+                        cm.handleParticipantLeft(
+                            leftData.call,
+                            leftData.user_id
+                        );
+                    }
+                    break;
+
+                case "call_ended":
+                    const callMgr = global.state.callManager;
+                    const endData = message.content.content;
+
+                    // Clear ongoing call from conversation
+                    if (endData.conversation_id) {
+                        setElement(`global.convs[${endData.conversation_id}].ongoingCall`, null);
+                    }
+
+                    // Clean up if we're in this call
+                    if (callMgr) {
+                        callMgr.cleanup();
+                    }
+                    break;
+
+                case "call_mode_switch":
+                    const modeCallManager = global.state.callManager;
+                    if (modeCallManager && modeCallManager.currentCall &&
+                        modeCallManager.currentCall.id === message.content.content.call_id) {
+                        modeCallManager.handleModeSwitch(message.content.content.new_mode);
+                    }
+                    break;
+
+                case "callOffer":
+                    const offerMgr = global.state.callManager;
+                    if (offerMgr && offerMgr.currentCall) {
+                        offerMgr.handleOffer(
+                            message.content.content.from_user,
+                            message.content.content.signal
+                        );
+                    }
+                    break;
+
+                case "callAnswer":
+                    const answerMgr = global.state.callManager;
+                    if (answerMgr && answerMgr.currentCall) {
+                        answerMgr.handleAnswer(
+                            message.content.content.from_user,
+                            message.content.content.signal
+                        );
+                    }
+                    break;
+
+                case "callIce":
+                    const iceMgr = global.state.callManager;
+                    if (iceMgr && iceMgr.currentCall) {
+                        iceMgr.handleIceCandidate(
+                            message.content.content.from_user,
+                            message.content.content.signal
+                        );
+                    }
+                    break;
+
                 default:
                     break;
             }

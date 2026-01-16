@@ -2,44 +2,301 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Disclone | Home 🛜</title>
+    <title>Disclone | Your new sanctuary.</title>
     <meta charset="UTF-8">
     <meta name="referrer" content="always">
-    <meta content="website" property="og:type">
-    <meta name="description" content="Disclone is a minimalist yet feature-full discord clone, open source, tracker free, create your account in 2 clicks and join our community">
-    <meta name="keywords" content="discord, clone, disclone, carbonlab">
-    <meta content="Disclone" property="og:site_name">
-    <meta content="Disclone is a minimalist yet feature-full discord clone, open source, tracker free, create your account in 2 clicks and join our community" property="og:title">
+
+    <meta name="description" content="Disclone is a sovereign digital sanctuary for creative collectives. Handcrafted, lightweight, and ethical messaging, drive, and forum for artists and FOSS enthusiasts.">
+    <meta name="keywords" content="messaging, privacy, FOSS, digital commons, artists, collective, drive, forum, sovereign digital space, open source, ethical software">
+    <meta name="author" content="Carbonlab">
+
     <meta content="/static/images/logo.png" property="og:image">
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/x-icon" href="/static/images/favicon.ico">
     <link href="/static/home/home.css" rel="stylesheet">
+
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://disclonecarbonlab.dev">
+    <meta property="og:title" content="Disclone | Your new sanctuary.">
+    <meta property="og:description" content="A handcrafted digital home for artists and collectives. Chat, forum, and cloud storage—built without bloat, owned by you.">
+    <meta property="og:image" content="/static/images/logo.png">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+    <script type="application/ld+json">
+        {
+            "@context": "https://schema.org",
+            "@type": "SoftwareApplication",
+            "name": "Disclone",
+            "operatingSystem": "Web",
+            "applicationCategory": "CommunicationApplication",
+            "offers": {
+                "@type": "Offer",
+                "price": "0",
+                "priceCurrency": "EUR"
+            },
+            "description": "Sovereign digital sanctuary for creative collectives. Handcrafted, lightweight, and ethical messaging.",
+            "aggregateRating": {
+                "@type": "AggregateRating",
+                "ratingValue": "5",
+                "ratingCount": "1"
+            }
+        }
+    </script>
 </head>
 <body>
- <header>
-     <h1>Disclone</h1>
-     <a href="/channels">
-        <div class="btn white">Open Disclone</div>
-     </a>
- </header>
-<section id="pres">
-    <img class="bg" src="static/home/bg.svg" alt="background">
-    <h2>Ceci n'est pas Discord</h2>
-    <div class="side-text">
-        <h3>No ads</h3>
-        <h3>No trackers</h3>
-        <h3>No data-collection</h3>
+<div id="cursor" aria-hidden="true"></div>
+<div id="cursor-follower" aria-hidden="true"></div>
+
+<header>
+    <div class="logo">Disclone Beta</div>
+    <nav role="navigation" aria-label="Main Navigation">
+        <a href="#features">Features</a>
+        <a href="#manifesto">Manifesto</a>
+    </nav>
+</header>
+
+<main>
+    <section class="hero container" aria-labelledby="hero-title">
+        <div class="hero-grid" aria-hidden="true">
+            <div class="grid-line grid-v" style="left: 20%;"></div>
+            <div class="grid-line grid-v" style="left: 40%;"></div>
+            <div class="grid-line grid-v" style="left: 60%;"></div>
+            <div class="grid-line grid-v" style="left: 80%;"></div>
+            <div class="grid-line grid-h" style="top: 25%;"></div>
+            <div class="grid-line grid-h" style="top: 50%;"></div>
+            <div class="grid-line grid-h" style="top: 75%;"></div>
+        </div>
+
+        <h1 id="hero-title" class="reveal">SOVEREIGN<br>SPACES.</h1>
+        <div class="hero-meta reveal">
+            <p class="hero-sub">
+                Digital sanctuaries handcrafted for creative people. Own your tools, protect your privacy, chat and meet people.
+            </p>
+            <a href="/auth" class="btn-magnetic">Build your own space</a>
+        </div>
+
+        <div class="scroll-indicator reveal" aria-hidden="true">
+            <span>Scroll</span>
+            <div class="scroll-line"></div>
+        </div>
+    </section>
+
+    <section class="manifesto container" aria-labelledby="manifesto-title">
+        <h2 id="manifesto-title" class="visually-hidden">Our Manifesto</h2>
+        <p class="reveal">
+            We believe digital life should be <span class="dim">intentional, not invasive.</span>
+            Disclone is a quiet, powerful <span class="dim">canvas for connection.</span>
+            Built for those who refuse to <span class="dim">live in someone else's garden.</span>
+        </p>
+    </section>
+
+    <section class="container" id="features" aria-labelledby="features-title">
+        <h2 id="features-title" class="visually-hidden">Core Features</h2>
+        <div class="bento">
+            <!-- Card 1: Integrated Drive -->
+            <div class="card span-4 reveal">
+                <svg class="ani-symbol" viewBox="0 0 100 100" aria-hidden="true">
+                    <rect x="25" y="25" width="50" height="50" />
+                    <rect x="35" y="35" width="50" height="50" opacity="0.5" />
+                    <line x1="25" y1="25" x2="35" y2="35" />
+                    <line x1="75" y1="25" x2="85" y2="35" />
+                    <line x1="25" y1="75" x2="35" y2="85" />
+                    <line x1="75" y1="75" x2="85" y2="85" />
+                </svg>
+                <div class="ani-blob" style="top: 20%; left: 30%;" aria-hidden="true"></div>
+                <div>
+                    <span class="card-tag">Architecture</span>
+                    <h3>Integrated Drive</h3>
+                    <p>Your assets are part of the conversation. Use drive channels to centralize all your data in one place.</p>
+                </div>
+            </div>
+
+            <!-- Card 2: Stealth Mode -->
+            <div class="card span-8 reveal">
+                <svg class="ani-symbol" viewBox="0 0 100 100" aria-hidden="true">
+                    <circle cx="50" cy="50" r="30" />
+                    <line x1="20" y1="50" x2="80" y2="50" />
+                    <line x1="50" y1="20" x2="50" y2="80" opacity="0.3" />
+                </svg>
+                <div class="ani-blob" style="bottom: 10%; right: 10%;" aria-hidden="true"></div>
+                <div>
+                    <span class="card-tag">Privacy</span>
+                    <h3><span class="stealth-dot"></span>Stealth mode</h3>
+                    <p>No data-collection. No ads. <br>De-activable typing indicators. <br>Think and read in absolute silence.</p>
+                </div>
+            </div>
+
+            <!-- Card 3: Technical Merit -->
+            <div class="card span-12 reveal" style="background: var(--accent); color: white; border: none;">
+                <div class="chroma-bg" style="background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);" aria-hidden="true"></div>
+                <div>
+                    <span class="card-tag" style="color: rgba(255,255,255,0.7)">Craftsmanship</span>
+                    <h3 style="font-size: clamp(2rem, 6.5vw, 6rem); line-height: 0.85; margin-bottom: 0;">Handcrafted with love.<br>Zero Dependencies.<br>Pure Sovereign FOSS Code.</h3>
+                </div>
+            </div>
+
+            <!-- Card 4: Forum Threads -->
+            <div class="card span-8 reveal">
+                <svg class="ani-symbol" viewBox="0 0 100 100" aria-hidden="true">
+                    <line x1="20" y1="20" x2="80" y2="20" />
+                    <line x1="20" y1="50" x2="60" y2="50" />
+                    <line x1="20" y1="80" x2="70" y2="80" />
+                    <line x1="20" y1="20" x2="20" y2="80" />
+                </svg>
+                <div>
+                    <span class="card-tag">Structure</span>
+                    <h3>Do more</h3>
+                    <p>More than a messaging app, a forum. Discover your next community. <br>Make your voice heard.</p>
+                </div>
+            </div>
+
+            <!-- Card 5: Chromatic Voice -->
+            <div class="card span-4 reveal">
+                <svg class="ani-symbol" viewBox="0 0 100 100" aria-hidden="true">
+                    <circle cx="50" cy="50" r="40" stroke-dasharray="10,5" />
+                    <circle cx="50" cy="50" r="20" opacity="0.5" />
+                </svg>
+                <div class="chroma-bg" aria-hidden="true"></div>
+                <div>
+                    <span class="card-tag">Identity</span>
+                    <h3>Chromatic Voice</h3>
+                    <p>Full markdown and text coloring. Because every conversation has its own aesthetic.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+
+<footer id="footer" role="contentinfo">
+    <div class="container">
+        <h2 class="footer-cta reveal">
+            CLAIM YOUR<br><span style="color: var(--accent)">SPACE.</span>
+        </h2>
+
+        <div class="footer-grid">
+            <div class="footer-brand">
+                <h3>CARBONLAB_</h3>
+                <p>A non-profit architecture for the digital autonomy of creative collectives.</p>
+            </div>
+            <div class="footer-links">
+                <h3>Protocol</h3>
+                <ul>
+                    <li><a href="https://synapse.carbonlab.dev/project?uid=6&access=read-only" target="_blank">Roadmap</a></li>
+                </ul>
+            </div>
+            <div class="footer-links">
+                <h3>Ethics</h3>
+                <ul>
+                    <li><a href="#manifesto">Manifesto</a></li>
+                    <li><a href="https://gitlab.com/Louciole/disclone/-/blob/maine/LICENSE.md?ref_type=heads" target="_blank">FOSS License</a></li>
+                </ul>
+            </div>
+            <div class="footer-links">
+                <h3>Network</h3>
+                <ul>
+                    <li><a href="https://gitlab.com/Louciole/disclone" target="_blank">GitLab</a></li>
+                    <li><a href="https://github.com/Louciole/disclone" target="_blank">GitHub [Mirror]</a></li>
+                    <li><a href="https://carbonlab.dev" target="_blank">Our Home</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <div>EST. 2024 / BETA BUILD / VANILLA STACK</div>
+            <div style="text-align: right;">CRAFTED BY ARTISTS FOR THE COMMONS</div>
+        </div>
     </div>
-    <div class="img">
-        <img src="static/home/screen.png" alt="application screenshot">
-    </div>
-</section>
-<footer>
-    <p>Choose the responsible, open source, tracker free discord.
-    create your account in 2 clicks and join our community
-    </p>
-    Lou ! x Carbonlab
 </footer>
+
+<script>
+    const cursor = document.getElementById('cursor');
+    const follower = document.getElementById('cursor-follower');
+
+    let mouseX = 0, mouseY = 0;
+    let cursorX = 0, cursorY = 0;
+    let followerX = 0, followerY = 0;
+
+    document.addEventListener('mousemove', (e) => {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+    });
+
+    const animateCursors = () => {
+        cursorX = mouseX;
+        cursorY = mouseY;
+        cursor.style.transform = `translate3d(${cursorX}px, ${cursorY}px, 0)`;
+
+        followerX += (mouseX - followerX - 22.5) * 0.12;
+        followerY += (mouseY - followerY - 22.5) * 0.12;
+        follower.style.transform = `translate3d(${followerX}px, ${followerY}px, 0)`;
+
+        requestAnimationFrame(animateCursors);
+    };
+
+    requestAnimationFrame(animateCursors);
+
+    // Hover States
+    document.querySelectorAll('.btn-magnetic, .card, a').forEach(el => {
+        el.addEventListener('mouseenter', () => {
+            follower.style.width = '80px';
+            follower.style.height = '80px';
+            follower.style.borderColor = 'var(--accent)';
+            follower.style.backgroundColor = 'rgba(59, 130, 246, 0.05)';
+            cursor.style.backgroundColor = 'var(--accent)';
+        });
+        el.addEventListener('mouseleave', () => {
+            follower.style.width = '45px';
+            follower.style.height = '45px';
+            follower.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+            follower.style.backgroundColor = 'transparent';
+            cursor.style.backgroundColor = 'white';
+        });
+    });
+
+    // Bento Interactions
+    document.querySelectorAll('.card').forEach(card => {
+        const blob = card.querySelector('.ani-blob');
+        const symbol = card.querySelector('.ani-symbol');
+
+        card.addEventListener('mousemove', (e) => {
+            const rect = card.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            if (blob) {
+                blob.style.transform = `translate3d(${x - 100}px, ${y - 100}px, 0)`;
+            }
+
+            if (symbol) {
+                const moveX = (x - rect.width/2) / 15;
+                const moveY = (y - rect.height/2) / 15;
+                symbol.style.transform = `translate3d(${moveX}px, ${moveY}px, 0) rotate(${moveX/2}deg)`;
+            }
+        });
+
+        card.addEventListener('mouseleave', () => {
+            if (symbol) {
+                symbol.style.transform = `translate3d(0, 0, 0) rotate(0deg)`;
+            }
+        });
+    });
+
+    // Scroll reveal
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry, index) => {
+            if (entry.isIntersecting) {
+                setTimeout(() => {
+                    entry.target.classList.add('active');
+                }, 50);
+            }
+        });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
 </body>
 </html>

@@ -105,11 +105,11 @@ window.createDashboard = createDashboard
 function goToDashboard(id){
     let targetElt
     if(global.state.activeConv){
-        targetElt = document.getElementById("channel".concat(global.state.activeConv))
+        targetElt = document.getElementById("channel".concat(global.state.activeChan))
         targetElt.classList.remove("selected")
     }
 
-    global.state.activeConv = undefined
+    global.state.activeChan = "-dashboard-"+id
 
     // Initialiser le dashboard actuel si non défini
     if (!global.state.currentDashboard) {
@@ -118,7 +118,7 @@ function goToDashboard(id){
 
     // loadChan(id)
 
-    targetElt = document.getElementById("channel".concat(id))
+    targetElt = document.getElementById("channel".concat(global.state.activeChan))
     targetElt.classList.add("selected")
 
     goTo('content','admin-channel',undefined,false)

@@ -1,16 +1,45 @@
 import global from "./framework/global.mjs"
-import {handleMessageGroup, lookFor} from "./crud.mjs";
+import {lookFor} from "./crud.mjs";
 import {xhr} from "./framework/templating.mjs";
+import {setElement} from "./framework/vesta.mjs";
+
+
+function updateMessageInGlobal(messageId, newContent) {
+    const conv = global.convs[global.state.activeConv];
+    if (!conv || !conv.messages) return;
+
+    const message = conv.messages[messageId];
+    if (message) {
+        setElement(`global.convs[${global.state.activeConv}].messages[${messageId}].body`, newContent);
+        setElement(`global.convs[${global.state.activeConv}].messages[${messageId}].edited`, true);
+    }
+}
 
 function deafen(){
     event.currentTarget.lastElementChild.classList.toggle("visible")
+    const callManager = global.state.callManager;
+    if (callManager) {
+        callManager.toggleDeafen();
+    }
 }
 window.deafen = deafen
 
 function mute(){
     event.currentTarget.lastElementChild.classList.toggle("visible")
+    const callManager = global.state.callManager;
+    if (callManager) {
+        callManager.toggleMute();
+    }
 }
 window.mute = mute
+
+function toggleVideo(){
+    const callManager = global.state.callManager;
+    if (callManager) {
+        callManager.toggleVideo();
+    }
+}
+window.toggleVideo = toggleVideo
 
 function silent_typing(){
     event.currentTarget.lastElementChild.classList.toggle("visible")
@@ -25,7 +54,10 @@ window.silent_typing = silent_typing
 function reply(msg_id){
     document.getElementById("replyBox").style.display = "flex"
     global.convs[global.state.activeConv].reply = msg_id
-    document.getElementById("replyName").innerText = global.users[lookFor(msg_id.toString(),global.convs[global.state.activeConv].messages).sender].display
+    const msg = global.convs[global.state.activeConv].messages?.[msg_id]
+    if (msg) {
+        document.getElementById("replyName").innerText = global.users[msg.sender].display
+    }
     document.querySelector(".chat-input textarea").focus()
 }
 window.reply = reply
@@ -34,7 +66,9 @@ function editMsg(msg_id){
     // get the message element
     const msgBox = document.querySelector('#message-'+msg_id.toString())
     const msgContent = msgBox.querySelector('.content')
-    const msg = lookFor(1,global.convs[global.state.activeConv].messages)
+    const msg = global.convs[global.state.activeConv].messages?.[msg_id]
+    if (!msg) return;
+
     // hide the message
     console.log(msg)
     msgContent.style.display = 'none'
@@ -95,20 +129,24 @@ window.onEdition = onEdition
 function saveEdition(id){
     const msgBox = document.querySelector('#message-'+id.toString())
     const editor = msgBox.querySelector('.edit')
-    const content = msgBox.querySelector('.content')
     const textarea = editor.querySelector('textarea')
+    const trimmedContent = textarea.value.trim()
+
+    // Si le contenu est vide, annuler l'édition au lieu d'envoyer
+    if (trimmedContent === ''){
+        cancelEdition(id)
+        return
+    }
 
     const onEdited = function (){
-        console.log("edited")
-        //TODO edit message in global, edit content, show content and hide editor
-        // META TODO add edition notification and show edition
+        console.log("Message edited successfully")
+
+        updateMessageInGlobal(id, trimmedContent)
+        cancelEdition(id)
     }
 
-    if (textarea.value.trim() !== ''){
-        xhr("editMessage?message=".concat(id,"&content=",encodeURIComponent(textarea.value.trim())), onEdited)
-    }
-
-
+    // Send the edit request to server
+    xhr("editMessage?message=".concat(id,"&content=",encodeURIComponent(trimmedContent)), onEdited)
 }
 window.saveEdition = saveEdition
 

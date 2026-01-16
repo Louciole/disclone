@@ -22,7 +22,13 @@ create table if not exists server (
     id bigserial NOT NULL PRIMARY KEY,
     name varchar(44) NOT NULL,
     owner integer NOT NULL,
-    pfp text
+    pfp text,
+    is_community boolean DEFAULT false,
+    tags jsonb DEFAULT '[]',
+    languages jsonb DEFAULT '[]',
+    is_featured boolean DEFAULT false,
+    description text,
+    member_count integer DEFAULT 0
 );
 
 create table if not exists accessServer (
@@ -35,6 +41,26 @@ drop CONSTRAINT if exists SERVACC_SERV_CONSTRAINT;
 
 ALTER TABLE accessServer
 ADD CONSTRAINT SERVACC_SERV_CONSTRAINT FOREIGN KEY (server) REFERENCES server (id) ON UPDATE CASCADE;
+
+-- Trigger function to update server member_count
+CREATE OR REPLACE FUNCTION update_server_member_count()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF (TG_OP = 'INSERT') THEN
+        UPDATE server SET member_count = member_count + 1 WHERE id = NEW.server;
+    ELSIF (TG_OP = 'DELETE') THEN
+        UPDATE server SET member_count = member_count - 1 WHERE id = OLD.server;
+    END IF;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create trigger on accessServer for member_count
+DROP TRIGGER IF EXISTS update_member_count_trigger ON accessServer;
+CREATE TRIGGER update_member_count_trigger
+AFTER INSERT OR DELETE ON accessServer
+FOR EACH ROW
+EXECUTE FUNCTION update_server_member_count();
 
 create table if not exists server_cat (
     id bigserial NOT NULL PRIMARY KEY,
@@ -199,4 +225,18 @@ create table if not exists drive_file (
     parent_folder integer,
     uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (parent_folder) REFERENCES drive_folder(id) ON DELETE CASCADE
-)
+);
+
+create table if not exists call_session (
+    id bigserial NOT NULL PRIMARY KEY,
+    conversation_id integer NOT NULL,
+    participants jsonb NOT NULL DEFAULT '[]',
+    started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ended_at TIMESTAMP,
+    call_type varchar(10) NOT NULL DEFAULT 'audio',
+    mode varchar(10) NOT NULL DEFAULT 'p2p',
+    active boolean NOT NULL DEFAULT true
+);
+
+create index if not exists idx_call_session_conversation on call_session(conversation_id);
+create index if not exists idx_call_session_active on call_session(active);

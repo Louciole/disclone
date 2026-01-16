@@ -1,6 +1,6 @@
 import {initNavigation, printWatermark, goTo} from "/static/framework/navigation.mjs"
 import {initWebSockets} from "./framework/websockets.mjs";
-import {loadServers, loadUser, loadConvs, loadUsers, handleMessageGroup, sendTyping, lookFor} from "/static/crud.mjs"
+import {loadServers, loadUser, loadConvs, loadUsers, handleMessageGroup, sendTyping, lookFor, orderServDirs} from "/static/crud.mjs"
 import global from "/static/framework/global.mjs"
 import {MDToHTML} from "/static/markdown/utils.mjs"; // DO NOT REMOVE
 import {} from "/static/admin.mjs"; // DO NOT REMOVE
@@ -11,6 +11,8 @@ import emojis from "/static/emojis.mjs";
 import {addElement, pushElement, setElement} from "/static/framework/vesta.mjs";
 import {xhr} from "./framework/templating.mjs";
 import {initTranslations} from "./translations/translation.mjs";
+import CallManager from "/static/webrtc.mjs";
+import {} from "/static/constants.mjs"; // Expose LANGUAGE_LABELS and parseJsonArray globally
 
 
 global.state.currentTab = document.getElementById("logo")
@@ -53,6 +55,9 @@ const onInvitationsLoaded = function(){
 export function postWS(){
     const userList = JSON.stringify(Object.keys(global.users).map(cle => parseInt(cle)))
     xhr("subscribe?client="+global.state.clientID+"&cat=user&items="+userList,undefined)
+
+    global.state.callManager = new CallManager();
+
     console.log("Client ready", global)
     hideLoadingScreen()
 }
@@ -86,19 +91,7 @@ function getSlug(name){
     }
     return slug
 }
-
-export function addServer(name, id, object = undefined){
-    const servers = document.getElementById('servers')
-    servers.insertAdjacentHTML("beforeend",`
-        <div class="container">
-            <div class="item serveur" onclick="goToServer(event,${id})">
-            ${object?.pfp ? '<img src="/static/attachments/' + object.pfp + '">': getSlug(name)}
-            </div>
-            <div class="indicator"></div>
-            <span class="tooltip left">${name}</span>
-        </div>
-    `)
-}
+window.getSlug = getSlug
 
 function loadEmojis(){
 
@@ -143,8 +136,39 @@ function Save(endpoint="change"){
                 setElement("global.state.currentServer.".concat(target), global.state["currentForm"][key].value)
             }else if (endpoint === "editChannel") {
                 const id = global.state.modaltarget.dataset.id
-                xhr("editServer?id=".concat(global.state.currentServer.id, "&property=channel&value=", encodeURIComponent(global.state["currentForm"][key].value), "&field=name&targetId=", id), undefined, "POST", false)
-                // setElement("global.state.currentServer.".concat(target), global.state["currentForm"][key].value)
+                const newValue = global.state["currentForm"][key].value
+
+                const channelId = parseInt(id)
+                let channelArray = null
+                let channelIndex = -1
+
+                channelIndex = global.state.currentServer.dirs.channels.findIndex(ch => ch.id === channelId)
+                if (channelIndex !== -1) {
+                    channelArray = global.state.currentServer.dirs.channels
+                }
+
+                if (channelIndex === -1) {
+                    channelIndex = global.state.currentServer.dirs.rooms.findIndex(ch => ch.id === channelId)
+                    if (channelIndex !== -1) {
+                        channelArray = global.state.currentServer.dirs.rooms
+                    }
+                }
+
+                if (channelIndex === -1) {
+                    channelIndex = global.state.currentServer.dirs.drives.findIndex(ch => ch.id === channelId)
+                    if (channelIndex !== -1) {
+                        channelArray = global.state.currentServer.dirs.drives
+                    }
+                }
+
+                if (channelArray && channelIndex !== -1) {
+                    channelArray[channelIndex].name = newValue
+
+                    orderServDirs(global.state.currentServer)
+                }
+
+                // Envoyer la requête en arrière-plan (si ça échoue, on pourrait rollback)
+                xhr("editServer?id=".concat(global.state.currentServer.id, "&property=channel&value=", encodeURIComponent(newValue), "&field=name&targetId=", id), undefined, "POST", false)
             }else if (endpoint === "editRole") {
                 const id = global.state.currentRole.id
                 xhr("editServer?id=".concat(global.state.currentServer.id, "&property=role&value=", encodeURIComponent(global.state["currentForm"][key].value), "&field=name&targetId=", id), undefined, "POST", false)
@@ -178,9 +202,13 @@ function sendMessage(event){
             const attachments = this.responseText
             const currentDate = new Date();
             const timestamp = currentDate.getTime();
-            const message = {"id":global.convs[global.state.activeConv].messages.length, "sender": global.user.id,"place":global.state.activeConv, "body": target.value, "timestamp":timestamp, "reply":global.convs[global.state.activeConv].reply, "attachments":attachments}
+            // Use timestamp as temporary ID (server should return real ID, but for now...)
+            const tempId = Object.keys(global.convs[global.state.activeConv].messages || {}).length
+            const message = {"id":tempId, "sender": global.user.id,"place":global.state.activeConv, "body": target.value, "timestamp":timestamp, "reply":global.convs[global.state.activeConv].reply, "attachments":attachments}
             handleMessageGroup(message)
-            pushElement('global.convs['.concat(global.state.activeConv,'].messages'), message)
+
+            addElement('global.convs['.concat(global.state.activeConv,'].messages'), message)
+
             target.value = ''
             resizeHeight(event, target)
             cancelReply()
@@ -246,7 +274,7 @@ window.getSeparator = getSeparator
 
 function getAnswerBlock(element){
     if(element.messages[0].reply){
-        const og = lookFor(element.messages[0].reply, global.convs[global.state.activeConv].messages)
+        const og = global.convs[global.state.activeConv].messages?.[element.messages[0].reply]
 
         if (!og){ // FIXME when sending a message you dont get the id of your message back so the reply block is broken if the users responds
             return ""
@@ -328,7 +356,6 @@ function getUserStatus(id, customOnly=false){
 }
 window.getUserStatus = getUserStatus
 
-initWebSockets()
 initNavigation()
 printWatermark("Disclone@carbonlab.dev", "https://github.com/Louciole/disclone")
 await initTranslations()
@@ -359,6 +386,74 @@ function hideLoadingScreen() {
         loadingScreen.style.display = 'none';
     });
 }
+
+
+function showIncomingCallNotification(callData) {
+    // TODO USE A TEMPLATE INSTEAD OF CREATING ELEMENTS LIKE A SAVAGE
+    const isVideo = callData.call_type === 'video';
+    const callTypeText = isVideo ? _t("appel vidéo") : _t("appel vocal");
+
+    const initiator = callData.participants[0];
+    const initiatorName = global.users[initiator]?.display || 'Un utilisateur';
+
+    const notification = document.createElement('div');
+    notification.className = 'incoming-call-notification';
+    notification.innerHTML = `
+        <div class="incoming-call-content">
+            <img class="icon large" src="/static/icons/material/${isVideo ? 'videocam' : 'call'}.svg"/>
+            <h3>${initiatorName}</h3>
+            <p>${callTypeText} ${_t("entrant")}</p>
+            <div class="incoming-call-actions">
+                <button class="btn-accept" onclick="acceptCall(${callData.id}, ${isVideo})">
+                    <img class="icon" src="/static/icons/material/call.svg"/>
+                    ${_t("Accepter")}
+                </button>
+                <button class="btn-decline" onclick="declineCall(${callData.id})">
+                    <img class="icon" src="/static/icons/material/call_end.svg"/>
+                    ${_t("Refuser")}
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(notification);
+
+    const notifSound = document.getElementById('call-ringtone');
+    if (notifSound) {
+        notifSound.play().catch(e => console.log('Cannot play ringtone:', e));
+    }
+}
+window.showIncomingCallNotification = showIncomingCallNotification;
+
+window.acceptCall = async function(callId, hasVideo) {
+    const notification = document.querySelector('.incoming-call-notification');
+    if (notification) {
+        notification.remove();
+    }
+
+    const ringtone = document.getElementById('call-ringtone');
+    if (ringtone) {
+        ringtone.pause();
+        ringtone.currentTime = 0;
+    }
+
+    await joinCall(callId, hasVideo);
+};
+
+window.declineCall = function(callId) {
+    // Supprimer la notification
+    const notification = document.querySelector('.incoming-call-notification');
+    if (notification) {
+        notification.remove();
+    }
+
+    // Arrêter la sonnerie
+    const ringtone = document.getElementById('call-ringtone');
+    if (ringtone) {
+        ringtone.pause();
+        ringtone.currentTime = 0;
+    }
+};
 
 window.addEventListener('load', () => {
     hideLoadingScreen()
