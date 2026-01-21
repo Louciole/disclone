@@ -67,6 +67,7 @@ export function loadConvs(){
         for(let key of keys){
             global.privateConvs[key.id] = key // HACK
             global.convs[key.id] = global.privateConvs[key.id]
+            global.convs[key.id].ongoingCall = null; // Initialize call state
             addElement("global.privateConvs", key);
         }
         updateElement("global.convs", global.convs)
@@ -108,10 +109,16 @@ export function loadConv(key){
     let lastTimestamp = undefined
     global.convs[key].messageGroups = []
 
-    for(let message of global.convs[key].messages){
+    const messagesArray = global.convs[key].messages || []
+    global.convs[key].messages = {}  // Source of truth: all messages by ID
+
+    for(let message of messagesArray){
         message.body = message.body.replace(/</g, "&lt;")
 
         // si ça fait moins de 3 minutes de différence, que c'est la même personne et que la date n'a pas changée et que le message n'est pas une réponse
+        global.convs[key].messages[message.id] = message
+
+        // Group consecutive messages from same sender
         if(message.sender === lastSender && (new Date(message.timestamp)-new Date(lastTimestamp))/60000<3 && getTimeStr(message.timestamp, { locale: "fr-FR",hour: undefined, minute: undefined}) === getTimeStr(lastTimestamp, { locale: "fr-FR",hour: undefined, minute: undefined}) && !message.reply){
             global.convs[key].messageGroups[global.convs[key].messageGroups.length-1].messages.push(message)
         }else{
@@ -139,10 +146,16 @@ export function loadChan(key){
     let lastTimestamp = undefined
     global.convs[key].messageGroups = []
 
-    for(let message of global.convs[key].messages){
+    // Convert messages array to dict
+    const messagesArray = global.convs[key].messages || []
+    global.convs[key].messages = {}  // Source of truth: all messages by ID
+
+    for(let message of messagesArray){
         message.body = message.body.replace(/</g, "&lt;")
 
-        // si ça fait moins de 3 minutes de différence, que c'est la même personne et que la date n'a pas changée et que le message n'est pas une réponse
+        global.convs[key].messages[message.id] = message
+
+        // Group consecutive messages - messageGroups contain REFERENCES to messages dict objects
         if(message.sender === lastSender && (new Date(message.timestamp)-new Date(lastTimestamp))/60000<3 && getTimeStr(message.timestamp, { locale: "fr-FR",hour: undefined, minute: undefined}) === getTimeStr(lastTimestamp, { locale: "fr-FR",hour: undefined, minute: undefined}) && !message.reply){
             global.convs[key].messageGroups[global.convs[key].messageGroups.length-1].messages.push(message)
         }else{
@@ -247,21 +260,57 @@ export function lookFor(element, array){
     }
 }
 
-function newMessageGroup(conv, message){
-    global.convs[conv].messageGroups.push({"date": getTimeStr(message.timestamp, { locale: "fr-FR",hour: undefined, minute: undefined}), "messages":[message], "id":global.convs[conv].messageGroups.length})
+/**
+ * Get the last message ID from messages dict
+ * @param {number} convId - Conversation ID
+ * @returns {number|null} Last message ID or null if no messages
+ */
+function getLastMessageId(convId) {
+    const messages = global.convs[convId]?.messages
+    if (!messages) return null
+
+    const keys = Object.keys(messages)
+    if (keys.length === 0) return null
+
+    // Get the last key (messages are added in order, so last key = last message)
+    return parseInt(keys[keys.length - 1])
 }
 
+/**
+ * Create a new message group
+ * @param {number} conv - Conversation ID
+ * @param {object} message - Message object (reference will be stored, not a copy)
+ */
+function newMessageGroup(conv, message){
+    global.convs[conv].messageGroups.push({
+        "date": getTimeStr(message.timestamp, { locale: "fr-FR",hour: undefined, minute: undefined}),
+        "messages":[message],  // Array of REFERENCES to message objects
+        "id":global.convs[conv].messageGroups.length
+    })
+}
+
+/**
+ * Handle grouping of a new message
+ * Groups consecutive messages from the same sender within 3 minutes
+ * @param {object} message - Message object to group
+ */
 export function handleMessageGroup(message){
     console.log("handleMessageGroup",message)
     message.attachments = message.attachments ? JSON.parse(message.attachments) : []
-    if (global.convs[message.place].messages.length !== 0){
-        // si ça fait moins de 3 minutes de différence, que c'est la même personne que la date n'a pas changée ET que le message n'est pas une réponse
-        if(message.sender === global.convs[message.place].messages[global.convs[message.place].messages.length-1].sender && (new Date(message.timestamp)-new Date(global.convs[message.place].messages[global.convs[message.place].messages.length-1].timestamp))/60000<3 && getTimeStr(message.timestamp, { locale: "fr-FR",hour: undefined, minute: undefined}) === getTimeStr(global.convs[message.place].messages[global.convs[message.place].messages.length-1].timestamp, { locale: "fr-FR",hour: undefined, minute: undefined}) && !message.reply){
+
+    const lastMsgId = getLastMessageId(message.place)
+    if (lastMsgId !== null){
+        const lastMsg = global.convs[message.place].messages[lastMsgId]
+        // Group if same sender, < 3 min apart, same day, and not a reply
+        if(message.sender === lastMsg.sender && (new Date(message.timestamp)-new Date(lastMsg.timestamp))/60000<3 && getTimeStr(message.timestamp, { locale: "fr-FR",hour: undefined, minute: undefined}) === getTimeStr(lastMsg.timestamp, { locale: "fr-FR",hour: undefined, minute: undefined}) && !message.reply){
+            // Add reference to existing group
             global.convs[message.place].messageGroups[global.convs[message.place].messageGroups.length-1].messages.push(message)
         }else{
+            // Create new group
             newMessageGroup(message.place, message)
         }
     }else{
+        // First message - create new group
         newMessageGroup(message.place, message)
     }
 }
@@ -398,7 +447,7 @@ function createConv(event){
 
     global.state.pendingConvMembers[global.state.activeConv].splice(selfId,1)
     const members = global.state.pendingConvMembers[global.state.activeConv]
-    const conv = {"name":"New Conversation","members":members,"messageGroups":[],"messages":[],"private":false}
+    const conv = {"name":"New Conversation","members":members,"messageGroups":[],"messages":{},"private":false}
 
     const onload = function() {
         conv.id = parseInt(this.responseText)
@@ -670,7 +719,7 @@ function firstGreater(arr, target) {
     }
 }
 
-function orderServDirs(serv){
+export function orderServDirs(serv){
     serv?.dirs?.cat.sort((a, b) => a.place - b.place);
     serv?.dirs?.channels.sort((a, b) => a.place - b.place);
     serv?.dirs?.dashboards.sort((a, b) => a.place - b.place);
@@ -733,9 +782,38 @@ window.createInvitation = createInvitation
 
 function createChan(type = 'textual'){
     const channelType = type || 'textual';
-    xhr("editServer?id="+global.state.currentServer.id+"&property=channel&action=create&channelType="+channelType,undefined)
-    const menu = document.getElementById('create-channel')
-    if(menu) menu.style.display = 'none'
+
+    const onChannelCreated = function() {
+        try {
+            const response = JSON.parse(this.responseText);
+            const newChannel = response.channel;
+            const channelTypeStr = response.type;
+
+            // Ajouter le type au canal
+            if (channelTypeStr === 'textual') {
+                newChannel.type = 'textual';
+                global.state.currentServer.dirs.channels.push(newChannel);
+            } else if (channelTypeStr === 'vocal') {
+                newChannel.type = 'vocal';
+                newChannel.name = newChannel.name || "Salon vocal";
+                global.state.currentServer.dirs.rooms.push(newChannel);
+            } else if (channelTypeStr === 'drive') {
+                newChannel.type = 'drive';
+                global.state.currentServer.dirs.drives.push(newChannel);
+            }
+
+            // Re-ordonner et mettre à jour l'affichage
+            orderServDirs(global.state.currentServer);
+
+        } catch (e) {
+            console.error("Error creating channel:", e);
+        }
+    };
+
+    xhr("editServer?id="+global.state.currentServer.id+"&property=channel&action=create&channelType="+channelType, onChannelCreated);
+
+    const menu = document.getElementById('create-channel');
+    if(menu) menu.style.display = 'none';
 }
 window.createChan = createChan
 

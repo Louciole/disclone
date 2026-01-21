@@ -1,0 +1,22 @@
+<!-- Unified participant template - adapts based on participant status -->
+<div class="call-participant status-${element.status || 'active'}"
+     id="participant-${element.userId}"
+     title="${global.users[element.userId]?.display || 'User'}"
+     style="background: hsl(${(element.userId * 137.508) % 360}, 45%, 25%);">
+    <!-- Avatar (always visible as fallback) -->
+    <div class="participant-avatar" id="avatar-${element.userId}">
+        <img src="/static/attachments/${global.users[element.userId]?.pfp}" alt="${global.users[element.userId]?.display || 'User'}">
+    </div>
+
+    <!-- Status ring for calling state -->
+    <div class="participant-status-ring"></div>
+
+    <!-- Video element (only visible when stream exists and status is 'active') -->
+    <video id="remote-video-${element.userId}" autoplay playsinline></video>
+
+    <!-- Name label -->
+    <div class="participant-name-label">${global.users[element.userId]?.display || 'User'}</div>
+
+    <!-- Status text (only for calling state) -->
+    <div class="participant-status-text">${_t("Appel en cours")}...</div>
+</div>

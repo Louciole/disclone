@@ -18,9 +18,41 @@ class CallManager:
         self.conversation_calls = {}
 
     def get_call_by_conversation(self, conv_id):
+        # Try memory first (fast path)
         call_id = self.conversation_calls.get(conv_id)
-        if call_id:
-            return self.active_calls.get(call_id)
+        if call_id and call_id in self.active_calls:
+            return self.active_calls[call_id]
+
+        # Fallback: Load from DB (handles multi-worker scenario)
+        call_session = self.db.getFilters("call_session", [
+            "conversation_id", "=", conv_id,
+            "and", "active", "=", True
+        ])
+
+        if call_session and len(call_session) > 0:
+            session_data = call_session[0]
+            call_id = session_data['id']
+
+            # Reconstruct CallSession object from DB
+            # Note: participants is jsonb in PostgreSQL, already deserialized to list
+            participants = session_data['participants']
+            if isinstance(participants, str):
+                participants = json.loads(participants)
+
+            call = CallSession(
+                call_id,
+                session_data['conversation_id'],
+                participants,
+                session_data['call_type'],
+                session_data['mode']
+            )
+
+            # Cache in memory for subsequent requests
+            self.active_calls[call_id] = call
+            self.conversation_calls[conv_id] = call_id
+
+            return call
+
         return None
 
     def create_call(self, conv_id, initiator_id, call_type='audio'):
@@ -45,8 +77,28 @@ class CallManager:
 
     def join_call(self, call_id, user_id):
         call = self.active_calls.get(call_id)
+
+        # If not in memory, try to load from DB
         if not call:
-            return None
+            call_session = self.db.getSomething("call_session", call_id)
+            if call_session and call_session.get('active'):
+                # participants is jsonb in PostgreSQL, already deserialized to list
+                participants = call_session['participants']
+                if isinstance(participants, str):
+                    participants = json.loads(participants)
+
+                call = CallSession(
+                    call_id,
+                    call_session['conversation_id'],
+                    participants,
+                    call_session['call_type'],
+                    call_session['mode']
+                )
+                # Cache in memory
+                self.active_calls[call_id] = call
+                self.conversation_calls[call_session['conversation_id']] = call_id
+            else:
+                return None
 
         if user_id not in call.participants:
             call.participants.append(user_id)
@@ -71,8 +123,28 @@ class CallManager:
 
     def leave_call(self, call_id, user_id):
         call = self.active_calls.get(call_id)
+
+        # If not in memory, try to load from DB
         if not call:
-            return None
+            call_session = self.db.getSomething("call_session", call_id)
+            if call_session and call_session.get('active'):
+                # participants is jsonb in PostgreSQL, already deserialized to list
+                participants = call_session['participants']
+                if isinstance(participants, str):
+                    participants = json.loads(participants)
+
+                call = CallSession(
+                    call_id,
+                    call_session['conversation_id'],
+                    participants,
+                    call_session['call_type'],
+                    call_session['mode']
+                )
+                # Cache in memory
+                self.active_calls[call_id] = call
+                self.conversation_calls[call_session['conversation_id']] = call_id
+            else:
+                return None
 
         if user_id in call.participants:
             call.participants.remove(user_id)
@@ -134,12 +206,13 @@ class CallManager:
 
 
 class CallSession:
-    def __init__(self, call_id, conversation_id, participants, call_type='audio'):
+    def __init__(self, call_id, conversation_id, participants, call_type='audio', mode=None):
         self.id = call_id
         self.conversation_id = conversation_id
         self.participants = participants  # Liste d'IDs utilisateurs
         self.call_type = call_type  # 'audio' ou 'video'
-        self.mode = 'p2p' if len(participants) < CallManager.SFU_THRESHOLD else 'sfu'
+        # Use provided mode or calculate based on participants
+        self.mode = mode if mode is not None else ('p2p' if len(participants) < CallManager.SFU_THRESHOLD else 'sfu')
         self.started_at = datetime.now()
 
         self.streams = {}  # {user_id: stream_info}

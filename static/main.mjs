@@ -1,6 +1,6 @@
 import {initNavigation, printWatermark, goTo} from "/static/framework/navigation.mjs"
 import {initWebSockets} from "./framework/websockets.mjs";
-import {loadServers, loadUser, loadConvs, loadUsers, handleMessageGroup, sendTyping, lookFor} from "/static/crud.mjs"
+import {loadServers, loadUser, loadConvs, loadUsers, handleMessageGroup, sendTyping, lookFor, orderServDirs} from "/static/crud.mjs"
 import global from "/static/framework/global.mjs"
 import {MDToHTML} from "/static/markdown/utils.mjs"; // DO NOT REMOVE
 import {} from "/static/admin.mjs"; // DO NOT REMOVE
@@ -147,8 +147,39 @@ function Save(endpoint="change"){
                 setElement("global.state.currentServer.".concat(target), global.state["currentForm"][key].value)
             }else if (endpoint === "editChannel") {
                 const id = global.state.modaltarget.dataset.id
-                xhr("editServer?id=".concat(global.state.currentServer.id, "&property=channel&value=", encodeURIComponent(global.state["currentForm"][key].value), "&field=name&targetId=", id), undefined, "POST", false)
-                // setElement("global.state.currentServer.".concat(target), global.state["currentForm"][key].value)
+                const newValue = global.state["currentForm"][key].value
+
+                const channelId = parseInt(id)
+                let channelArray = null
+                let channelIndex = -1
+
+                channelIndex = global.state.currentServer.dirs.channels.findIndex(ch => ch.id === channelId)
+                if (channelIndex !== -1) {
+                    channelArray = global.state.currentServer.dirs.channels
+                }
+
+                if (channelIndex === -1) {
+                    channelIndex = global.state.currentServer.dirs.rooms.findIndex(ch => ch.id === channelId)
+                    if (channelIndex !== -1) {
+                        channelArray = global.state.currentServer.dirs.rooms
+                    }
+                }
+
+                if (channelIndex === -1) {
+                    channelIndex = global.state.currentServer.dirs.drives.findIndex(ch => ch.id === channelId)
+                    if (channelIndex !== -1) {
+                        channelArray = global.state.currentServer.dirs.drives
+                    }
+                }
+
+                if (channelArray && channelIndex !== -1) {
+                    channelArray[channelIndex].name = newValue
+
+                    orderServDirs(global.state.currentServer)
+                }
+
+                // Envoyer la requête en arrière-plan (si ça échoue, on pourrait rollback)
+                xhr("editServer?id=".concat(global.state.currentServer.id, "&property=channel&value=", encodeURIComponent(newValue), "&field=name&targetId=", id), undefined, "POST", false)
             }else if (endpoint === "editRole") {
                 const id = global.state.currentRole.id
                 xhr("editServer?id=".concat(global.state.currentServer.id, "&property=role&value=", encodeURIComponent(global.state["currentForm"][key].value), "&field=name&targetId=", id), undefined, "POST", false)
@@ -182,9 +213,13 @@ function sendMessage(event){
             const attachments = this.responseText
             const currentDate = new Date();
             const timestamp = currentDate.getTime();
-            const message = {"id":global.convs[global.state.activeConv].messages.length, "sender": global.user.id,"place":global.state.activeConv, "body": target.value, "timestamp":timestamp, "reply":global.convs[global.state.activeConv].reply, "attachments":attachments}
+            // Use timestamp as temporary ID (server should return real ID, but for now...)
+            const tempId = Object.keys(global.convs[global.state.activeConv].messages || {}).length
+            const message = {"id":tempId, "sender": global.user.id,"place":global.state.activeConv, "body": target.value, "timestamp":timestamp, "reply":global.convs[global.state.activeConv].reply, "attachments":attachments}
             handleMessageGroup(message)
-            pushElement('global.convs['.concat(global.state.activeConv,'].messages'), message)
+
+            addElement('global.convs['.concat(global.state.activeConv,'].messages'), message)
+
             target.value = ''
             resizeHeight(event, target)
             cancelReply()
@@ -250,7 +285,7 @@ window.getSeparator = getSeparator
 
 function getAnswerBlock(element){
     if(element.messages[0].reply){
-        const og = lookFor(element.messages[0].reply, global.convs[global.state.activeConv].messages)
+        const og = global.convs[global.state.activeConv].messages?.[element.messages[0].reply]
 
         if (!og){ // FIXME when sending a message you dont get the id of your message back so the reply block is broken if the users responds
             return ""

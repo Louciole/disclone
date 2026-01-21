@@ -1,0 +1,11 @@
+<!-- Call action template - renders different actions based on type -->
+${element.type === 'join' ? `
+    <button class="btn-join" onclick="joinExistingCall(${element.callId}, ${element.isVideo})">${_t("Rejoindre")}</button>
+` : element.type === 'controls' ?
+    getTemplate('call-controls')
+: element.type === 'info' ? `
+    <div class="call-info-action">
+        <img class="icon" src="/static/icons/material/${element.icon}.svg" alt="${element.label}"/>
+        <span class="action-label">${_t(element.label)}</span>
+    </div>
+` : ''}

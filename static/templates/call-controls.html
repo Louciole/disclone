@@ -1,11 +1,11 @@
 
 <div class="controls-buttons">
-    <div class="icon-wrapper" id="call-mute-btn" onclick="toggleMute()" title="${_t('Activer/Désactiver le micro')}">
+    <div class="icon-wrapper" id="call-mute-btn" onclick="mute()" title="${_t('Activer/Désactiver le micro')}">
         <img class="icon" src="/static/icons/material/mic.svg"/>
         <span class="tooltip bottom">${_t("Micro")}</span>
     </div>
 
-    <div class="icon-wrapper" id="call-video-btn" onclick="toggleVideo()" title="${_t('Activer/Désactiver la caméra')}" style="${global.state.callManager?.callType === 'video' ? '' : 'display:none'}">
+    <div class="icon-wrapper" id="call-video-btn" onclick="toggleVideo()" title="${_t('Activer/Désactiver la caméra')}">
         <img class="icon" src="/static/icons/material/videocam.svg"/>
         <span class="tooltip bottom">${_t("Caméra")}</span>
     </div>

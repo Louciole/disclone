@@ -130,11 +130,22 @@ class Disclone(Server):
 
                             # Notifier tous les membres de la conversation
                             members = self.db.getAll("accessconversation", conv_id, "conversation")
+
+                            # DEBUG: Log conversation members
+                            print(f"🔔 [call_started] Conv {conv_id}: {len(members)} members, initiated by user {client['userid']}")
+
                             for member in members:
-                                await self.sendNotificationAsync(member["account"], {
-                                    "type": "call_started",
-                                    "content": call.to_dict()
-                                })
+                                member_id = member["account"]
+                                print(f"   → Sending call_started to user {member_id}")
+
+                                try:
+                                    await self.sendNotificationAsync(member_id, {
+                                        "type": "call_started",
+                                        "content": call.to_dict()
+                                    })
+                                    print(f"   ✅ Sent call_started to user {member_id}")
+                                except Exception as e:
+                                    print(f"   ❌ Error sending to user {member_id}: {e}")
 
                 case "callJoin":
                     # Rejoindre un appel existant
@@ -368,8 +379,8 @@ class Disclone(Server):
             raise HTTPError(self.response, 403, "Forbidden - No access to this conversation")
 
         conv = self.db.getSomething("conversation", conversation_id)
-        if not conv or not conv.get("private", True):
-            raise HTTPError(self.response, 403, "Calls are only available in private conversations")
+        if not conv:
+            raise HTTPError(self.response, 403, "Calls are only available in conversations")
 
         call = self.callManager.create_call(conversation_id, uid, call_type)
         return json.dumps(call.to_dict(), default=str)
@@ -390,10 +401,17 @@ class Disclone(Server):
         result = self.callManager.join_call(int(call_id), uid)
 
         if result:
-            return json.dumps({
+            response = {
                 'call': result['call'].to_dict(),
                 'mode_changed': result['mode_changed']
-            }, default=str)
+            }
+            # Include old_mode and new_mode if mode changed
+            if result.get('old_mode'):
+                response['old_mode'] = result['old_mode']
+            if result.get('new_mode'):
+                response['new_mode'] = result['new_mode']
+
+            return json.dumps(response, default=str)
 
         raise HTTPError(self.response, 500, "Failed to join call")
 
@@ -410,6 +428,12 @@ class Disclone(Server):
             }
             if not result['ended']:
                 response['call'] = result['call'].to_dict()
+
+            # Include old_mode and new_mode if mode changed
+            if result.get('old_mode'):
+                response['old_mode'] = result['old_mode']
+            if result.get('new_mode'):
+                response['new_mode'] = result['new_mode']
 
             return json.dumps(response, default=str)
 
@@ -486,6 +510,33 @@ class Disclone(Server):
         user["notifs"] = self.db.getAll("offline_notifs", uid, "account")
         user["additional_emails"] = self.uniauth.getAll("additional_mail", uid, "account")
         return json.dumps(user, default=str)
+
+    @Server.expose
+    def getDebugOTP(self, email):
+        """
+        Endpoint pour récupérer l'OTP en mode DEBUG uniquement
+        Utilisé pour les tests automatisés
+        """
+        if not self.config.getboolean("server", "DEBUG"):
+            raise HTTPError(self.response, 403, "This endpoint is only available in DEBUG mode")
+
+        # Récupérer l'OTP depuis la base de données verif_code
+        account = self.uniauth.getUserCredentials(email)
+        if not account:
+            raise HTTPError(self.response, 404, "User not found")
+
+        verif_code = self.uniauth.getSomething("verif_code", account["id"])
+        if not verif_code:
+            raise HTTPError(self.response, 404, "No verification code found for this user")
+
+        # Vérifier que le code n'est pas expiré
+        if verif_code["expiration"] < datetime.datetime.now():
+            raise HTTPError(self.response, 410, "Verification code has expired")
+
+        return json.dumps({
+            "code": verif_code["code"],
+            "expiration": verif_code["expiration"]
+        }, default=str)
 
     @Server.expose
     def uploadImage(self):
@@ -979,7 +1030,7 @@ class Disclone(Server):
 
         for member in members:
             if member["account"] != uid:
-                self.sendNotification(member,{"type":"message_edited", "content":{"id":message,"content":content}})
+                self.sendNotification(member["account"],{"type":"message_edited", "content":{"id":message,"content":content}})
 
     @Server.expose
     def deleteMessage(self, message):
@@ -998,7 +1049,7 @@ class Disclone(Server):
 
         for member in members:
             if member["account"] != uid:
-                self.sendNotification(member,{"type":"message_deleted", "content":{"id":messageId}})
+                self.sendNotification(member["account"],{"type":"message_deleted", "content":{"id":messageId}})
 
     @Server.expose
     def registerActivity(self, SDP):
@@ -1186,12 +1237,17 @@ class Disclone(Server):
                 channel_type = channelType if channelType else "textual"
 
                 if channel_type == "vocal":
-                    self.db.insertDict("room", {"server": id})
+                    channel_id = self.db.insertDict("room", {"server": id}, getId=True)
+                    channel = self.db.getSomething("room", channel_id)
                 elif channel_type == "drive":
-                    self.db.insertDict("drive_channel", {"name": "new storage", "server": id})
+                    channel_id = self.db.insertDict("drive_channel", {"name": "new storage", "server": id}, getId=True)
+                    channel = self.db.getSomething("drive_channel", channel_id)
                 else:  # textual par défaut
-                    self.db.insertDict("textual_channel", {"name": "new channel", "server": id})
-                return
+                    channel_id = self.db.insertDict("textual_channel", {"name": "new channel", "server": id}, getId=True)
+                    channel = self.db.getSomething("textual_channel", channel_id)
+
+                # Retourner le canal créé avec son type
+                return json.dumps({"channel": channel, "type": channel_type}, default=str)
 
             chan = self.db.getSomething("textual_channel", targetId)
             if chan and chan["server"] == int(id) and field != "server":

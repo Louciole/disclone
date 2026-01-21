@@ -1,0 +1,49 @@
+<!-- Unified Call Component - Single layout with dynamic participants and actions -->
+${Subscribe('global.state.callManager.callState', () => {
+    const callManager = global.state.callManager;
+    const callState = callManager?.callState || 'none';
+
+    console.log('🎨 call-component rendering, callState:', callState);
+
+    if (callState === 'none') {
+        console.log('❌ callState is none, not rendering');
+        return '';
+    }
+
+    console.log('✅ Rendering call-component with state:', callState);
+    console.log('   - participants:', callManager?.remoteParticipants);
+    console.log('   - actions:', callManager?.availableActions);
+
+    return `
+        <div class="call-component call-${callState}">
+            ${callState === 'calling' ? `
+                <div class="call-header">
+                    <div class="call-title">${_t("Appel en cours")}</div>
+                    <div class="call-subtitle">${_t("En attente de réponse")}...</div>
+                </div>
+            ` : ''}
+
+            <div class="call-content">
+                <div id="remote-videos" class="remote-videos-grid">
+                    ${Subscribe('global.state.callManager.remoteParticipants', () =>
+                        fillWith('call-participant', global.state.callManager?.remoteParticipants || [])
+                    )}
+                </div>
+                <div id="remote-audio-container"></div>
+
+                ${callState === 'active' || callState === 'calling' ? `
+                    <div class="local-video-container">
+                        <video id="local-video" autoplay playsinline muted></video>
+                        <div class="video-name-label">${_t("Vous")}</div>
+                    </div>
+                ` : ''}
+            </div>
+
+            <div class="call-actions">
+                ${Subscribe('global.state.callManager.availableActions', () =>
+                    fillWith('call-action', global.state.callManager?.availableActions || [])
+                )}
+            </div>
+        </div>
+    `;
+})}

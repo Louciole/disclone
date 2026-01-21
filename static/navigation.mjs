@@ -18,6 +18,11 @@ function goToConv(convId){
     global.state.activeConv = convId
     loadConv(convId)
 
+    // Load call state for this conversation
+    if (loadCallState) {
+        loadCallState(convId);
+    }
+
     targetElt = document.getElementById("conv".concat(convId))
     targetElt.classList.add("selected")
 
