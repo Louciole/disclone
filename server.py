@@ -306,6 +306,127 @@ class Disclone(Server):
         return json.dumps(servers)
 
     @Server.expose
+    def getDiscoverableServers(self, search=None, tags=None, language=None):
+        """
+        Get list of community servers for discovery page.
+
+        Args:
+            search: Optional search term for server name/description
+            tags: Optional JSON array of tags to filter by
+            language: Optional language code to filter by
+
+        Returns:
+            JSON object with 'featured' and 'regular' server lists
+        """
+        uid = self.getUser()
+
+        # Base query for community servers
+        filters = ["is_community", "=", True]
+
+        # Add language filter
+        if language:
+            filters.extend(["and", "language", "=", language])
+
+        # Add search filter
+        if search:
+            filters.extend(["and", "(", "name", "ilike", f"%{search}%", "or",
+                          "description", "ilike", f"%{search}%", ")"])
+
+        # Get all community servers
+        all_servers = self.db.getFilters("server", filters)
+
+        # Filter by tags if provided
+        if tags:
+            tags_list = json.loads(tags)
+            filtered_servers = []
+            for server in all_servers:
+                server_tags = server.get('tags', [])
+                if isinstance(server_tags, str):
+                    server_tags = json.loads(server_tags)
+                # Check if any requested tag is in server tags
+                if any(tag in server_tags for tag in tags_list):
+                    filtered_servers.append(server)
+            all_servers = filtered_servers
+
+        # Separate featured and regular servers
+        featured = [s for s in all_servers if s.get('is_featured', False)]
+        regular = [s for s in all_servers if not s.get('is_featured', False)]
+
+        # Sort featured by member count
+        featured.sort(key=lambda x: x.get('member_count', 0), reverse=True)
+
+        # Sort regular by member count
+        regular.sort(key=lambda x: x.get('member_count', 0), reverse=True)
+
+        # Mark servers user is already in
+        user_server_ids = [s['id'] for s in self.db.getSomethingProxied("server", "accessserver", "account", uid)]
+
+        for server in featured + regular:
+            server['is_joined'] = server['id'] in user_server_ids
+
+        return json.dumps({
+            'featured': featured[:10],  # Limit to 10 featured
+            'regular': regular[:50]      # Limit to 50 regular
+        }, default=str)
+
+    @Server.expose
+    def joinCommunityServer(self, server_id):
+        """
+        Join a community server.
+
+        Args:
+            server_id: ID of the server to join
+
+        Returns:
+            Success message
+        """
+        uid = self.getUser()
+
+        # Check if server exists and is a community server
+        server = self.db.getSomething("server", server_id)
+        if not server:
+            raise HTTPError(self.response, 404, "Server not found")
+
+        if not server.get('is_community', False):
+            raise HTTPError(self.response, 403, "This server is not a community server")
+
+        # Check if already a member
+        existing = self.db.getFilters("accessserver", [
+            "account", "=", uid,
+            "and",
+            "server", "=", server_id
+        ])
+
+        if existing:
+            raise HTTPError(self.response, 400, "Already a member of this server")
+
+        # Add user to server
+        self.db.insertDict('accessserver', {'account': uid, 'server': server_id})
+
+        return json.dumps({"success": True, "server_id": server_id})
+
+    @Server.expose
+    def getAvailableTags(self):
+        """
+        Get list of all available tags from community servers.
+
+        Returns:
+            JSON array of unique tags
+        """
+        # Get all community servers
+        servers = self.db.getFilters("server", ["is_community", "=", True])
+
+        # Collect all unique tags
+        all_tags = set()
+        for server in servers:
+            tags = server.get('tags', [])
+            if isinstance(tags, str):
+                tags = json.loads(tags)
+            all_tags.update(tags)
+
+        return json.dumps(sorted(list(all_tags)))
+
+    @Server.expose
     def createConv(self, name, members, private=False):
         members = json.loads(members)
         return str(self.newConv(name, members, private))
@@ -969,6 +1090,37 @@ class Disclone(Server):
 
         return False
 
+    @Server.expose
+    def setServerFeatured(self, server_id, featured):
+        """
+        Set a server as featured (admin only).
+
+        Args:
+            server_id: ID of the server
+            featured: "true" or "false"
+
+        Returns:
+            Success message
+        """
+        uid = self.getUser()
+
+        # Check if user is admin
+        if not self.isAdmin(uid):
+            raise HTTPError(self.response, 403, "Only admins can feature servers")
+
+        # Check if server exists and is a community server
+        server = self.db.getSomething("server", server_id)
+        if not server:
+            raise HTTPError(self.response, 404, "Server not found")
+
+        if not server.get('is_community', False):
+            raise HTTPError(self.response, 400, "Only community servers can be featured")
+
+        # Update featured status
+        self.db.edit("server", server_id, "is_featured", featured == "true")
+
+        return json.dumps({"success": True, "server_id": server_id, "is_featured": featured == "true"})
+
     def onWSAuth(self,uid):
         self.sendStatusUpdates(uid)
 
@@ -1326,6 +1478,20 @@ class Disclone(Server):
             filename = self.saveFile(value)
             self.db.edit("server", id, "pfp", filename)
             return json.dumps({"pfp": filename}, default=str)
+        elif property == "is_community":
+            # Only server owner can change this
+            server = self.db.getSomething("server", id)
+            if server["owner"] != uid:
+                raise HTTPError(self.response, 403, "Only server owner can change community status")
+            self.db.edit("server", id, "is_community", value == "true")
+        elif property == "tags":
+            # Parse tags as JSON array
+            tags = json.loads(value) if isinstance(value, str) else value
+            self.db.edit("server", id, "tags", json.dumps(tags))
+        elif property == "language":
+            self.db.edit("server", id, "language", value)
+        elif property == "description":
+            self.db.edit("server", id, "description", value)
 
 
     @Server.expose

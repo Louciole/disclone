@@ -1058,3 +1058,116 @@ function removeEmail(emailId){
     xhr("/removeEmail?id=".concat(emailId), onload, "POST")
 }
 window.removeEmail = removeEmail
+
+// ==================== Community Server Functions ====================
+
+function toggleCommunityServer() {
+    const checkbox = document.getElementById('is-community-checkbox');
+    const communitySettings = document.getElementById('community-settings');
+    const isCommunity = checkbox.checked;
+
+    if (communitySettings) {
+        communitySettings.style.display = isCommunity ? '' : 'none';
+    }
+
+    // Save to server
+    xhr(`editServer?id=${global.state.currentServer.id}&property=is_community&value=${isCommunity}`,
+        () => {
+            global.state.currentServer.is_community = isCommunity;
+            if (isCommunity) {
+                // Initialize tags if needed
+                if (!global.state.currentServer.tags) {
+                    global.state.currentServer.tags = [];
+                }
+                renderServerTags();
+            }
+        },
+        "POST", false);
+}
+window.toggleCommunityServer = toggleCommunityServer;
+
+function updateLanguage() {
+    const select = document.getElementById('language-select');
+    const language = select.value;
+
+    xhr(`editServer?id=${global.state.currentServer.id}&property=language&value=${language}`,
+        () => {
+            global.state.currentServer.language = language;
+        },
+        "POST", false);
+}
+window.updateLanguage = updateLanguage;
+
+function renderServerTags() {
+    const container = document.getElementById('server-tags-container');
+    if (!container) return;
+
+    const tags = global.state.currentServer?.tags || [];
+    const tagsList = typeof tags === 'string' ? JSON.parse(tags) : tags;
+
+    container.innerHTML = '';
+
+    tagsList.forEach((tag, index) => {
+        const tagElement = document.createElement('div');
+        tagElement.className = 'server-tag-item';
+        tagElement.style.cssText = 'display: flex; align-items: center; gap: 0.5rem; background: var(--bg4); padding: 0.4rem 0.8rem; border-radius: 8px;';
+        tagElement.innerHTML = `
+            <span style="color: var(--text);">${tag}</span>
+            <button onclick="removeServerTag(${index})" style="background: transparent; border: none; color: var(--text2); cursor: pointer; padding: 0; font-size: 1.2rem; line-height: 1;">×</button>
+        `;
+        container.appendChild(tagElement);
+    });
+}
+window.renderServerTags = renderServerTags;
+
+function addServerTag() {
+    const input = document.getElementById('new-tag-input');
+    const tag = input.value.trim();
+
+    if (!tag) return;
+
+    if (tag.length > 20) {
+        alert('Les tags ne peuvent pas dépasser 20 caractères.');
+        return;
+    }
+
+    const tags = global.state.currentServer?.tags || [];
+    const tagsList = typeof tags === 'string' ? JSON.parse(tags) : tags;
+
+    if (tagsList.includes(tag)) {
+        alert('Ce tag existe déjà.');
+        return;
+    }
+
+    if (tagsList.length >= 10) {
+        alert('Vous ne pouvez pas ajouter plus de 10 tags.');
+        return;
+    }
+
+    tagsList.push(tag);
+
+    xhr(`editServer?id=${global.state.currentServer.id}&property=tags&value=${encodeURIComponent(JSON.stringify(tagsList))}`,
+        () => {
+            global.state.currentServer.tags = tagsList;
+            renderServerTags();
+            input.value = '';
+        },
+        "POST", false);
+}
+window.addServerTag = addServerTag;
+
+function removeServerTag(index) {
+    const tags = global.state.currentServer?.tags || [];
+    const tagsList = typeof tags === 'string' ? JSON.parse(tags) : tags;
+
+    tagsList.splice(index, 1);
+
+    xhr(`editServer?id=${global.state.currentServer.id}&property=tags&value=${encodeURIComponent(JSON.stringify(tagsList))}`,
+        () => {
+            global.state.currentServer.tags = tagsList;
+            renderServerTags();
+        },
+        "POST", false);
+}
+window.removeServerTag = removeServerTag;
+

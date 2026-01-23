@@ -17,6 +17,7 @@
     <script type="module" src="/static/navigation.mjs"></script>
     <script type="module" src="/static/controls.mjs"></script>
     <script type="module" src="/static/misc.mjs"></script>
+    <script type="module" src="/static/discover.mjs"></script>
     <link href="/static/style.css" rel="stylesheet">
 </head>
 <body>
@@ -37,6 +38,12 @@
         <div class="global-user-notifs" data-content="()=>fillWith('offlineNotif',global.user.notifs)"></div>
         <hr>
         <div id="servers" class="global-servers" data-default-class="global-servers" data-content="()=&gt;fillWith('server-icon', global.servers)">
+        </div>
+        <div class="container">
+            <div id="discover-servers" class="item action" onclick="openDiscoverServers()">
+                <img src="/static/icons/material/compass.svg" alt="Compass icon" class="icon" style="width: 24px; height: 24px; filter: invert(0.7);">
+            </div>
+            <span class="tooltip left">Découvrir des serveurs</span>
         </div>
         <div class="container">
             <div id="new-server" class="item action" onclick="openMenu('create-server')">+</div>
@@ -79,6 +86,45 @@
                         <div class="btn blue" onclick="newServer()">Créer</div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Discover Servers Menu -->
+    <section class="fullscreen-menu" id="discover-servers-menu" style="display:none">
+        <div class="discover-header">
+            <div class="discover-title">
+                <h1>Découvrir des serveurs</h1>
+                <button class="close-btn" onclick="closeDiscoverServers()">✕</button>
+            </div>
+            <div class="discover-filters">
+                <input type="text" id="discover-search" placeholder="Rechercher des serveurs..." oninput="filterDiscoverServers()">
+                <select id="discover-language" onchange="filterDiscoverServers()">
+                    <option value="">Toutes les langues</option>
+                    <option value="fr">Français</option>
+                    <option value="en">English</option>
+                    <option value="es">Español</option>
+                    <option value="de">Deutsch</option>
+                    <option value="it">Italiano</option>
+                    <option value="pt">Português</option>
+                </select>
+                <div id="discover-tags-filter"></div>
+            </div>
+        </div>
+
+        <div class="discover-content">
+            <div class="discover-section" id="featured-servers-section" style="display:none">
+                <h2>Serveurs mis en avant</h2>
+                <div id="featured-servers-list" class="servers-grid"></div>
+            </div>
+
+            <div class="discover-section">
+                <h2>Tous les serveurs</h2>
+                <div id="all-servers-list" class="servers-grid"></div>
+            </div>
+
+            <div id="no-results" style="display:none; text-align: center; padding: 2rem;">
+                <p>Aucun serveur trouvé avec ces critères de recherche.</p>
             </div>
         </div>
     </section>

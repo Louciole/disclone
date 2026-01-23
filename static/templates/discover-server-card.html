@@ -1,0 +1,25 @@
+<div class="server-card" data-server-id="${element.id}">
+    <div class="server-card-header">
+        ${element.is_featured ? '<div class="featured-badge">⭐ Mis en avant</div>' : ''}
+    </div>
+    <div class="server-card-icon">
+        ${element?.pfp ? '<img src="/static/attachments/' + element.pfp + '">' : '<div class="server-placeholder">' + getSlug(element.name) + '</div>'}
+    </div>
+    <div class="server-card-info">
+        <h3>${element.name}</h3>
+        <p class="server-description">${element.description || 'Aucune description'}</p>
+        <div class="server-stats">
+            <span class="stat">
+                <img src="/static/icons/material/people.svg" class="icon-small">
+                ${element.member_count || 0} membres
+            </span>
+            <span class="stat language-badge">${element.language || 'en'}</span>
+        </div>
+        ${element.tags && element.tags.length > 0 ? '<div class="server-tags">' + (typeof element.tags === 'string' ? JSON.parse(element.tags) : element.tags).map(tag => '<span class="tag">' + tag + '</span>').join('') + '</div>' : ''}
+    </div>
+    <div class="server-card-actions">
+        ${element.is_joined
+            ? '<button class="btn grey" disabled>Déjà membre</button>'
+            : '<button class="btn blue" onclick="joinDiscoverServer(' + element.id + ')">Rejoindre</button>'}
+    </div>
+</div>

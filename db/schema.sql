@@ -22,7 +22,13 @@ create table if not exists server (
     id bigserial NOT NULL PRIMARY KEY,
     name varchar(44) NOT NULL,
     owner integer NOT NULL,
-    pfp text
+    pfp text,
+    is_community boolean DEFAULT false,
+    tags jsonb DEFAULT '[]',
+    language varchar(10) DEFAULT 'en',
+    is_featured boolean DEFAULT false,
+    description text,
+    member_count integer DEFAULT 0
 );
 
 create table if not exists accessServer (
