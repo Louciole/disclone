@@ -1,4 +1,4 @@
-import {addServer, getRelevantUser} from "./main.mjs"
+import {getRelevantUser} from "./main.mjs"
 import {
     addElement,
     deleteElement,
@@ -38,8 +38,7 @@ function newServer(){
     request.open('POST', "createServer", true);
     request.onload = function() {
         const serv = {name:"New Server",id:JSON.parse(request.responseText)}
-        global.servers[serv.id] = serv
-        addServer(serv.name, serv.id)
+        setElement(`global.servers[${serv.id}]`, serv)
     };
 
     request.onerror = function() {
@@ -54,9 +53,7 @@ export function loadServers(){
     const onload = function() {
         const response = JSON.parse(this.responseText)
         global.servers = response
-        for (let i in response) {
-            addServer(response[i].name, response[i].id, response[i])
-        }
+        setElement(`global.servers`, response)
     };
     xhr("getUserServers",onload)
 }
@@ -640,6 +637,24 @@ function uploadProfileImage(field="pfp"){
             console.log(this.responseText)
             if (global.state.uploadImage === "serverAvatar") {
                 global.state.uploadImage = ""
+                try {
+                    const response = JSON.parse(this.responseText)
+                    if (response.pfp) {
+                        setElement('global.state.currentServer.pfp', response.pfp)
+                        updateElement("global.servers")
+                    }
+                } catch (e) {
+                    console.error("Failed to parse server pfp response:", e)
+                }
+            } else {
+                try {
+                    const response = JSON.parse(this.responseText)
+                    if (response.pfp) {
+                        setElement('global.user.pfp', response.pfp)
+                    }
+                } catch (e) {
+                    console.error("Failed to parse user pfp response:", e)
+                }
             }
         }
         console.log(result, {"value":result})

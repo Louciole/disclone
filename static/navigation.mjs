@@ -32,15 +32,16 @@ window.goToConv = goToConv
 
 function goToChannel(id){
     let targetElt
-    if(global.state.activeConv){
-        targetElt = document.getElementById("channel".concat(global.state.activeConv))
-        targetElt.classList.remove("selected")
+    if(global.state.activeChan){
+        targetElt = document.getElementById("channel".concat(global.state.activeChan))
+        targetElt?.classList.remove("selected")
     }
 
     global.state.activeConv = id
+    global.state.activeChan = "-conv-"+id
     loadChan(id)
 
-    targetElt = document.getElementById("channel".concat(id))
+    targetElt = document.getElementById("channel".concat(global.state.activeChan))
     targetElt.classList.add("selected")
 
     goTo('content','server-channel',undefined,false)
@@ -49,18 +50,18 @@ window.goToChannel = goToChannel
 
 function goToVocalChannel(id){
     let targetElt
-    if(global.state.activeConv){
-        targetElt = document.getElementById("channel".concat(global.state.activeConv))
-        targetElt.classList.remove("selected")
+    if(global.state.activeChan){
+        targetElt = document.getElementById("channel".concat(global.state.activeChan))
+        targetElt?.classList.remove("selected")
     }
 
-    global.state.activeConv = id
-    // Charger les infos du channel vocal depuis les données du serveur
+    global.state.activeChan = "-voc-"+id
+
     if (!global.convs) global.convs = {}
     const room = lookFor(id, global.state.currentServer.dirs.rooms)
     global.convs[id] = {id: id, name: room ? room.name : "Salon vocal", type: "vocal"}
 
-    targetElt = document.getElementById("channel".concat(id))
+    targetElt = document.getElementById("channel".concat(global.state.activeChan))
     targetElt.classList.add("selected")
 
     goTo('content','server-vocal-content',undefined,false)
@@ -69,25 +70,23 @@ window.goToVocalChannel = goToVocalChannel
 
 function goToDriveChannel(id){
     let targetElt
-    if(global.state.activeConv){
-        targetElt = document.getElementById("channel".concat(global.state.activeConv))
-        targetElt.classList.remove("selected")
+    if(global.state.activeChan){
+        targetElt = document.getElementById("channel".concat(global.state.activeChan))
+        targetElt?.classList.remove("selected")
     }
 
-    global.state.activeConv = id
-    // Charger les infos du channel de stockage depuis les données du serveur
+    global.state.activeChan = "-drive-"+id
+
     if (!global.convs) global.convs = {}
     const drive = lookFor(id, global.state.currentServer.dirs.drives)
     global.convs[id] = {id: id, name: drive ? drive.name : "Salon de stockage", type: "drive"}
 
-    targetElt = document.getElementById("channel".concat(id))
+    targetElt = document.getElementById("channel".concat(global.state.activeChan))
     targetElt.classList.add("selected")
 
-    // Initialize folder navigation
     if (!global.driveCurrentFolder) global.driveCurrentFolder = {}
     if (!global.driveCurrentFolder[id]) global.driveCurrentFolder[id] = []
 
-    // Load drive files and folders
     loadDriveContent(id)
 
     goTo('content','server-drive-content',undefined,false)

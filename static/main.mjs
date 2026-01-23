@@ -90,19 +90,7 @@ function getSlug(name){
     }
     return slug
 }
-
-export function addServer(name, id, object = undefined){
-    const servers = document.getElementById('servers')
-    servers.insertAdjacentHTML("beforeend",`
-        <div class="container">
-            <div class="item serveur" onclick="goToServer(event,${id})">
-            ${object?.pfp ? '<img src="/static/attachments/' + object.pfp + '">': getSlug(name)}
-            </div>
-            <div class="indicator"></div>
-            <span class="tooltip left">${name}</span>
-        </div>
-    `)
-}
+window.getSlug = getSlug
 
 function loadEmojis(){
 

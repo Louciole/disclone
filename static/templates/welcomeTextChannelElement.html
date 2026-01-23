@@ -1,5 +1,12 @@
 <div id="welcome-message">
-    <div class="big pfp grey">
+    <div class="big pfp" style="    font-size: 3rem;
+    background-color: var(--text3);
+    color: var(--text);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: 600;">
+        #
     </div>
     <h1>${_t("Bienvenue dans")} #${Subscribe("global.convs["+global.state.activeConv+"].name", ()=>{return global.convs[global.state.activeConv].name})}${_t(" !")}</h1>
     <div class="p">${_t("C'est le début du salon #")}${Subscribe("global.convs["+global.state.activeConv+"].name", ()=>{return global.convs[global.state.activeConv].name})}.</div>

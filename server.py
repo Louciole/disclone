@@ -1151,7 +1151,9 @@ class Disclone(Server):
                 self.db.edit("status", uid, "expiration", None)
             self.sendStatusUpdates(uid)
         elif element == "pfp":
-            self.db.edit("disclone_account", uid, element, self.saveFile(value))
+            filename = self.saveFile(value)
+            self.db.edit("disclone_account", uid, element, filename)
+            return json.dumps({"pfp": filename}, default=str)
         else:
             self.db.edit("disclone_account", uid, element, value)
 
@@ -1321,7 +1323,9 @@ class Disclone(Server):
         elif property == "name":
             self.db.edit("server", id, property, value)
         elif property == "pfp":
-            self.db.edit("server", id, "pfp", self.saveFile(value))
+            filename = self.saveFile(value)
+            self.db.edit("server", id, "pfp", filename)
+            return json.dumps({"pfp": filename}, default=str)
 
 
     @Server.expose
