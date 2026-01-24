@@ -22,6 +22,9 @@
     <meta property="og:description" content="A handcrafted digital home for artists and collectives. Chat, forum, and cloud storage—built without bloat, owned by you.">
     <meta property="og:image" content="/static/images/logo.png">
 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 
     <script type="application/ld+json">
         {
@@ -45,20 +48,20 @@
     </script>
 </head>
 <body>
-<div id="cursor"></div>
-<div id="cursor-follower"></div>
+<div id="cursor" aria-hidden="true"></div>
+<div id="cursor-follower" aria-hidden="true"></div>
 
 <header>
     <div class="logo">Disclone Beta</div>
-    <nav>
+    <nav role="navigation" aria-label="Main Navigation">
         <a href="#features">Features</a>
         <a href="#manifesto">Manifesto</a>
     </nav>
 </header>
 
 <main>
-    <section class="hero container">
-        <div class="hero-grid">
+    <section class="hero container" aria-labelledby="hero-title">
+        <div class="hero-grid" aria-hidden="true">
             <div class="grid-line grid-v" style="left: 20%;"></div>
             <div class="grid-line grid-v" style="left: 40%;"></div>
             <div class="grid-line grid-v" style="left: 60%;"></div>
@@ -68,7 +71,7 @@
             <div class="grid-line grid-h" style="top: 75%;"></div>
         </div>
 
-        <h1 class="reveal">SOVEREIGN<br>SPACES.</h1>
+        <h1 id="hero-title" class="reveal">SOVEREIGN<br>SPACES.</h1>
         <div class="hero-meta reveal">
             <p class="hero-sub">
                 Digital sanctuaries handcrafted for creative collectives. Own your tools, protect your privacy, build your world.
@@ -76,13 +79,14 @@
             <a href="/auth" class="btn-magnetic">Build your own space</a>
         </div>
 
-        <div class="scroll-indicator reveal">
+        <div class="scroll-indicator reveal" aria-hidden="true">
             <span>Scroll</span>
             <div class="scroll-line"></div>
         </div>
     </section>
 
-    <section class="manifesto container" id="manifesto">
+    <section class="manifesto container" aria-labelledby="manifesto-title">
+        <h2 id="manifesto-title" class="visually-hidden">Our Manifesto</h2>
         <p class="reveal">
             We believe digital life should be <span class="dim">intentional, not invasive.</span>
             Disclone is a quiet, powerful <span class="dim">canvas for connection.</span>
@@ -90,11 +94,12 @@
         </p>
     </section>
 
-    <section class="container" id="features">
+    <section class="container" id="features" aria-labelledby="features-title">
+        <h2 id="features-title" class="visually-hidden">Core Features</h2>
         <div class="bento">
             <!-- Card 1: Integrated Drive -->
-            <div class="card span-8 reveal">
-                <svg class="ani-symbol" viewBox="0 0 100 100">
+            <div class="card span-4 reveal">
+                <svg class="ani-symbol" viewBox="0 0 100 100" aria-hidden="true">
                     <rect x="25" y="25" width="50" height="50" />
                     <rect x="35" y="35" width="50" height="50" opacity="0.5" />
                     <line x1="25" y1="25" x2="35" y2="35" />
@@ -102,41 +107,41 @@
                     <line x1="25" y1="75" x2="35" y2="85" />
                     <line x1="75" y1="75" x2="85" y2="85" />
                 </svg>
-                <div class="ani-blob" style="top: 20%; left: 30%;"></div>
+                <div class="ani-blob" style="top: 20%; left: 30%;" aria-hidden="true"></div>
                 <div>
                     <span class="card-tag">Architecture</span>
                     <h3>Integrated Drive</h3>
-                    <p>Your assets are part of the conversation. High-fidelity file hosting without limits or tracking.</p>
+                    <p>Your assets are part of the conversation. Use drive channels to centralize all your data in one place.</p>
                 </div>
             </div>
 
             <!-- Card 2: Stealth Mode -->
-            <div class="card span-4 reveal">
-                <svg class="ani-symbol" viewBox="0 0 100 100">
+            <div class="card span-8 reveal">
+                <svg class="ani-symbol" viewBox="0 0 100 100" aria-hidden="true">
                     <circle cx="50" cy="50" r="30" />
                     <line x1="20" y1="50" x2="80" y2="50" />
                     <line x1="50" y1="20" x2="50" y2="80" opacity="0.3" />
                 </svg>
-                <div class="ani-blob" style="bottom: 10%; right: 10%;"></div>
+                <div class="ani-blob" style="bottom: 10%; right: 10%;" aria-hidden="true"></div>
                 <div>
                     <span class="card-tag">Privacy</span>
                     <h3><span class="stealth-dot"></span>Stealth mode</h3>
-                    <p>No typing indicators. No presence data. Think and read in absolute silence.</p>
+                    <p>No data-collection. No ads. <br>De-activable typing indicators. <br>Think and read in absolute silence.</p>
                 </div>
             </div>
 
             <!-- Card 3: Technical Merit -->
             <div class="card span-12 reveal" style="background: var(--accent); color: white; border: none;">
-                <div class="chroma-bg" style="background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);"></div>
+                <div class="chroma-bg" style="background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);" aria-hidden="true"></div>
                 <div>
-                    <span class="card-tag" style="color: rgba(255,255,255,0.7)">Technical Merit</span>
-                    <h3 style="font-size: clamp(2rem, 6.5vw, 6rem); line-height: 0.85; margin-bottom: 0;">Handcrafted Logic.<br>Zero Dependencies.<br>Pure Sovereign Code.</h3>
+                    <span class="card-tag" style="color: rgba(255,255,255,0.7)">Craftsmanship</span>
+                    <h3 style="font-size: clamp(2rem, 6.5vw, 6rem); line-height: 0.85; margin-bottom: 0;">Handcrafted with love.<br>Zero Dependencies.<br>Pure Sovereign FOSS Code.</h3>
                 </div>
             </div>
 
             <!-- Card 4: Forum Threads -->
-            <div class="card span-4 reveal">
-                <svg class="ani-symbol" viewBox="0 0 100 100">
+            <div class="card span-8 reveal">
+                <svg class="ani-symbol" viewBox="0 0 100 100" aria-hidden="true">
                     <line x1="20" y1="20" x2="80" y2="20" />
                     <line x1="20" y1="50" x2="60" y2="50" />
                     <line x1="20" y1="80" x2="70" y2="80" />
@@ -144,18 +149,18 @@
                 </svg>
                 <div>
                     <span class="card-tag">Structure</span>
-                    <h3>Forum Threads</h3>
-                    <p>Organize knowledge into deep, searchable gardens instead of chaotic timelines.</p>
+                    <h3>Do more</h3>
+                    <p>More than a messaging app, a forum. Discover your next community. <br>Make your voice heard.</p>
                 </div>
             </div>
 
             <!-- Card 5: Chromatic Voice -->
-            <div class="card span-8 reveal">
-                <svg class="ani-symbol" viewBox="0 0 100 100">
+            <div class="card span-4 reveal">
+                <svg class="ani-symbol" viewBox="0 0 100 100" aria-hidden="true">
                     <circle cx="50" cy="50" r="40" stroke-dasharray="10,5" />
                     <circle cx="50" cy="50" r="20" opacity="0.5" />
                 </svg>
-                <div class="chroma-bg"></div>
+                <div class="chroma-bg" aria-hidden="true"></div>
                 <div>
                     <span class="card-tag">Identity</span>
                     <h3>Chromatic Voice</h3>
@@ -166,32 +171,32 @@
     </section>
 </main>
 
-<footer id="footer">
+<footer id="footer" role="contentinfo">
     <div class="container">
-        <div class="footer-cta reveal">
+        <h2 class="footer-cta reveal">
             CLAIM YOUR<br><span style="color: var(--accent)">SPACE.</span>
-        </div>
+        </h2>
 
         <div class="footer-grid">
             <div class="footer-brand">
-                <h4>CARBONLAB_</h4>
+                <h3>CARBONLAB_</h3>
                 <p>A non-profit architecture for the digital autonomy of creative collectives.</p>
             </div>
             <div class="footer-links">
-                <h5>Protocol</h5>
+                <h3>Protocol</h3>
                 <ul>
                     <li><a href="https://smoop.carbonlab.dev/project?uid=6&access=read-only">Roadmap</a></li>
                 </ul>
             </div>
             <div class="footer-links">
-                <h5>Ethics</h5>
+                <h3>Ethics</h3>
                 <ul>
                     <li><a href="#manifesto">Manifesto</a></li>
                     <li><a href="https://gitlab.com/Louciole/disclone/-/blob/maine/LICENSE.md?ref_type=heads">FOSS License</a></li>
                 </ul>
             </div>
             <div class="footer-links">
-                <h5>Network</h5>
+                <h3>Network</h3>
                 <ul>
                     <li><a href="https://gitlab.com/Louciole/disclone">GitLab</a></li>
                     <li><a href="https://github.com/Louciole/disclone">GitHub [Mirror]</a></li>
@@ -208,43 +213,52 @@
 </footer>
 
 <script>
+    // High-Performance Cursor Logic
     const cursor = document.getElementById('cursor');
     const follower = document.getElementById('cursor-follower');
 
     let mouseX = 0, mouseY = 0;
+    let cursorX = 0, cursorY = 0;
     let followerX = 0, followerY = 0;
 
     document.addEventListener('mousemove', (e) => {
         mouseX = e.clientX;
         mouseY = e.clientY;
-
-        cursor.style.transform = `translate3d(${mouseX}px, ${mouseY}px, 0)`;
     });
 
-    const animateFollower = () => {
+    const animateCursors = () => {
+        cursorX = mouseX;
+        cursorY = mouseY;
+        cursor.style.transform = `translate3d(${cursorX}px, ${cursorY}px, 0)`;
+
         followerX += (mouseX - followerX - 22.5) * 0.12;
         followerY += (mouseY - followerY - 22.5) * 0.12;
-
         follower.style.transform = `translate3d(${followerX}px, ${followerY}px, 0)`;
-        requestAnimationFrame(animateFollower);
-    };
-    animateFollower();
 
+        requestAnimationFrame(animateCursors);
+    };
+
+    requestAnimationFrame(animateCursors);
+
+    // Hover States
     document.querySelectorAll('.btn-magnetic, .card, a').forEach(el => {
         el.addEventListener('mouseenter', () => {
             follower.style.width = '80px';
             follower.style.height = '80px';
             follower.style.borderColor = 'var(--accent)';
             follower.style.backgroundColor = 'rgba(59, 130, 246, 0.05)';
+            cursor.style.backgroundColor = 'var(--accent)';
         });
         el.addEventListener('mouseleave', () => {
             follower.style.width = '45px';
             follower.style.height = '45px';
             follower.style.borderColor = 'rgba(255, 255, 255, 0.2)';
             follower.style.backgroundColor = 'transparent';
+            cursor.style.backgroundColor = 'white';
         });
     });
 
+    // Bento Interactions
     document.querySelectorAll('.card').forEach(card => {
         const blob = card.querySelector('.ani-blob');
         const symbol = card.querySelector('.ani-symbol');
@@ -272,6 +286,7 @@
         });
     });
 
+    // Scroll reveal
     const observer = new IntersectionObserver((entries) => {
         entries.forEach((entry, index) => {
             if (entry.isIntersecting) {
