@@ -12,6 +12,7 @@ import {addElement, pushElement, setElement} from "/static/framework/vesta.mjs";
 import {xhr} from "./framework/templating.mjs";
 import {initTranslations} from "./translations/translation.mjs";
 import CallManager from "/static/webrtc.mjs";
+import {} from "/static/constants.mjs"; // Expose LANGUAGE_LABELS and parseJsonArray globally
 
 
 global.state.currentTab = document.getElementById("logo")

@@ -26,10 +26,13 @@ PATH = dirname(abspath(__file__))
 class Disclone(Server):
     features = {"websockets": True, "errors": {404: "/static/404.html"}}
     clients = []
+    _admin_cache = None  # Cache for admin user IDs
+    _admin_cache_time = None  # Last cache update time
 
     def __init__(self, *args, **kwargs):
         super().__init__(path=PATH, configFile="/server.ini", noStart=True)
         self.callManager = CallManager(self.db)
+        self._refreshAdminCache()  # Initialize admin cache
         self.start()
 
     @Server.expose
@@ -306,38 +309,84 @@ class Disclone(Server):
         return json.dumps(servers)
 
     @Server.expose
-    def getDiscoverableServers(self, search=None, tags=None, language=None):
+    def getDiscoverableServers(self, search=None, tags=None, languages=None):
         """
         Get list of community servers for discovery page.
 
         Args:
             search: Optional search term for server name/description
             tags: Optional JSON array of tags to filter by
-            language: Optional language code to filter by
+            languages: Optional JSON array of language codes to filter by
 
         Returns:
             JSON object with 'featured' and 'regular' server lists
         """
         uid = self.getUser()
 
+        # Constants
+        MAX_SEARCH_LENGTH = 100
+        MAX_TAGS_FILTER = 10
+
+        # Validate search
+        if search:
+            if len(search) > MAX_SEARCH_LENGTH:
+                raise HTTPError(self.response, 400, "Search query too long")
+            search = search.strip()
+
+        # Validate and parse languages
+        languages_list = []
+        if languages:
+            try:
+                languages_list = json.loads(languages) if isinstance(languages, str) else languages
+                if not isinstance(languages_list, list):
+                    raise HTTPError(self.response, 400, "Languages must be an array")
+            except json.JSONDecodeError:
+                raise HTTPError(self.response, 400, "Invalid JSON format for languages")
+
+        # Validate and parse tags
+        tags_list = []
+        if tags:
+            try:
+                tags_list = json.loads(tags) if isinstance(tags, str) else tags
+                if not isinstance(tags_list, list):
+                    raise HTTPError(self.response, 400, "Tags must be an array")
+                if len(tags_list) > MAX_TAGS_FILTER:
+                    raise HTTPError(self.response, 400, f"Too many tags (max {MAX_TAGS_FILTER})")
+                # Sanitize tags
+                tags_list = [tag.strip().lower() for tag in tags_list if tag.strip()]
+            except json.JSONDecodeError:
+                raise HTTPError(self.response, 400, "Invalid JSON format for tags")
+
         # Base query for community servers
         filters = ["is_community", "=", True]
 
-        # Add language filter
-        if language:
-            filters.extend(["and", "language", "=", language])
-
-        # Add search filter
-        if search:
-            filters.extend(["and", "(", "name", "ilike", f"%{search}%", "or",
-                          "description", "ilike", f"%{search}%", ")"])
-
-        # Get all community servers
+        # Get all community servers first
         all_servers = self.db.getFilters("server", filters)
 
+        # Filter by search term in Python (safer than complex SQL with parentheses)
+        if search:
+            search_lower = search.lower()
+            filtered_servers = []
+            for server in all_servers:
+                name = (server.get('name') or '').lower()
+                description = (server.get('description') or '').lower()
+                if search_lower in name or search_lower in description:
+                    filtered_servers.append(server)
+            all_servers = filtered_servers
+
+        # Filter by languages if provided
+        if languages_list:
+            filtered_servers = []
+            for server in all_servers:
+                server_languages = server.get('languages', [])
+                if isinstance(server_languages, str):
+                    server_languages = json.loads(server_languages)
+                if any(lang in server_languages for lang in languages_list):
+                    filtered_servers.append(server)
+            all_servers = filtered_servers
+
         # Filter by tags if provided
-        if tags:
-            tags_list = json.loads(tags)
+        if tags_list:
             filtered_servers = []
             for server in all_servers:
                 server_tags = server.get('tags', [])
@@ -364,9 +413,13 @@ class Disclone(Server):
         for server in featured + regular:
             server['is_joined'] = server['id'] in user_server_ids
 
+        # Limits
+        MAX_FEATURED_SERVERS = 10
+        MAX_REGULAR_SERVERS = 50
+
         return json.dumps({
-            'featured': featured[:10],  # Limit to 10 featured
-            'regular': regular[:50]      # Limit to 50 regular
+            'featured': featured[:MAX_FEATURED_SERVERS],
+            'regular': regular[:MAX_REGULAR_SERVERS]
         }, default=str)
 
     @Server.expose
@@ -630,6 +683,7 @@ class Disclone(Server):
         self.getUsersStatus([user],detailed=True)
         user["notifs"] = self.db.getAll("offline_notifs", uid, "account")
         user["additional_emails"] = self.uniauth.getAll("additional_mail", uid, "account")
+        user["isAdmin"] = self.isAdmin(uid)
         return json.dumps(user, default=str)
 
     @Server.expose
@@ -1077,18 +1131,62 @@ class Disclone(Server):
         return file_id
 
     def isAdmin(self, uid):
-        # admins are users with admin status in op servs
-        users_op_servs = self.db.cur.execute("SELECT * FROM op_servs, accessServer WHERE op_servs.server = accessServer.server AND accessServer.account = %s", (uid,)).fetchall()
+        # Use cached admin list for performance (instead of DB query every time)
+        if self._admin_cache is None or self._shouldRefreshAdminCache():
+            self._refreshAdminCache()
 
-        if not users_op_servs:
-            return False
+        return uid in self._admin_cache
+
+    def _refreshAdminCache(self):
+        """Refresh the admin cache from database"""
+        import datetime
+
+        # Get all users with admin rights in op servers
+        users_op_servs = self.db.cur.execute(
+            "SELECT DISTINCT accessServer.account FROM op_servs, accessServer WHERE op_servs.server = accessServer.server",
+            ()
+        ).fetchall()
+
+        admin_ids = set()
 
         for user_op_serv in users_op_servs:
-            id = user_op_serv["server"]
-            if self.checkAccessRights(uid, id, "disclone_admin"):
+            uid = user_op_serv["account"]
+            # Check if user has disclone_admin right
+            if self._hasAdminRight(uid):
+                admin_ids.add(uid)
+
+        self._admin_cache = admin_ids
+        self._admin_cache_time = datetime.datetime.now()
+
+    def _hasAdminRight(self, uid):
+        """Check if user has disclone_admin right (helper for cache refresh)"""
+        users_op_servs = self.db.cur.execute(
+            "SELECT * FROM op_servs, accessServer WHERE op_servs.server = accessServer.server AND accessServer.account = %s",
+            (uid,)
+        ).fetchall()
+
+        for user_op_serv in users_op_servs:
+            server_id = user_op_serv["server"]
+            if self.checkAccessRights(uid, server_id, "disclone_admin"):
                 return True
 
         return False
+
+    def _shouldRefreshAdminCache(self):
+        """Check if admin cache should be refreshed (every 5 minutes)"""
+        import datetime
+
+        if self._admin_cache_time is None:
+            return True
+
+        # Refresh cache every 5 minutes
+        age = datetime.datetime.now() - self._admin_cache_time
+        return age.total_seconds() > 300  # 5 minutes
+
+    def invalidateAdminCache(self):
+        """Invalidate admin cache (call this when admin rights change)"""
+        self._admin_cache = None
+        self._admin_cache_time = None
 
     @Server.expose
     def setServerFeatured(self, server_id, featured):
@@ -1382,7 +1480,8 @@ class Disclone(Server):
     @Server.expose
     def editServer(self, property, id, value=None, field=None, action=None, targetId=None, channelType=None):
         uid = self.getUser()
-        if field == "id" or field == "owner" or not self.checkAccessRights(uid, id, "edit"):
+        forbidden_fields = ["id", "owner", "is_featured", "member_count"]
+        if field in forbidden_fields or not self.checkAccessRights(uid, id, "edit"):
             raise HTTPError(self.response, 403, "forbidden")
 
         if property == "channel":
@@ -1468,10 +1567,14 @@ class Disclone(Server):
                 if self.db.getFilters("role_attribution", ["account", "=", targetId, "and", "role", "=", value, "and", "server", "=", id]):
                     raise HTTPError(self.response, 403, "already attributed")
 
-                id = self.db.insertDict("role_attribution", {"account": targetId, "role": value, "server":id}, getId=True)
+                self.db.insertDict("role_attribution", {"account": targetId, "role": value, "server":id}, getId=True)
+                # Invalidate admin cache as role attribution might have changed admin rights
+                self.invalidateAdminCache()
                 return str(id)
 
             self.db.edit("role", targetId, field, value)
+            # Invalidate admin cache as role permissions might have changed
+            self.invalidateAdminCache()
         elif property == "name":
             self.db.edit("server", id, property, value)
         elif property == "pfp":
@@ -1488,8 +1591,9 @@ class Disclone(Server):
             # Parse tags as JSON array
             tags = json.loads(value) if isinstance(value, str) else value
             self.db.edit("server", id, "tags", json.dumps(tags))
-        elif property == "language":
-            self.db.edit("server", id, "language", value)
+        elif property == "languages":
+            languages = json.loads(value) if isinstance(value, str) else value
+            self.db.edit("server", id, "languages", json.dumps(languages))
         elif property == "description":
             self.db.edit("server", id, "description", value)
 

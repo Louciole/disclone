@@ -1,21 +1,37 @@
 <div class="server-card" data-server-id="${element.id}">
     <div class="server-card-header">
         ${element.is_featured ? '<div class="featured-badge">⭐ Mis en avant</div>' : ''}
+        ${global.user?.isAdmin ? `
+            <div class="admin-feature-toggle ${element.is_featured ? 'featured' : ''}"
+                 onclick="toggleServerFeatured(${element.id}, ${!element.is_featured})"
+                 title="${element.is_featured ? 'Retirer de la mise en avant' : 'Mettre en avant'}">
+                <img src="/static/icons/material/${element.is_featured ? 'flag' : 'flag_outline'}.svg" alt="Feature Icon" class="icon-small" style="width: 16px; height: 16px;">
+            </div>
+        ` : ''}
     </div>
     <div class="server-card-icon">
-        ${element?.pfp ? '<img src="/static/attachments/' + element.pfp + '">' : '<div class="server-placeholder">' + getSlug(element.name) + '</div>'}
+        ${element?.pfp ? '<img src="/static/attachments/' + element.pfp + '" alt="' + element.name + '">' : '<div class="server-placeholder">' + getSlug(element.name) + '</div>'}
     </div>
     <div class="server-card-info">
         <h3>${element.name}</h3>
         <p class="server-description">${element.description || 'Aucune description'}</p>
         <div class="server-stats">
             <span class="stat">
-                <img src="/static/icons/material/people.svg" class="icon-small">
+                <img src="/static/icons/material/people.svg" alt="Members" class="icon-small" style="width: 16px; height: 16px;">
                 ${element.member_count || 0} membres
             </span>
-            <span class="stat language-badge">${element.language || 'en'}</span>
+            ${(() => {
+                const languages = typeof element.languages === 'string' ? JSON.parse(element.languages || '[]') : (element.languages || []);
+                if (languages.length === 0) return '';
+                const getLabel = window.getLanguageLabel || ((code) => code);
+                return '<span class="stat language-badges">' + languages.map(lang => getLabel(lang)).join(' ') + '</span>';
+            })()}
         </div>
-        ${element.tags && element.tags.length > 0 ? '<div class="server-tags">' + (typeof element.tags === 'string' ? JSON.parse(element.tags) : element.tags).map(tag => '<span class="tag">' + tag + '</span>').join('') + '</div>' : ''}
+        ${(() => {
+            const tags = typeof element.tags === 'string' ? JSON.parse(element.tags || '[]') : (element.tags || []);
+            if (tags.length === 0) return '';
+            return '<div class="server-tags">' + tags.map(tag => '<span class="tag">' + tag + '</span>').join('') + '</div>';
+        })()}
     </div>
     <div class="server-card-actions">
         ${element.is_joined

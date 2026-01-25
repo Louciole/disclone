@@ -1,14 +1,13 @@
 import {xhr} from "./framework/templating.mjs";
-import global from "./framework/global.mjs";
 import {setElement} from "./framework/vesta.mjs";
-import {loadServer} from "./crud.mjs";
 
-let discoverServersCache = null;
-let currentFilters = {
-    search: '',
-    language: '',
-    tags: []
-};
+// Initialize discover state
+if (!global.discover) {
+    setElement('global.discover', {
+        search: { text: '', languages: [], tags: [] },
+        servers: { featured: [], regular: [] }
+    });
+}
 
 function openDiscoverServers() {
     const menu = document.getElementById('discover-servers-menu');
@@ -27,15 +26,202 @@ function closeDiscoverServers() {
 }
 window.closeDiscoverServers = closeDiscoverServers;
 
+// Render active filter badges
+function renderActiveBadges() {
+    const container = document.getElementById('discover-active-filters');
+    if (!container) return;
+
+    const search = global.discover?.search || { text: '', languages: [], tags: [] };
+
+    if (search.languages.length === 0 && search.tags.length === 0) {
+        container.innerHTML = '';
+        return;
+    }
+
+    let html = '<div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">';
+
+    // Language badges
+    search.languages.forEach(lang => {
+        const label = window.getLanguageLabel ? window.getLanguageLabel(lang) : lang;
+        html += `<button class="filter-badge lang-badge" onclick="removeLanguageFromSearch('${lang}')" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.8rem; background: var(--blue); color: white; border: none; border-radius: 16px; cursor: pointer; font-size: 0.9rem;">
+            ${label} ×
+        </button>`;
+    });
+
+    // Tag badges
+    search.tags.forEach(tag => {
+        html += `<button class="filter-badge tag-badge" onclick="removeTagFromSearch('${tag}')" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.8rem; background: var(--green); color: white; border: none; border-radius: 16px; cursor: pointer; font-size: 0.9rem;">
+            🏷️ ${tag} ×
+        </button>`;
+    });
+
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+// Render server cards
+function renderServers() {
+    const container = document.getElementById('discover-content');
+    if (!container) return;
+
+    const data = global.discover?.servers || { featured: [], regular: [] };
+
+    console.log('🔍 Rendering servers');
+    console.log('  - featured:', data.featured?.length || 0);
+    console.log('  - regular:', data.regular?.length || 0);
+
+    let html = '';
+
+    // Featured servers section
+    if (data.featured && data.featured.length > 0) {
+        console.log('  ⭐ Rendering featured servers...');
+        html += '<div class="discover-section">';
+        html += '<h2>Serveurs mis en avant</h2>';
+        html += '<div class="servers-grid">';
+        html += fillWith('discover-server-card', data.featured);
+        html += '</div>';
+        html += '</div>';
+    }
+
+    // Regular servers section
+    if (data.regular && data.regular.length > 0) {
+        console.log('  📋 Rendering regular servers...');
+        html += '<div class="discover-section">';
+        html += '<h2>Tous les serveurs</h2>';
+        html += '<div class="servers-grid">';
+        html += fillWith('discover-server-card', data.regular);
+        html += '</div>';
+        html += '</div>';
+    }
+
+    // No results message
+    if (data.featured.length === 0 && data.regular.length === 0) {
+        console.log('  ℹ️ No servers found');
+        html += '<div style="text-align: center; padding: 3rem; color: var(--text2); font-size: 1.1rem;">';
+        html += '<p>Aucun serveur trouvé avec ces critères de recherche.</p>';
+        html += '</div>';
+    }
+
+    console.log('  ✅ Setting HTML, length:', html.length);
+    container.innerHTML = html;
+}
+
+// Parse search query with lang: and tag: syntax
+function parseSearchQuery(query) {
+    const result = {
+        text: '',
+        languages: [],
+        tags: []
+    };
+
+    if (!query) return result;
+
+    // Extract lang:...
+    const langRegex = /lang:([a-z,]+)/gi;
+    let match;
+    while ((match = langRegex.exec(query)) !== null) {
+        const langs = match[1].split(',').map(l => l.trim()).filter(l => l);
+        result.languages.push(...langs);
+    }
+    query = query.replace(langRegex, '').trim();
+
+    // Extract tag:...
+    const tagRegex = /tag:([a-z0-9,]+)/gi;
+    while ((match = tagRegex.exec(query)) !== null) {
+        const tags = match[1].split(',').map(t => t.trim()).filter(t => t);
+        result.tags.push(...tags);
+    }
+    query = query.replace(tagRegex, '').trim();
+
+    result.text = query;
+    return result;
+}
+window.parseSearchQuery = parseSearchQuery;
+
+// Build search query from state
+function buildSearchQuery() {
+    const search = global.discover?.search || { text: '', languages: [], tags: [] };
+    let query = search.text || '';
+
+    if (search.languages && search.languages.length > 0) {
+        query += ` lang:${search.languages.join(',')}`;
+    }
+
+    if (search.tags && search.tags.length > 0) {
+        query += ` tag:${search.tags.join(',')}`;
+    }
+
+    return query.trim();
+}
+window.buildSearchQuery = buildSearchQuery;
+
+// Handle smart search input
+function handleSmartSearch(event) {
+    const query = event.target.value;
+    const parsed = parseSearchQuery(query);
+
+    // Update state
+    setElement('global.discover.search', parsed);
+
+    // Update UI
+    renderActiveBadges();
+
+    // Reload servers with new filters
+    loadDiscoverServers();
+}
+window.handleSmartSearch = handleSmartSearch;
+
+// Remove language from search
+function removeLanguageFromSearch(lang) {
+    const search = global.discover?.search || { text: '', languages: [], tags: [] };
+    const index = search.languages.indexOf(lang);
+    if (index > -1) {
+        search.languages.splice(index, 1);
+    }
+    setElement('global.discover.search', search);
+
+    // Update input value
+    const input = document.getElementById('discover-search-smart');
+    if (input) {
+        input.value = buildSearchQuery();
+    }
+
+    // Update UI
+    renderActiveBadges();
+    loadDiscoverServers();
+}
+window.removeLanguageFromSearch = removeLanguageFromSearch;
+
+// Remove tag from search
+function removeTagFromSearch(tag) {
+    const search = global.discover?.search || { text: '', languages: [], tags: [] };
+    const index = search.tags.indexOf(tag);
+    if (index > -1) {
+        search.tags.splice(index, 1);
+    }
+    setElement('global.discover.search', search);
+
+    // Update input value
+    const input = document.getElementById('discover-search-smart');
+    if (input) {
+        input.value = buildSearchQuery();
+    }
+
+    // Update UI
+    renderActiveBadges();
+    loadDiscoverServers();
+}
+window.removeTagFromSearch = removeTagFromSearch;
+
 function loadDiscoverServers() {
-    const { search, language, tags } = currentFilters;
+    const search = global.discover?.search || { text: '', languages: [], tags: [] };
 
     let url = 'getDiscoverableServers';
     const params = [];
 
-    if (search) params.push(`search=${encodeURIComponent(search)}`);
-    if (language) params.push(`language=${encodeURIComponent(language)}`);
-    if (tags.length > 0) params.push(`tags=${encodeURIComponent(JSON.stringify(tags))}`);
+    if (search.text) params.push(`search=${encodeURIComponent(search.text)}`);
+    if (search.languages.length > 0) params.push(`languages=${encodeURIComponent(JSON.stringify(search.languages))}`);
+    if (search.tags.length > 0) params.push(`tags=${encodeURIComponent(JSON.stringify(search.tags))}`);
 
     if (params.length > 0) {
         url += '?' + params.join('&');
@@ -44,143 +230,56 @@ function loadDiscoverServers() {
     const onload = function() {
         try {
             const data = JSON.parse(this.responseText);
-            discoverServersCache = data;
-            renderDiscoverServers(data);
+            console.log('📡 Backend response:', data);
+            // Update state
+            setElement('global.discover.servers', data);
+            // Render servers
+            renderServers();
         } catch (e) {
             console.error('Error loading discoverable servers:', e);
         }
     };
 
     xhr(url, onload, "GET", false);
-
-    // Load available tags
-    loadAvailableTags();
 }
 
-function renderDiscoverServers(data) {
-    const featuredList = document.getElementById('featured-servers-list');
-    const allList = document.getElementById('all-servers-list');
-    const featuredSection = document.getElementById('featured-servers-section');
-    const noResults = document.getElementById('no-results');
-
-    // Clear lists
-    featuredList.innerHTML = '';
-    allList.innerHTML = '';
-
-    // Show/hide featured section
-    if (data.featured && data.featured.length > 0) {
-        featuredSection.style.display = 'block';
-        data.featured.forEach(server => {
-            featuredList.innerHTML += renderServerCard(server);
-        });
-    } else {
-        featuredSection.style.display = 'none';
-    }
-
-    // Render all servers
-    if (data.regular && data.regular.length > 0) {
-        data.regular.forEach(server => {
-            allList.innerHTML += renderServerCard(server);
-        });
-        noResults.style.display = 'none';
-    } else if (data.featured.length === 0) {
-        noResults.style.display = 'block';
-    }
-}
-
-function renderServerCard(server) {
-    // Parse tags if string
-    let tags = server.tags || [];
-    if (typeof tags === 'string') {
+function toggleServerFeatured(serverId, featured) {
+    const onload = function() {
         try {
-            tags = JSON.parse(tags);
+            const response = JSON.parse(this.responseText);
+            if (response.success) {
+                // Reload the server list to reflect changes
+                loadDiscoverServers();
+            }
         } catch (e) {
-            tags = [];
+            console.error('Error toggling featured status:', e);
+            alert('Erreur lors de la mise à jour du serveur.');
         }
-    }
+    };
 
-    const tagsHtml = tags.length > 0
-        ? '<div class="server-tags">' + tags.map(tag => `<span class="tag">${tag}</span>`).join('') + '</div>'
-        : '';
+    const onerror = function() {
+        console.error('Failed to toggle featured status');
+        alert('Erreur: Vous devez être administrateur pour mettre en avant des serveurs.');
+    };
 
-    const featuredBadge = server.is_featured
-        ? '<div class="featured-badge">⭐ Mis en avant</div>'
-        : '';
-
-    const icon = server.pfp
-        ? `<img src="/static/attachments/${server.pfp}" alt="${server.name}">`
-        : `<div class="server-placeholder">${getSlug(server.name)}</div>`;
-
-    const joinButton = server.is_joined
-        ? '<button class="btn grey" disabled>Déjà membre</button>'
-        : `<button class="btn blue" onclick="joinDiscoverServer(${server.id})">Rejoindre</button>`;
-
-    return `
-        <div class="server-card" data-server-id="${server.id}">
-            <div class="server-card-header">
-                ${featuredBadge}
-            </div>
-            <div class="server-card-icon">
-                ${icon}
-            </div>
-            <div class="server-card-info">
-                <h3>${server.name}</h3>
-                <p class="server-description">${server.description || 'Aucune description'}</p>
-                <div class="server-stats">
-                    <span class="stat">
-                        <img src="/static/icons/material/people.svg" alt="Members" class="icon-small" style="width: 16px; height: 16px;">
-                        ${server.member_count || 0} membres
-                    </span>
-                    <span class="stat language-badge">${server.language || 'en'}</span>
-                </div>
-                ${tagsHtml}
-            </div>
-            <div class="server-card-actions">
-                ${joinButton}
-            </div>
-        </div>
-    `;
+    xhr(`setServerFeatured?server_id=${serverId}&featured=${featured}`, onload, "POST", false, onerror);
 }
-
-function filterDiscoverServers() {
-    const searchInput = document.getElementById('discover-search');
-    const languageSelect = document.getElementById('discover-language');
-
-    currentFilters.search = searchInput ? searchInput.value : '';
-    currentFilters.language = languageSelect ? languageSelect.value : '';
-
-    loadDiscoverServers();
-}
-window.filterDiscoverServers = filterDiscoverServers;
+window.toggleServerFeatured = toggleServerFeatured;
 
 function joinDiscoverServer(serverId) {
     const onload = function() {
         try {
             const response = JSON.parse(this.responseText);
             if (response.success) {
-                // Reload server list
-                const server = discoverServersCache.regular.find(s => s.id === serverId) ||
-                              discoverServersCache.featured.find(s => s.id === serverId);
+                // Reload server list to update join status
+                loadDiscoverServers();
 
-                if (server) {
-                    // Add to user's servers
-                    setElement(`global.servers[${serverId}]`, server);
-
-                    // Update button
-                    const card = document.querySelector(`[data-server-id="${serverId}"]`);
-                    if (card) {
-                        const actionsDiv = card.querySelector('.server-card-actions');
-                        if (actionsDiv) {
-                            actionsDiv.innerHTML = '<button class="btn grey" disabled>Déjà membre</button>';
-                        }
-                    }
-
-                    // Show notification
-                    console.log(`Successfully joined server: ${server.name}`);
-                }
+                // Show notification
+                console.log(`Successfully joined server ID: ${serverId}`);
             }
         } catch (e) {
             console.error('Error joining server:', e);
+            alert('Erreur lors du traitement de la réponse.');
         }
     };
 
@@ -189,71 +288,9 @@ function joinDiscoverServer(serverId) {
         alert('Impossible de rejoindre ce serveur. Veuillez réessayer.');
     };
 
-    const request = new XMLHttpRequest();
-    request.open('POST', `joinCommunityServer?server_id=${serverId}`, true);
-    request.onload = onload;
-    request.onerror = onerror;
-    request.send();
+    xhr(`joinCommunityServer?server_id=${serverId}`, onload, "POST", false, onerror);
 }
 window.joinDiscoverServer = joinDiscoverServer;
 
-function loadAvailableTags() {
-    const onload = function() {
-        try {
-            const tags = JSON.parse(this.responseText);
-            renderTagsFilter(tags);
-        } catch (e) {
-            console.error('Error loading tags:', e);
-        }
-    };
-
-    xhr('getAvailableTags', onload, "GET", false);
-}
-
-function renderTagsFilter(tags) {
-    const container = document.getElementById('discover-tags-filter');
-    if (!container || tags.length === 0) return;
-
-    container.innerHTML = '<div class="tags-filter-label">Filtrer par tags:</div>';
-    const tagsContainer = document.createElement('div');
-    tagsContainer.className = 'tags-filter-options';
-
-    tags.forEach(tag => {
-        const tagButton = document.createElement('button');
-        tagButton.className = 'tag-filter-btn';
-        tagButton.textContent = tag;
-        tagButton.onclick = () => toggleTagFilter(tag, tagButton);
-        tagsContainer.appendChild(tagButton);
-    });
-
-    container.appendChild(tagsContainer);
-}
-
-function toggleTagFilter(tag, button) {
-    const index = currentFilters.tags.indexOf(tag);
-
-    if (index > -1) {
-        // Remove tag
-        currentFilters.tags.splice(index, 1);
-        button.classList.remove('active');
-    } else {
-        // Add tag
-        currentFilters.tags.push(tag);
-        button.classList.add('active');
-    }
-
-    loadDiscoverServers();
-}
-
-function getSlug(name) {
-    const words = name.split(' ');
-    let i = 0;
-    let slug = '';
-    while (i < words.length && i < 2) {
-        slug = slug + words[i][0];
-        i++;
-    }
-    return slug.toUpperCase();
-}
 
 export { openDiscoverServers, closeDiscoverServers, joinDiscoverServer };

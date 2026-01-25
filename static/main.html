@@ -40,14 +40,14 @@
         <div id="servers" class="global-servers" data-default-class="global-servers" data-content="()=&gt;fillWith('server-icon', global.servers)">
         </div>
         <div class="container">
+            <div id="new-server" class="item action" onclick="openMenu('create-server')">+</div>
+            <span class="tooltip left">Ajouter un serveur</span>
+        </div>
+        <div class="container">
             <div id="discover-servers" class="item action" onclick="openDiscoverServers()">
                 <img src="/static/icons/material/compass.svg" alt="Compass icon" class="icon" style="width: 24px; height: 24px; filter: invert(0.7);">
             </div>
             <span class="tooltip left">Découvrir des serveurs</span>
-        </div>
-        <div class="container">
-            <div id="new-server" class="item action" onclick="openMenu('create-server')">+</div>
-            <span class="tooltip left">Ajouter un serveur</span>
         </div>
     </section>
     <section id="sec-column">
@@ -89,44 +89,41 @@
             </div>
         </div>
     </section>
-
     <!-- Discover Servers Menu -->
-    <section class="fullscreen-menu" id="discover-servers-menu" style="display:none">
+    <section class="fullscreen-menu" id="discover-servers-menu" style="display: none">
         <div class="discover-header">
             <div class="discover-title">
                 <h1>Découvrir des serveurs</h1>
                 <button class="close-btn" onclick="closeDiscoverServers()">✕</button>
             </div>
-            <div class="discover-filters">
-                <input type="text" id="discover-search" placeholder="Rechercher des serveurs..." oninput="filterDiscoverServers()">
-                <select id="discover-language" onchange="filterDiscoverServers()">
-                    <option value="">Toutes les langues</option>
-                    <option value="fr">Français</option>
-                    <option value="en">English</option>
-                    <option value="es">Español</option>
-                    <option value="de">Deutsch</option>
-                    <option value="it">Italiano</option>
-                    <option value="pt">Português</option>
-                </select>
-                <div id="discover-tags-filter"></div>
+
+            <!-- Nouvelle barre de recherche intelligente -->
+            <div class="smart-search-container" style="margin-top: 1rem;">
+                <div class="search-input-wrapper" style="position: relative;">
+                    <input
+                        type="text"
+                        id="discover-search-smart"
+                        placeholder="Rechercher... (ex: minecraft lang:fr tag:gaming)"
+                        oninput="handleSmartSearch(event)"
+                        style="width: 100%; padding: 0.75rem; background: var(--bg4); border: 2px solid var(--bg5); color: var(--text); border-radius: 8px; font-size: 1rem;"
+                    />
+                </div>
+
+                <!-- Filtres actifs -->
+                <div id="discover-active-filters" style="margin-top: 0.75rem;"></div>
+
+                <!-- Aide syntaxe -->
+                <div class="search-help" style="margin-top: 0.5rem; padding: 0.5rem; background: var(--bg3); border-radius: 4px; font-size: 0.85rem; color: var(--text2);">
+                    <strong>💡 Syntaxe:</strong>
+                    <code style="background: var(--bg4); padding: 0.2rem 0.4rem; border-radius: 3px; margin: 0 0.25rem;">lang:fr</code>
+                    <code style="background: var(--bg4); padding: 0.2rem 0.4rem; border-radius: 3px; margin: 0 0.25rem;">tag:gaming</code>
+                    ou combinez: <code style="background: var(--bg4); padding: 0.2rem 0.4rem; border-radius: 3px; margin: 0 0.25rem;">minecraft lang:fr tag:gaming</code>
+                </div>
             </div>
         </div>
 
-        <div class="discover-content">
-            <div class="discover-section" id="featured-servers-section" style="display:none">
-                <h2>Serveurs mis en avant</h2>
-                <div id="featured-servers-list" class="servers-grid"></div>
-            </div>
-
-            <div class="discover-section">
-                <h2>Tous les serveurs</h2>
-                <div id="all-servers-list" class="servers-grid"></div>
-            </div>
-
-            <div id="no-results" style="display:none; text-align: center; padding: 2rem;">
-                <p>Aucun serveur trouvé avec ces critères de recherche.</p>
-            </div>
-        </div>
+        <!-- Contenu des serveurs -->
+        <div class="discover-content" id="discover-content"></div>
     </section>
 </body>
 </html>

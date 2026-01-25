@@ -2,38 +2,120 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title> Carbonlab | 404 🫠</title>
     <link href="/static/404.css" rel="stylesheet">
     <link rel="icon" type="image/x-icon" href="/static/images/favicon.ico">
     <meta name="viewport" id="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=10.0,minimal-ui">
 </head>
-<body onload="ready()">
-<div class="wrapper">
-    <h1>404</h1>
-    <h2>Nothing here</h2>
-    <div class=btn onclick="window.location.href='/'">Go back</div>
+<body>
+
+<div id="ui-layer">
+    <header>
+        <div class="status">HTTP_ERROR_CODE: 404</div>
+        <div class="status">RELOCATING_RESOURCE...</div>
+    </header>
+
+    <main>
+        <div class="huge-title">404</div>
+    </main>
+
+    <footer>
+        <div>
+            <a href="/" class="nav-link">BACK_TO_HOME</a>
+        </div>
+        <div class="stats-box">
+            BOUNCES: <span id="bounce-count">000</span><br>
+            X_POS: <span id="pos-x">0</span> Y_POS: <span id="pos-y">0</span>
+        </div>
+    </footer>
 </div>
-<div id="layer"></div>
-</body>
-</html>
+
+<div id="dvd-container">
+    <svg id="dvd-svg" viewBox="0 0 86 52" xmlns="http://www.w3.org/2000/svg">
+        <g fill="currentColor">
+            <path d="M4.44055e-05 29.5909L1.09095 23.0114L19.1421 0.477261H24.9887L23.5057 9.40908H20.1137L9.5455 22.6704L9.47732 22.9432H30.2046L29.0966 29.5909H4.44055e-05ZM15.9035 35.3864L17.216 27.5795L17.8637 24.6989L21.8694 0.477261H29.7614L23.966 35.3864H15.9035ZM41.1236 36.2386C38.0667 36.2386 35.5497 35.517 33.5724 34.0739C31.5952 32.6193 30.2372 30.5341 29.4986 27.8182C28.7599 25.0909 28.7202 21.8125 29.3792 17.9829C30.027 14.1534 31.169 10.9034 32.8054 8.23294C34.4417 5.55112 36.4758 3.51135 38.9077 2.11363C41.3395 0.704534 44.0724 -1.23978e-05 47.1065 -1.23978e-05C50.152 -1.23978e-05 52.6577 0.704534 54.6236 2.11363C56.6008 3.51135 57.9645 5.55112 58.7145 8.23294C59.4645 10.9034 59.5213 14.1534 58.8849 17.9829C58.2486 21.8125 57.1065 25.0909 55.4588 27.8182C53.8224 30.5454 51.7827 32.6307 49.3395 34.0739C46.9077 35.517 44.169 36.2386 41.1236 36.2386ZM42.2827 29.3352C44.1008 29.3352 45.7145 28.4034 47.1236 26.5398C48.5327 24.6761 49.5611 21.8239 50.2088 17.9829C50.6406 15.4716 50.7372 13.392 50.4986 11.7443C50.2713 10.0966 49.7656 8.86931 48.9815 8.06249C48.2088 7.25567 47.2202 6.85226 46.0156 6.85226C44.1974 6.85226 42.5724 7.76703 41.1406 9.59658C39.7088 11.4148 38.6747 14.2102 38.0383 17.9829C37.6179 20.5511 37.527 22.6761 37.7656 24.3579C38.0042 26.0284 38.5156 27.2784 39.2997 28.1079C40.0838 28.9261 41.0781 29.3352 42.2827 29.3352ZM55.605 29.5909L56.696 23.0114L74.7471 0.477261H80.5937L79.1107 9.40908H75.7187L65.1505 22.6704L65.0823 22.9432H85.8096L84.7016 29.5909H55.605ZM71.5085 35.3864L72.821 27.5795L73.4687 24.6989L77.4744 0.477261H85.3664L79.571 35.3864H71.5085Z" />
+            <path fill-rule="evenodd" d="M0,42 C0,37 19,33 43,33 C67,33 86,37 86,42 C86,47 67,51 43,51 C19,51 0,47 0,42 Z M32,42 C32,40 37,38 43,38 C49,38 54,40 54,42 C54,44 49,46 43,46 C37,46 32,44 32,42 Z" />
+        </g>
+    </svg>
+</div>
 
 <script>
-    function makeParticles(layer) {
-        const N = 64
-        const WIDTH = window.innerWidth
-        let particles = [];
+    (function() {
+        const container = document.getElementById('dvd-container');
+        const svg = document.getElementById('dvd-svg');
+        const bounceSpan = document.getElementById('bounce-count');
+        const posX = document.getElementById('pos-x');
+        const posY = document.getElementById('pos-y');
 
-        for (let i = 0; i < N; i += 1) {
-            particles.push(document.createElement('div'))
-            particles[i].className = "leaf"
-            particles[i].style.left = (Math.random() * WIDTH*1.2).toString() + "px"
-            particles[i].style.animation = `falling ${Math.random()*5+5}s cubic-bezier(0.69, 0.58, 0.65, 1.01) ${Math.random()*5}s infinite`
-            layer.appendChild(particles[i])
+        const LOGO_WIDTH = 160;
+        const LOGO_HEIGHT = 96;
+
+        let x = Math.random() * (window.innerWidth - LOGO_WIDTH);
+        let y = Math.random() * (window.innerHeight - LOGO_HEIGHT);
+        let xSpeed = 2.4;
+        let ySpeed = 2.4;
+        let bounces = 0;
+
+        const colors = [
+            '#FFFFFF',
+            '#FF3E00',
+            '#00FF88',
+            '#FF00FF',
+            '#FFFF00',
+            '#00CCFF'
+        ];
+
+        function changeColor() {
+            const newColor = colors[Math.floor(Math.random() * colors.length)];
+            svg.style.color = newColor;
+            bounces++;
+            if (bounceSpan) bounceSpan.innerText = bounces.toString().padStart(3, '0');
         }
-    }
 
-    function ready() {
-        const layer = document.getElementById('layer');
-        makeParticles(layer);
-    }
+        function animate() {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            const dvdWidth = container.offsetWidth;
+            const dvdHeight = container.offsetHeight;
+
+            x += xSpeed;
+            y += ySpeed;
+
+            let hit = false;
+
+            if (x + dvdWidth >= width || x <= 0) {
+                xSpeed *= -1;
+                x = x <= 0 ? 0 : width - dvdWidth;
+                hit = true;
+            }
+
+            if (y + dvdHeight >= height || y <= 0) {
+                ySpeed *= -1;
+                y = y <= 0 ? 0 : height - dvdHeight;
+                hit = true;
+            }
+
+            if (hit) {
+                changeColor();
+            }
+
+            container.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+
+            if (posX) posX.innerText = Math.round(x);
+            if (posY) posY.innerText = Math.round(y);
+
+            requestAnimationFrame(animate);
+        }
+
+        window.addEventListener('resize', () => {
+            x = Math.min(x, window.innerWidth - container.offsetWidth);
+            y = Math.min(y, window.innerHeight - container.offsetHeight);
+        });
+
+        svg.style.color = colors[Math.floor(Math.random() * colors.length)];
+        animate();
+    })();
 </script>
+</body>
+</html>

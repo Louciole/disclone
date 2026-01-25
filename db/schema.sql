@@ -25,7 +25,7 @@ create table if not exists server (
     pfp text,
     is_community boolean DEFAULT false,
     tags jsonb DEFAULT '[]',
-    language varchar(10) DEFAULT 'en',
+    languages jsonb DEFAULT '[]',
     is_featured boolean DEFAULT false,
     description text,
     member_count integer DEFAULT 0
@@ -41,6 +41,26 @@ drop CONSTRAINT if exists SERVACC_SERV_CONSTRAINT;
 
 ALTER TABLE accessServer
 ADD CONSTRAINT SERVACC_SERV_CONSTRAINT FOREIGN KEY (server) REFERENCES server (id) ON UPDATE CASCADE;
+
+-- Trigger function to update server member_count
+CREATE OR REPLACE FUNCTION update_server_member_count()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF (TG_OP = 'INSERT') THEN
+        UPDATE server SET member_count = member_count + 1 WHERE id = NEW.server;
+    ELSIF (TG_OP = 'DELETE') THEN
+        UPDATE server SET member_count = member_count - 1 WHERE id = OLD.server;
+    END IF;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create trigger on accessServer for member_count
+DROP TRIGGER IF EXISTS update_member_count_trigger ON accessServer;
+CREATE TRIGGER update_member_count_trigger
+AFTER INSERT OR DELETE ON accessServer
+FOR EACH ROW
+EXECUTE FUNCTION update_server_member_count();
 
 create table if not exists server_cat (
     id bigserial NOT NULL PRIMARY KEY,

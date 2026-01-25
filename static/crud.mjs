@@ -699,6 +699,18 @@ export function loadServer(id){
         console.log(this.responseText)
         const resp = JSON.parse(this.responseText)
         const serv = lookFor(id,global.servers)
+
+        // Preserve community server properties (languages, tags, description, etc.)
+        // These are loaded by getUserServers but not included in getServContent
+        const preservedProps = {
+            languages: serv.languages,
+            tags: serv.tags,
+            description: serv.description,
+            is_community: serv.is_community,
+            is_featured: serv.is_featured,
+            member_count: serv.member_count
+        };
+
         if (resp.op) {
             serv.op = resp.op
         }
@@ -720,8 +732,19 @@ export function loadServer(id){
 
         serv["type"]= resp.type
 
+        // Restore preserved properties
+        Object.assign(serv, preservedProps);
+
         loadUsers(userList)
         orderServDirs(serv)
+
+        // Déclencher la réactivité Vesta en mettant à jour le global state
+        setElement(`global.servers[${id}]`, serv);
+
+        // Si c'est le serveur actuel, mettre à jour currentServer pour déclencher Subscribe
+        if (global.state.currentServer?.id === id) {
+            setElement('global.state.currentServer', serv);
+        }
     };
     xhr("getServContent?servID=".concat(id.toString()),onload,"GET",false)
 }
@@ -1077,48 +1100,58 @@ function toggleCommunityServer() {
             if (isCommunity) {
                 // Initialize tags if needed
                 if (!global.state.currentServer.tags) {
-                    global.state.currentServer.tags = [];
+                    setElement('global.state.currentServer.tags', []);
                 }
-                renderServerTags();
             }
         },
         "POST", false);
 }
 window.toggleCommunityServer = toggleCommunityServer;
 
-function updateLanguage() {
-    const select = document.getElementById('language-select');
+function addLanguage() {
+    const select = document.getElementById('language-add-select');
     const language = select.value;
 
-    xhr(`editServer?id=${global.state.currentServer.id}&property=language&value=${language}`,
+    if (!language) return;
+
+    const languages = global.state.currentServer?.languages || [];
+    const languagesList = typeof languages === 'string' ? JSON.parse(languages) : languages;
+
+    if (languagesList.includes(language)) {
+        alert('Cette langue est déjà ajoutée.');
+        select.value = '';
+        return;
+    }
+
+    languagesList.push(language);
+
+    xhr(`editServer?id=${global.state.currentServer.id}&property=languages&value=${encodeURIComponent(JSON.stringify(languagesList))}`,
         () => {
-            global.state.currentServer.language = language;
+            // Utiliser setElement pour déclencher la réactivité Vesta
+            setElement('global.state.currentServer.languages', languagesList);
+            select.value = '';
         },
         "POST", false);
 }
-window.updateLanguage = updateLanguage;
+window.addLanguage = addLanguage;
 
-function renderServerTags() {
-    const container = document.getElementById('server-tags-container');
-    if (!container) return;
+function removeLanguage(language) {
+    const languages = global.state.currentServer?.languages || [];
+    const languagesList = typeof languages === 'string' ? JSON.parse(languages) : languages;
 
-    const tags = global.state.currentServer?.tags || [];
-    const tagsList = typeof tags === 'string' ? JSON.parse(tags) : tags;
+    const index = languagesList.indexOf(language);
+    if (index > -1) {
+        languagesList.splice(index, 1);
+    }
 
-    container.innerHTML = '';
-
-    tagsList.forEach((tag, index) => {
-        const tagElement = document.createElement('div');
-        tagElement.className = 'server-tag-item';
-        tagElement.style.cssText = 'display: flex; align-items: center; gap: 0.5rem; background: var(--bg4); padding: 0.4rem 0.8rem; border-radius: 8px;';
-        tagElement.innerHTML = `
-            <span style="color: var(--text);">${tag}</span>
-            <button onclick="removeServerTag(${index})" style="background: transparent; border: none; color: var(--text2); cursor: pointer; padding: 0; font-size: 1.2rem; line-height: 1;">×</button>
-        `;
-        container.appendChild(tagElement);
-    });
+    xhr(`editServer?id=${global.state.currentServer.id}&property=languages&value=${encodeURIComponent(JSON.stringify(languagesList))}`,
+        () => {
+            // Utiliser setElement pour déclencher la réactivité Vesta
+            setElement('global.state.currentServer.languages', languagesList);
+        },
+        "POST", false);
 }
-window.renderServerTags = renderServerTags;
+window.removeLanguage = removeLanguage;
 
 function addServerTag() {
     const input = document.getElementById('new-tag-input');
@@ -1148,8 +1181,8 @@ function addServerTag() {
 
     xhr(`editServer?id=${global.state.currentServer.id}&property=tags&value=${encodeURIComponent(JSON.stringify(tagsList))}`,
         () => {
-            global.state.currentServer.tags = tagsList;
-            renderServerTags();
+            // Utiliser setElement pour déclencher la réactivité Vesta
+            setElement('global.state.currentServer.tags', tagsList);
             input.value = '';
         },
         "POST", false);
@@ -1164,8 +1197,8 @@ function removeServerTag(index) {
 
     xhr(`editServer?id=${global.state.currentServer.id}&property=tags&value=${encodeURIComponent(JSON.stringify(tagsList))}`,
         () => {
-            global.state.currentServer.tags = tagsList;
-            renderServerTags();
+            // Utiliser setElement pour déclencher la réactivité Vesta
+            setElement('global.state.currentServer.tags', tagsList);
         },
         "POST", false);
 }
