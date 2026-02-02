@@ -717,7 +717,8 @@ export function loadServer(id){
         const dashboards = resp.dashboards ? resp.dashboards : []
         const rooms = resp.rooms ? resp.rooms : []
         const drives = resp.drives ? resp.drives : []
-        serv["dirs"] = {"channels" : resp.channels, "dashboards" : dashboards , "rooms" : rooms, "drives" : drives, "cat" : resp.cat}
+        const notes = resp.notes ? resp.notes : []
+        serv["dirs"] = {"channels" : resp.channels, "dashboards" : dashboards , "rooms" : rooms, "drives" : drives, "notes": notes, "cat" : resp.cat}
 
         serv["members"] = {}
         let userList = []
@@ -806,6 +807,14 @@ export function orderServDirs(serv){
             ordered.splice(firstGreater(ordered,chan.place), 0, chan);
         }
     }
+    for (let chan of serv.dirs.notes){
+        chan.type = "note"
+        if (chan.category){
+            lookFor(chan.category,serv.dirs.cat).notes.push(chan)
+        }else{
+            ordered.splice(firstGreater(ordered,chan.place), 0, chan);
+        }
+    }
     console.log("ME ",ordered)
     setElement("global.state.currentServer['displayed-dirs']", ordered)
 }
@@ -838,6 +847,9 @@ function createChan(type = 'textual'){
             } else if (channelTypeStr === 'drive') {
                 newChannel.type = 'drive';
                 global.state.currentServer.dirs.drives.push(newChannel);
+            } else if (channelTypeStr === 'note') {
+                newChannel.type = 'note';
+                global.state.currentServer.dirs.notes.push(newChannel);
             }
 
             // Re-ordonner et mettre à jour l'affichage

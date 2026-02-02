@@ -192,6 +192,23 @@ create table if not exists vocal_channel (
     place float NOT NULL DEFAULT 0.1
 );
 
+create table if not exists notes_channel (
+    id bigserial NOT NULL PRIMARY KEY,
+    name varchar(255) NOT NULL,
+    server integer NOT NULL,
+    category integer,
+    place float NOT NULL DEFAULT 0.1
+);
+
+create table if not exists note_block (
+    id bigserial NOT NULL PRIMARY KEY,
+    channel integer NOT NULL,
+    parent_block integer REFERENCES note_block(id),
+    type varchar(50) NOT NULL,
+    position float NOT NULL DEFAULT 0.1,
+    content text default ''
+);
+
 create table if not exists API_key (
     id bigserial NOT NULL PRIMARY KEY,
     key varchar(64) UNIQUE NOT NULL,

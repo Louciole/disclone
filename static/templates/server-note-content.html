@@ -1,0 +1,17 @@
+<div class="selected-info">
+    <div class="title">
+        <img class="icon" src="/static/icons/material/volume.svg"/>
+        ${Subscribe("global.convs["+global.state.activeConv+"].name", ()=>{return global.convs[global.state.activeConv].name})}
+    </div>
+</div>
+
+${global.state.noteEditor = new NoteEditor()}
+<div class="" style="width: 100%;height: calc(100svh - 3rem);">
+    <div class="editor">
+        <div class="block">
+            <div class="content" contenteditable="true" oninput="global.state.noteEditor.onInput(event)">
+                AAABBBCCC
+            </div>
+        </div>
+    </div>
+</div>

@@ -59,7 +59,7 @@ function goToVocalChannel(id){
 
     if (!global.convs) global.convs = {}
     const room = lookFor(id, global.state.currentServer.dirs.rooms)
-    global.convs[id] = {id: id, name: room ? room.name : "Salon vocal", type: "vocal"}
+    global.convs[id] = {id: id, name: room ? room.name : "Note Channel", type: "note"}
 
     targetElt = document.getElementById("channel".concat(global.state.activeChan))
     targetElt.classList.add("selected")
@@ -67,6 +67,29 @@ function goToVocalChannel(id){
     goTo('content','server-vocal-content',undefined,false)
 }
 window.goToVocalChannel = goToVocalChannel
+
+function goToNoteChannel(id){
+    let targetElt
+    if(global.state.activeChan){
+        targetElt = document.getElementById("channel".concat(global.state.activeChan))
+        targetElt?.classList.remove("selected")
+    }
+
+    global.state.activeChan = "-note-"+id
+
+    if (!global.convs) global.convs = {}
+    const room = lookFor(id, global.state.currentServer.dirs.rooms)
+    global.convs[id] = {id: id, name: room ? room.name : "Salon vocal", type: "vocal"}
+
+    targetElt = document.getElementById("channel".concat(global.state.activeChan))
+    targetElt.classList.add("selected")
+
+
+    import("./workspaces/notes.mjs").then(
+        goTo('content','server-note-content',undefined,false)
+    )
+}
+window.goToNoteChannel = goToNoteChannel
 
 function goToDriveChannel(id){
     let targetElt

@@ -654,6 +654,8 @@ class Disclone(Server):
                 content["channels"] = self.db.getAll("textual_channel", servID,"server")
                 content["rooms"] = self.db.getAll("vocal_channel", servID,"server")
                 content["drives"] = self.db.getAll("drive_channel", servID,"server")
+                content["notes"] = self.db.getAll("notes_channel", servID,"server")
+                # content["whiteboard"] = self.db.getAll("drive_channel", servID,"server")
                 op = self.db.getSomething("op_servs", servID, "server")
                 if op and self.checkAccessRights(uid, servID, "dashboard-read"):
                     content["dashboards"] = self.db.getAll("serv_dashboard", servID, "server")
@@ -1495,6 +1497,9 @@ class Disclone(Server):
                 elif channel_type == "drive":
                     channel_id = self.db.insertDict("drive_channel", {"name": "new storage", "server": id}, getId=True)
                     channel = self.db.getSomething("drive_channel", channel_id)
+                elif channel_type == "note":
+                    channel_id = self.db.insertDict("notes_channel", {"name": "new note", "server": id}, getId=True)
+                    channel = self.db.getSomething("notes_channel", channel_id)
                 else:  # textual par défaut
                     channel_id = self.db.insertDict("textual_channel", {"name": "new channel", "server": id}, getId=True)
                     channel = self.db.getSomething("textual_channel", channel_id)
