@@ -4635,7 +4635,19 @@ input:checked + .slider:before {
 
 .editable-block:empty::before {
     content: attr(data-placeholder);
-    color: #aaa;
+    color: var(--text2bis);
     cursor: text;
+}
+
+.editor .editable-block{
+    outline: none;
+}
+
+.editor .editable-block:empty{
+    display: flex;
+}
+
+.preview-will-be-hidden{
+    color: var(--text2bis);
 }
 

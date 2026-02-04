@@ -39,9 +39,10 @@ class Editor {
                 event.currentTarget.classList.add("note-"+block.type)
                 event.currentTarget.textContent = block.content
             }else{
+                const cursorPosition = this.saveCursorPosition(event.currentTarget);
                 block.content = event.currentTarget.textContent
                 event.currentTarget.innerHTML = MDToPreview(event.currentTarget.textContent)
-                this.putCursorToEnd(event.currentTarget) // TODO put cursor to last position instead of end
+                this.restoreCursorPosition(event.currentTarget, cursorPosition);
             }
         }else{
             const cursorPosition = this.saveCursorPosition(event.currentTarget);
@@ -151,10 +152,10 @@ const blockTypes = {
 }
 
 const initiators = [
-{"type":"heading1", "initiator":"#"},
-{"type":"heading2", "initiator":"##"},
-{"type":"heading3", "initiator":"###"},
-{"type":"small", "initiator":"-#"},
+    {"type":"heading1", "initiator":"#"},
+    {"type":"heading2", "initiator":"##"},
+    {"type":"heading3", "initiator":"###"},
+    {"type":"small", "initiator":"-#"},
 ]
 
 
@@ -182,9 +183,12 @@ class InitiatorParser{
                     return {initiator: this.possibleInitiators[0], content: this.stripContent(this.content.slice(i))}
                 }
                 return {initiator: null, content: ""}
-            } else if (newPossibleInitiators.length === 1 && i + 1 === newPossibleInitiators[0].initiator.length) {
-                // Only return when we've matched the complete initiator
-                return {initiator: newPossibleInitiators[0], content: this.stripContent(this.content.slice(i+1))}
+            }else if (newPossibleInitiators.length === 1){
+                // Check if any of the possible initiators is fully matched
+                    const initiator = newPossibleInitiators[0]
+                    if (this.content.startsWith(initiator.initiator)) {
+                        return {initiator: newPossibleInitiators[0], content: this.stripContent(this.content.slice(initiator.initiator.length))}
+                    }
             }
             this.possibleInitiators = newPossibleInitiators
         }
@@ -203,7 +207,7 @@ class InitiatorParser{
 const preview_equiv = {
     "#":"${'#'.repeat(props.level)} ${content}",
     "text":"${content}",
-    "start li":"<li>${content}</li>",
+    "start li":"-${content}",
     "*":"<span class='preview-will-be-hidden'>*</span><i class='i'>${content}</i><span class='preview-will-be-hidden'>*</span>",
     "**":"<span class='preview-will-be-hidden'>**</span><b>${content}</b><span class='preview-will-be-hidden'>**</span>",
     ">":"<span class='answer'>${content}</span>",
