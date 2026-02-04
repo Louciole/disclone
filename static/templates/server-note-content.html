@@ -1,17 +1,20 @@
 <div class="selected-info">
     <div class="title">
-        <img class="icon" src="/static/icons/material/volume.svg"/>
+        <img class="icon" src="/static/icons/material/note.svg"/>
         ${Subscribe("global.convs["+global.state.activeConv+"].name", ()=>{return global.convs[global.state.activeConv].name})}
     </div>
 </div>
 
-${global.state.noteEditor = new NoteEditor()}
+
 <div class="" style="width: 100%;height: calc(100svh - 3rem);">
     <div class="editor">
         <div class="block">
-            <div class="content" contenteditable="true" oninput="global.state.noteEditor.onInput(event)">
-                AAABBBCCC
-            </div>
+            <span class="content editable-block" contenteditable="true"
+                  data-placeholder="Press '/' for commands"
+                  oninput="global.state.noteEditor.onInput(0, event)"
+                  onkeydown="global.state.noteEditor.onKeyDown(0, event)"
+                  onblur="global.state.noteEditor.onBlur(0, event)"
+                  onfocus="global.state.noteEditor.onFocus(0, event)"></span>
         </div>
     </div>
 </div>

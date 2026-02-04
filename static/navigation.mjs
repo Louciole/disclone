@@ -85,9 +85,11 @@ function goToNoteChannel(id){
     targetElt.classList.add("selected")
 
 
-    import("./workspaces/notes.mjs").then(
+    import("./workspaces/notes.mjs").then(()=>{
+        global.state.noteEditor = new NoteEditor()
         goTo('content','server-note-content',undefined,false)
-    )
+    })
+
 }
 window.goToNoteChannel = goToNoteChannel
 

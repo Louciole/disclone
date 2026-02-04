@@ -1906,15 +1906,15 @@ input[type="text"]{
     flex: 1;
 }
 
-.message h1{
+.message h1, .note-heading1{
     margin: 0;
     font-size: 1.8rem;
 }
-.message h2{
+.message h2, .note-heading2{
     margin: 0;
     font-size: 1.5rem;
 }
-.message h3{
+.message h3, .note-heading3{
     margin: 0;
     font-size: 1.3rem;
 }
@@ -4632,3 +4632,10 @@ input:checked + .slider:before {
     background: var(--accent);
     border-color: var(--accent);
 }
+
+.editable-block:empty::before {
+    content: attr(data-placeholder);
+    color: #aaa;
+    cursor: text;
+}
+
