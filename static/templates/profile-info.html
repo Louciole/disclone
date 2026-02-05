@@ -1,5 +1,5 @@
 <div id="profileInfo" class="flying-menu">
-  <div class="banner"></div>
+  <div class="banner">${Subscribe('global.state.profileInfo.banner',()=>{return global.state.profileInfo?.banner ? 'background-image:url(/static/attachments/'+global.state.profileInfo.banner+');' : '';},"banner",{"target":"style"})}</div>
   ${Subscribe('global.state.profileInfo',()=>{return 'background-image:url(/static/attachments/'+global.state.profileInfo?.pfp+');'},"profil-picture",{"target":"style"})}
   <div class="profil-wrapper">
     <div class="profil-badges"></div>

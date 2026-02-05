@@ -7,6 +7,7 @@ create table if not exists disclone_account(
     description varchar(250),
     faction integer,
     pfp text,
+    banner text,
     current_room integer
 );
 

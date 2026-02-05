@@ -6,6 +6,7 @@ import {MDToHTML} from "/static/markdown/utils.mjs"; // DO NOT REMOVE
 import {} from "/static/admin.mjs"; // DO NOT REMOVE
 import {} from "/static/access.mjs"; // DO NOT REMOVE
 import {} from "/static/avatar.mjs"; // DO NOT REMOVE
+import {} from "/static/imageEditor.mjs"; // Image crop/resize editor
 import { initDrag } from "./drag.mjs";
 import emojis from "/static/emojis.mjs";
 import {addElement, deleteElement, pushElement, setElement} from "/static/framework/vesta.mjs";

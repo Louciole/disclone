@@ -1413,6 +1413,10 @@ class Disclone(Server):
             filename = self.saveFile(value)
             self.db.edit("disclone_account", uid, element, filename)
             return json.dumps({"pfp": filename}, default=str)
+        elif element == "banner":
+            filename = self.saveFile(value)
+            self.db.edit("disclone_account", uid, element, filename)
+            return json.dumps({"banner": filename}, default=str)
         else:
             self.db.edit("disclone_account", uid, element, value)
 

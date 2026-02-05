@@ -9,7 +9,7 @@
             <img src="/static/icons/material/addImage.svg"/>
           </div>
           <p>${_t("Uploader une image")}</p>
-          <input type="file" id="fileInput" accept="image/*" onchange="uploadResizeImage(event.currentTarget.files[0])"/>
+          <input type="file" id="fileInput" accept="image/*" onchange="handleImageUpload(event.currentTarget.files[0])"/>
         </div>
       </div>
     </div>

@@ -30,7 +30,10 @@
     <div class="half vertical">
         <h3>${_t("APERCU")}</h3>
         <div class="user-profile">
-            <div class="banner"></div>
+            <div class="banner" onclick="openBannerEditor()">
+                ${Subscribe('global.user.banner',()=>{return global.user.banner ? 'background-image: url(/static/attachments/'+global.user.banner+');' : '';},"banner",{"target":"style"})}
+                <div class="edit"><img src="/static/icons/material/edit.svg"/></div>
+            </div>
             <div class="profil-picture" onclick="toggleModale('editPfp',event)">
                 ${Subscribe('global.user.pfp',()=>{return '<img style="height: 100%;width: 100%;position: absolute" src="/static/attachments/'+global.user?.pfp+'" alt="user profile picture">';})}
                 <div class="edit"><img src="/static/icons/material/edit.svg"/></div>

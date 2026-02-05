@@ -852,6 +852,8 @@ section{
     background: wheat;
     border-radius: 6px 6px 0 0;
     height: 60px;
+    background-size: cover;
+    background-position: center;
 }
 
 #profil-menu .profil-picture, #profileInfo .profil-picture {
@@ -1578,6 +1580,28 @@ section{
 #settings .banner {
     background: wheat;
     height: 5rem;
+    position: relative;
+    background-size: cover;
+    background-position: center;
+}
+
+#settings .banner .edit {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    align-items: center;
+    justify-content: center;
+}
+
+#settings .banner:hover .edit {
+    display: flex;
+}
+
+#settings .banner .edit img {
+    width: 2rem;
+    height: 2rem;
+    filter: invert(1);
 }
 
 #settings .profil-picture {
@@ -2772,38 +2796,66 @@ select {
     border: 4px dashed var(--accent);
 }
 
-.preview::before{
-    content: "";
-    display: flex;
-    border: 6px solid var(--text);
-    aspect-ratio: 1;
-    box-sizing: border-box;
-    border-radius: 50%;
+/* Image Editor Preview Overlay */
+.preview {
     position: absolute;
-}
-
-.width .preview::before{
-    height: 100%;
     top: 0;
-    transform: translateX(calc(50%* var(--aspect-ratio) - 50%));
-}
-
-.height .preview::before{
-    width: 100%;
     left: 0;
-    transform: translateY(calc(50%/ var(--aspect-ratio) - 50%));
-}
-
-.preview{
-    width: var(--width);
-    height: var(--height);
-    position: absolute;
-    background: radial-gradient(closest-side circle at center, transparent 100%, #31333870 0);
+    width: 100%;
+    height: 100%;
     pointer-events: none;
-    top: 0;
+    overflow: hidden;
 }
 
-.resize-box{
+/* Dark overlay outside crop zone */
+.preview::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    pointer-events: none;
+}
+
+/* Crop zone cutout - circular for avatars */
+.crop-circle .preview::after {
+    content: "";
+    position: absolute;
+    width: var(--crop-width, 100%);
+    height: var(--crop-height, 100%);
+    left: var(--crop-x, 0);
+    top: var(--crop-y, 0);
+    background: transparent;
+    border-radius: 50%;
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6);
+    border: 3px solid var(--text);
+    box-sizing: border-box;
+}
+
+/* Crop zone cutout - rectangular for banners */
+.crop-rect .preview::after {
+    content: "";
+    position: absolute;
+    width: var(--crop-width, 100%);
+    height: var(--crop-height, 100%);
+    left: var(--crop-x, 0);
+    top: var(--crop-y, 0);
+    background: transparent;
+    border: 3px solid var(--text);
+    border-radius: 4px;
+    box-sizing: border-box;
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6);
+}
+
+/* Hide the ::before when we have the ::after with box-shadow */
+.crop-circle .preview::before,
+.crop-rect .preview::before {
+    display: none;
+}
+
+.resize-box {
     width: 100%;
     height: fit-content;
     background: var(--bg4);
@@ -2812,24 +2864,33 @@ select {
     position: relative;
 }
 
-.resize-wrapper{
-    max-width: var(--width);
-    max-height: var(--height);
-    height: var(--height);
+.resize-wrapper {
+    max-height: 50vh;
+    min-height: 200px;
     margin: auto;
     position: relative;
     overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.resize-box canvas{
-    max-height: calc(var(--scale, 1)* 50vh);
-    max-width: calc(var(--scale, 1)* 100%);
-    height: calc(var(--scale, 1)* var(--height, initial));
-    width: calc(var(--scale, 1)* var(--width, initial));
+.drag-zone {
+    display: flex;
+    position: relative;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.resize-box canvas {
+    max-height: 50vh;
+    max-width: 100%;
     cursor: grab;
+    touch-action: none;
 }
 
-.resize-box canvas.dragging{
+.resize-box canvas.dragging {
     cursor: grabbing;
 }
 
@@ -2842,14 +2903,6 @@ select {
     padding: 0;
 }
 
-.drag-zone{
-    display: flex;
-    position: relative;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    width: 100%;
-}
 
 .menu input[type="range"]{
     padding: 0.7rem 0;

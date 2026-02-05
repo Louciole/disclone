@@ -477,7 +477,7 @@ function dropImage(event) {
     const files = event.dataTransfer.files;
     if (files.length > 0) {
         const file = files[0];
-        uploadResizeFile(file);
+        handleImageUpload(file);
     }
 }
 window.dropImage = dropImage
@@ -494,48 +494,24 @@ function dropImageMessage(event) {
 }
 window.dropImageMessage = dropImageMessage
 
-let image;
-let img = new Image()
-let ctx
-let win = {size:0,'x':0,'y':0}
-let ratio = 1
-let scale = 1;
-let pos = {'x':0,'y':0}
-let cursor = {'x':0,'y':0}
-function uploadResizeFile(file) {
-    openMenu("resize-image",false)
-    const reader = new FileReader();
+import imageEditor from "/static/imageEditor.mjs"
 
-    reader.onload = function(e) {
-        const canvas = document.getElementById("imageCanvas")
-        image=canvas
-        ctx = canvas.getContext('2d');
-        img.onload = function() {
-            canvas.width = img.width;
-            canvas.height = img.height;
-            ratio = img.width/canvas.getBoundingClientRect().width
-            const wrapper = canvas.parentElement.parentElement
-            wrapper.style.setProperty('--aspect-ratio',(img.width/img.height).toString())
-            wrapper.style.setProperty('--width',(img.width / ratio).toString()+ "px")
-            wrapper.style.setProperty('--height',(img.height / ratio).toString()+ "px")
-            if(img.width >= img.height){
-                wrapper.classList.remove("height")
-                wrapper.classList.add("width")
-                win.x = (img.width - img.height)/2
-                win.y = 0
-            }else {
-                wrapper.classList.remove("width")
-                wrapper.classList.add("height")
-                win.x = 0
-                win.y = (img.height - img.width)/2
-            }
+/**
+ * Open image resize menu and initialize editor
+ * @param {File} file - Image file to edit
+ * @param {number} cropRatio - Crop ratio (1 = square/circle, 3 = banner)
+ */
+function uploadResizeFile(file, cropRatio = 1) {
+    openMenu("resize-image", false)
 
-            ctx.drawImage(img, 0, 0);
-            win.size = Math.min(img.width,img.height)
-        };
-        img.src = event.target.result;
-    };
-    reader.readAsDataURL(file);
+    // Reset zoom slider
+    const slider = document.querySelector('#resize-image input[type="range"]')
+    if (slider) slider.value = 1
+
+    imageEditor.init(file, cropRatio).catch(err => {
+        console.error("Failed to load image:", err)
+        closeMenu('#resize-image')
+    })
 }
 window.uploadResizeImage = uploadResizeFile
 
@@ -544,8 +520,8 @@ function displayMessageImage(file){
     const canvas = document.getElementsByClassName("imageCanvas")[0]
     const box = document.getElementById("imageBox")
     box.style.display = "block"
-    image = canvas
-    ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d');
+    const img = new Image()
     reader.onload = function(e) {
         global.state.currentMessageImages = [reader.result]
         img.onload = function() {
@@ -554,10 +530,9 @@ function displayMessageImage(file){
             canvas.height = size;
             const x = (size - img.width)/2
             const y = (size - img.height)/2
-            console.log(size,img.width,img.height,"pos",x,y,size-x,size - y)
             ctx.drawImage(img, x, y, img.width, img.height);
         }
-        img.src = event.target.result;
+        img.src = e.target.result;
     }
     reader.readAsDataURL(file);
 }
@@ -565,77 +540,38 @@ function displayMessageImage(file){
 function removeImageMessage(event){
     const box = document.getElementById("imageBox")
     box.style.display = "none"
-    // event.currentTarget.querySelector(".imageCanvas")[0].
     global.state.currentMessageImages = []
 }
 window.removeImageMessage = removeImageMessage
 
-function startDrag(event){
-    global.state.disableClose = true
-    cursor = {'x':event.clientX,'y':event.clientY}
-    image = event.currentTarget
-    image.classList.add('dragging')
-    document.onmouseup = closeDragElement;
-    document.onmousemove = dragImage;
-    global.temp = image
+/**
+ * Open banner editor with file picker (opens loadImage menu directly)
+ */
+function openBannerEditor() {
+    global.state.uploadImage = "banner" // Flag for upload target
+    openMenu('loadImage', false)
 }
-window.startDrag = startDrag
+window.openBannerEditor = openBannerEditor
 
-function closeDragElement(event) {
-    document.onmouseup = null;
-    document.onmousemove = null;
-    image.classList.remove('dragging')
-    setTimeout(()=>{global.state.disableClose = false}, 50);
-    //todo cancel close menu event
+/**
+ * Handle image upload from loadImage menu (detects banner vs pfp)
+ */
+function handleImageUpload(file) {
+    if (!file) return
+
+    const isBanner = global.state.uploadImage === "banner"
+    const cropRatio = isBanner ? 3 : 1 // 3:1 for banners, 1:1 for avatars
+
+    uploadResizeFile(file, cropRatio)
 }
-
-function dragImage(event){
-    const canvas = document.getElementById("imageCanvas")
-    ratio = img.width/canvas.getBoundingClientRect().width
-
-    const diffX = (event.clientX - cursor.x)/(30*scale)
-    const diffY = (event.clientY - cursor.y)/(30*scale)
-
-    const borderX = (img.width/ratio - (win.size/(scale*ratio)))/2
-    const borderY = (img.height/ratio - (win.size/(scale*ratio)))/2
-
-    pos.x = Math.max(-borderX,Math.min(pos.x+diffX,borderX))
-    pos.y = Math.max(-borderY,Math.min(pos.y+diffY,borderY))
-
-    image.parentElement.style.margin = `${pos.y}px 0 0 ${pos.x}px`
-    console.log(image.parentElement.style.margin,win,scale,ratio)
-}
-window.dragImage = dragImage
-
-
-function zoom(new_scale){
-    scale = new_scale
-    const canvas = document.getElementById("imageCanvas")
-    ratio = img.width/canvas.getBoundingClientRect().width
-    image.parentElement.style.setProperty('--scale',scale.toString())
-}
-window.zoom = zoom
+window.handleImageUpload = handleImageUpload
 
 function uploadProfileImage(field="pfp"){
+    const isBanner = global.state.uploadImage === "banner"
+    const outputSize = isBanner ? 600 : 256 // 600px wide for banners, 256x256 for avatars
 
-    let cropStartX
-    let cropStartY
-    if (img.width > img.height){
-        cropStartX = img.width - img.height - (pos.x*2*ratio)
-        cropStartY = pos.y*2*ratio
-    }else if(img.width < img.height){
-        cropStartX = pos.x*2*ratio
-        cropStartY = Math.min(0,img.height - img.width - (pos.y*2*ratio))
-    }else{
-        cropStartX = pos.x*2*ratio/scale
-        cropStartY = pos.y*2*ratio/scale
-    }
-    console.log("cropping",cropStartX,cropStartY,win.size/scale,pos)
-    const imageData = ctx.getImageData(cropStartX, cropStartY, win.size/scale, win.size/scale)
-
-    const onImgLoaded = function(result) {
+    imageEditor.getCroppedImageData(outputSize).then(result => {
         const onload = function () {
-            console.log(this.responseText)
             if (global.state.uploadImage === "serverAvatar") {
                 global.state.uploadImage = ""
                 try {
@@ -647,7 +583,19 @@ function uploadProfileImage(field="pfp"){
                 } catch (e) {
                     console.error("Failed to parse server pfp response:", e)
                 }
+            } else if (isBanner) {
+                // Banner upload
+                global.state.uploadImage = ""
+                try {
+                    const response = JSON.parse(this.responseText)
+                    if (response.banner) {
+                        setElement('global.user.banner', response.banner)
+                    }
+                } catch (e) {
+                    console.error("Failed to parse banner response:", e)
+                }
             } else {
+                // Profile picture upload
                 try {
                     const response = JSON.parse(this.responseText)
                     if (response.pfp) {
@@ -658,41 +606,21 @@ function uploadProfileImage(field="pfp"){
                 }
             }
         }
-        console.log(result, {"value":result})
 
         if (global.state.uploadImage === "serverAvatar"){
             xhr("editServer?property=pfp&id=".concat(global.state.currentServer.id), onload,"POST",true,{"value":result})
-        }else{
+        } else if (isBanner) {
+            xhr("change?element=banner", onload,"POST",true,{"value":result})
+        } else {
             xhr("change?element=".concat(field), onload,"POST",true,{"value":result})
         }
         closeMenu('#resize-image')
         closeMenu('#loadImage')
-    }
-    imageDataToB64(imageData,onImgLoaded)
+    }).catch(err => {
+        console.error("Failed to crop image:", err)
+    })
 }
 window.uploadProfileImage = uploadProfileImage
-
-function imageDataToB64(imageData, onloaded) {
-    const w = imageData.width
-    const h = imageData.height
-    const canvas = document.createElement("canvas")
-    canvas.width = w
-    canvas.height = h
-    const ctx = canvas.getContext("2d")
-    ctx.putImageData(imageData, 0, 0)
-
-    canvas.toBlob(function (blob){
-        const reader = new FileReader()
-        reader.onload = function(){
-            onloaded(event.target.result)
-        }
-        reader.onerror = () => {
-            console.log("error")
-        }
-        // debugger
-        reader.readAsDataURL(blob)
-    }, "image/jpeg", 0.5)
-}
 
 
 export function loadServer(id){
