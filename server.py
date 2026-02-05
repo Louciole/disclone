@@ -1890,5 +1890,5 @@ class Disclone(Server):
                 else:
                     user['status'] = {'icon': 'orange', 'text': params['text'], 'emoji': params['emoji']}
 
-REGEX_USERNAME = re.compile('^(?=.{3,}$)[a-zA-Z0-9_\-\.]*$')
+REGEX_USERNAME = re.compile(r'^(?=.{3,}$)[a-zA-Z0-9_\-\.]*$')
 server = Disclone(path=PATH, configFile="/server.ini")

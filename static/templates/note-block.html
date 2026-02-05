@@ -1,0 +1,18 @@
+<div class="block" data-block-id="${element.id}"
+     ondragover="global.state.noteEditor.onDragOver(${element.id}, event)"
+     ondrop="global.state.noteEditor.onDrop(${element.id}, event)">
+    <div class="controls">
+        <div class="add" onclick="global.state.noteEditor.createBlock({position: ${element.position}})">+</div>
+        <div class="drag" draggable="true"
+             ondragstart="global.state.noteEditor.onDragStart(${element.id}, event)"
+             ondragend="global.state.noteEditor.onDragEnd(${element.id}, event)">
+            <img src="/static/icons/material/handle.svg"/>
+        </div>
+    </div>
+    <span class="content editable-block" contenteditable="true"
+          data-placeholder="Press '/' for commands"
+          oninput="global.state.noteEditor.onInput(${element.id}, event)"
+          onkeydown="global.state.noteEditor.onKeyDown(${element.id}, event)"
+          onblur="global.state.noteEditor.onBlur(${element.id}, event)"
+          onfocus="global.state.noteEditor.onFocus(${element.id}, event)"></span>
+</div>

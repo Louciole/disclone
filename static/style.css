@@ -4647,7 +4647,98 @@ input:checked + .slider:before {
     display: flex;
 }
 
+.editor .block .controls>div{
+    width: 1.4rem;
+    height: 1.4rem;
+    display: flex;
+    border-radius: 3px;
+    align-items: center;
+    justify-content: center;
+}
+
+.editor .block{
+    display: flex;
+}
+
+.editor .block .add{
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: bold;
+}
+
+.editor .block .drag{
+    cursor: grab;
+}
+
+.editor .block .controls>div:hover{
+    background: var(--text3);
+}
+
+.editor .block .drag img{
+    filter: invert(85%) sepia(5%) saturate(15%) hue-rotate(315deg) brightness(81%) contrast(81%);
+    height: 1.2rem;
+}
+
+.editor .block .controls{
+    opacity: 0;
+    transition: opacity 0.2s;
+    display: flex;
+    gap: 0.1rem;
+    align-items: center;
+}
+
+.editor .block:hover .controls{
+    opacity: 1;
+}
+
+.editor .block.dragging{
+    opacity: 0.4;
+}
+
+.drop-indicator{
+    height: 2px;
+    background: #22c55e;
+    margin: 0.25rem 0;
+    border-radius: 1px;
+    position: relative;
+    pointer-events: none;
+}
+
+.drop-indicator::before{
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 6px;
+    height: 6px;
+    background: #22c55e;
+    border-radius: 50%;
+
+    pointer-events: none;
+}
+
+.drop-indicator::after{
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 6px;
+    height: 6px;
+    background: #22c55e;
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.editor .block .drag:active{
+    cursor: grabbing;
+}
+
 .preview-will-be-hidden{
     color: var(--text2bis);
 }
+
+
+
 
