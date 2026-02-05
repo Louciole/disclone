@@ -303,6 +303,13 @@ class Disclone(Server):
         return str(server_id)
 
     @Server.expose
+    def deleteServer(self, id):
+        uid = self.getUser()
+        if not self.checkAccessRights(uid, id, "server-admin"):
+            raise HTTPError(self.response, 403, "forbidden")
+        raise HTTPRedirect(self.response, "/channels")
+
+    @Server.expose
     def getUserServers(self):
         uid = self.getUser()
         servers = self.db.getSomethingProxied("server", "accessserver", "account", uid)
@@ -1576,6 +1583,13 @@ class Disclone(Server):
                 # Invalidate admin cache as role attribution might have changed admin rights
                 self.invalidateAdminCache()
                 return str(id)
+
+            if field == "permissions":
+                permissions = json.loads(value)
+                serv_op = self.db.getSomething("op_servs", id, "server")
+                if permissions.get("disclone-admin") is not None and serv_op == []: # restrict disclone_admin right to op servers
+                    print("forbidden disclone admin")
+                    raise HTTPError(self.response, 403)
 
             self.db.edit("role", targetId, field, value)
             # Invalidate admin cache as role permissions might have changed

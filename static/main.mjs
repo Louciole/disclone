@@ -8,7 +8,7 @@ import {} from "/static/access.mjs"; // DO NOT REMOVE
 import {} from "/static/avatar.mjs"; // DO NOT REMOVE
 import { initDrag } from "./drag.mjs";
 import emojis from "/static/emojis.mjs";
-import {addElement, pushElement, setElement} from "/static/framework/vesta.mjs";
+import {addElement, deleteElement, pushElement, setElement} from "/static/framework/vesta.mjs";
 import {xhr} from "./framework/templating.mjs";
 import {initTranslations} from "./translations/translation.mjs";
 import CallManager from "/static/webrtc.mjs";
@@ -244,7 +244,7 @@ function getConvName(conv,inputable = false){
 
         for (let member in conv.members){
             member = conv.members[member]
-            if(member !== global.user.id){
+            if(member != global.user.id){
                 name = name.concat(global.users[member].display)
             }
         }
@@ -322,6 +322,10 @@ export function displayNotif(notif){
 }
 
 function notMe(userList, loadUser=false){
+    if (userList == undefined) {
+        return undefined
+    }
+
     for (let i in userList){
         if (userList[i] != global.user.id){
             if(loadUser){
@@ -356,12 +360,28 @@ function getUserStatus(id, customOnly=false){
 }
 window.getUserStatus = getUserStatus
 
+
+function deleteServer(){
+    if (confirm(_t('Voulez-vous vraiment supprimer votre serveur et tous ses contenus associés ? Cette action est irréversible.'))) {
+
+        const onload = function() { // request successful
+            console.log("server deleted")
+            deleteElement("global.servers", global.state.currentServer.id)
+            window.location.href = ("/channels")
+        };
+        xhr("deleteServer?id=".concat(global.state.currentServer.id), onload, "POST", true)
+
+    } else {
+        console.log("ouf 😖")
+    }
+}
+window.deleteServer = deleteServer
+
 initNavigation()
 printWatermark("Disclone@carbonlab.dev", "https://github.com/Louciole/disclone")
 await initTranslations()
 goTo('content',"friends",undefined,true,()=>{goTo('friends-block','main-friend')})
 loadTemplate("profile-info.html")
-loadConvs()
 loadUser()
 xhr("friends?action=getBlocked", onBlockedLoaded)
 xhr("friends?action=get", onFriendsLoaded)

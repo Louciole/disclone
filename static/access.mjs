@@ -3,9 +3,14 @@ import {xhr} from "./framework/templating.mjs";
 const rights = {
     "dashboard-read": {'name': 'dashboard-read', 'category': 'dashboard', 'description': 'See the dashboards'},
     "dashboard-create": {'name': 'dashboard-create' ,'category': 'dashboard', 'description': 'Create a new dashboard'},
-    "disclone-admin": {'name': 'disclone-admin' ,'category': 'disclone', 'description': 'Administrate Disclone, create admin API-keys'},
+    "server-admin": {'name': 'server-admin' ,'category': 'advanced', 'description': 'Administrate the server, delete it, do everything'},
 }
 window.rights = rights;
+
+const op_rights = {
+    "disclone-admin": {'name': 'disclone-admin' ,'category': 'disclone', 'description': 'Administrate Disclone, create admin API-keys'},
+}
+window.opr = op_rights;
 
 function getRights() {
     if (global.state.currentServer.userRights){

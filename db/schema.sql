@@ -34,13 +34,8 @@ create table if not exists server (
 create table if not exists accessServer (
     id bigserial NOT NULL PRIMARY KEY,
     account integer NOT NULL,
-    server integer NOT NULL
+    server integer NOT NULL references server(id) ON DELETE CASCADE
 );
-ALTER TABLE accessServer
-drop CONSTRAINT if exists SERVACC_SERV_CONSTRAINT;
-
-ALTER TABLE accessServer
-ADD CONSTRAINT SERVACC_SERV_CONSTRAINT FOREIGN KEY (server) REFERENCES server (id) ON UPDATE CASCADE;
 
 -- Trigger function to update server member_count
 CREATE OR REPLACE FUNCTION update_server_member_count()
@@ -65,7 +60,7 @@ EXECUTE FUNCTION update_server_member_count();
 create table if not exists server_cat (
     id bigserial NOT NULL PRIMARY KEY,
     name varchar(44) NOT NULL,
-    server integer NOT NULL,
+    server integer NOT NULL references server(id) ON DELETE CASCADE,
     place float NOT NULL DEFAULT 0.1
 );
 
@@ -80,7 +75,7 @@ create table if not exists conversation (
 
 create table if not exists textual_channel (
     name varchar(255) NOT NULL,
-    server integer NOT NULL,
+    server integer NOT NULL references server(id) ON DELETE CASCADE,
     category integer,
     place float NOT NULL DEFAULT 0.1
 ) inherits (conversationElement);
@@ -131,14 +126,14 @@ create table if not exists subscription (
 
 create table if not exists invitation (
     id bigserial NOT NULL PRIMARY KEY,
-    server integer not null,
+    server integer not null references server(id) ON DELETE CASCADE,
     link varchar(8) NOT NULL,
     expiration TIMESTAMP
 );
 
 create table if not exists role (
     id bigserial NOT NULL PRIMARY KEY,
-    server integer NOT NULL,
+    server integer NOT NULL references server(id) ON DELETE CASCADE,
     name varchar(24) NOT NULL,
     color varchar(7) DEFAULT '#A8A8A8',
     permissions jsonb DEFAULT '{}'
@@ -146,14 +141,14 @@ create table if not exists role (
 
 create table if not exists room (
     id bigserial NOT NULL PRIMARY KEY,
-    server integer
+    server integer references server(id) ON DELETE CASCADE
 );
 
 create table if not exists role_attribution (
     id bigserial NOT NULL PRIMARY KEY,
     account integer NOT NULL,
     role integer NOT NULL,
-    server integer NOT NULL
+    server integer NOT NULL references server(id) ON DELETE CASCADE
 );
 
 create table if not exists offline_notifs (
@@ -165,7 +160,7 @@ create table if not exists offline_notifs (
 
 create table if not exists op_servs (
     id bigserial NOT NULL PRIMARY KEY,
-    server integer NOT NULL
+    server integer NOT NULL references server(id) ON DELETE CASCADE
 );
 
 create table if not exists serv_dashboard (
@@ -179,7 +174,7 @@ create table if not exists serv_dashboard (
 create table if not exists drive_channel (
     id bigserial NOT NULL PRIMARY KEY,
     name varchar(255) NOT NULL,
-    server integer NOT NULL,
+    server integer NOT NULL references server(id) ON DELETE CASCADE,
     category integer,
     place float NOT NULL DEFAULT 0.1
 );
@@ -187,7 +182,7 @@ create table if not exists drive_channel (
 create table if not exists vocal_channel (
     id bigserial NOT NULL PRIMARY KEY,
     name varchar(255) NOT NULL,
-    server integer NOT NULL,
+    server integer NOT NULL references server(id) ON DELETE CASCADE,
     category integer,
     place float NOT NULL DEFAULT 0.1
 );
@@ -195,7 +190,7 @@ create table if not exists vocal_channel (
 create table if not exists notes_channel (
     id bigserial NOT NULL PRIMARY KEY,
     name varchar(255) NOT NULL,
-    server integer NOT NULL,
+    server integer NOT NULL references server(id) ON DELETE CASCADE,
     category integer,
     place float NOT NULL DEFAULT 0.1
 );
@@ -219,7 +214,7 @@ create table if not exists API_key (
 create table if not exists personal_server(
     id bigserial NOT NULL PRIMARY KEY,
     owner integer NOT NULL,
-    server integer NOT NULL
+    server integer NOT NULL references server(id) ON DELETE CASCADE
 );
 
 create table if not exists drive_folder (
