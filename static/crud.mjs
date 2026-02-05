@@ -167,7 +167,13 @@ export function loadUser(){
     let request = new XMLHttpRequest();
     request.open('POST', "/getUserInfo", true);
     request.onload = function() { // request successful
-        setElement('global.user', JSON.parse(request.responseText))
+
+        const response = JSON.parse(request.responseText)
+        for (let key in response){
+            global.user[key] = response[key]
+        }
+        updateElement('global.user', global.user)
+
         global.users[global.user.id] = global.user
         loadConvs()
         initWebSockets()

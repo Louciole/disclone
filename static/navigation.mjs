@@ -6,6 +6,43 @@ import {xhr} from "./framework/templating.mjs";
 
 let emptyStr = '' //DO NOT REMOVE
 
+/**
+ * Check if scrolled to bottom and mark conversation notifications as read
+ */
+function checkAndMarkConvAsRead() {
+    if (!global.state.activeConv) return
+
+    const scrollable = document.querySelector('#content .scrollable.bottom-margin')
+    if (!scrollable) return
+
+    // Check if scrolled to bottom (within 50px threshold)
+    const scrollBottom = scrollable.scrollHeight - scrollable.scrollTop - scrollable.clientHeight
+    const isAtBottom = scrollBottom < 50
+
+    if (isAtBottom && global.user.notifs) {
+        // Find notification for current conversation
+        const notif = global.user.notifs.find(n => n.conversation === global.state.activeConv)
+
+        if (notif) {
+            // Call backend to delete the notification
+            const onload = function() {
+                try {
+                    // Remove notification from global.user.notifs array
+                    const index = global.user.notifs.findIndex(n => n.id === notif.id)
+                    if (index > -1) {
+                        global.user.notifs.splice(index, 1)
+                        setElement('global.user.notifs', global.user.notifs)
+                    }
+                } catch (e) {
+                    console.error("Error updating notifications:", e)
+                }
+            }
+
+            xhr(`consultNotifs?notifId=${notif.id}`, onload, "POST")
+        }
+    }
+}
+
 function goToConv(convId){
     let targetElt
     if(global.state.activeConv){
@@ -27,6 +64,19 @@ function goToConv(convId){
     targetElt.classList.add("selected")
 
     goTo('content','conversation',undefined,false)
+
+    // Attach scroll listener to mark notifications as read
+    setTimeout(() => {
+        const scrollable = document.querySelector('#content .scrollable.bottom-margin')
+        if (scrollable) {
+            // Remove old listener if exists to prevent duplicates
+            scrollable.removeEventListener('scroll', checkAndMarkConvAsRead)
+            // Add new listener
+            scrollable.addEventListener('scroll', checkAndMarkConvAsRead)
+            // Check immediately in case already at bottom (e.g., when opening conv)
+            checkAndMarkConvAsRead()
+        }
+    }, 100)
 }
 window.goToConv = goToConv
 

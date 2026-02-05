@@ -367,7 +367,6 @@ function deleteServer(){
 
         const onload = function() { // request successful
             console.log("server deleted")
-            deleteElement("global.servers", global.state.currentServer.id)
             window.location.href = ("/channels")
         };
         xhr("deleteServer?id=".concat(global.state.currentServer.id), onload, "POST", true)

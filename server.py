@@ -307,6 +307,7 @@ class Disclone(Server):
         uid = self.getUser()
         if not self.checkAccessRights(uid, id, "server-admin"):
             raise HTTPError(self.response, 403, "forbidden")
+        self.db.deleteSomething("server", id)
         raise HTTPRedirect(self.response, "/channels")
 
     @Server.expose
