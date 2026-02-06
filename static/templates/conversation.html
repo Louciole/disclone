@@ -6,11 +6,11 @@
             ${Subscribe("global.convs["+global.state.activeConv+"].name", ()=>{return getConvName(global.convs[global.state.activeConv], true)})}
         </div>
         <div class="call-actions">
-            <div class="icon-wrapper" onclick="handleCallButtonClick(${global.state.activeConv}, false)" title="${_t("Appel vocal")}">
+            <div class="icon-wrapper" onclick="handleCallButtonClick(${global.state.activeConv}, false)" title="${_t('Appel vocal')}">
                 <img class="icon" src="/static/icons/material/call.svg"/>
                 <span class="tooltip bottom">${_t("Appel vocal")}</span>
             </div>
-            <div class="icon-wrapper" onclick="handleCallButtonClick(${global.state.activeConv}, true)" title="${_t("Appel vidéo")}">
+            <div class="icon-wrapper" onclick="handleCallButtonClick(${global.state.activeConv}, true)" title="${_t('Appel vidéo')}">
                 <img class="icon" src="/static/icons/material/videocam.svg"/>
                 <span class="tooltip bottom">${_t("Appel vidéo")}</span>
             </div>
@@ -50,7 +50,7 @@
                 <img class="icon" src="/static/icons/material/add.svg"/>
             </div>
             <label style="flex: 1;height: fit-content;">
-                <textarea class="selected" rows="1" placeholder="${_t('Envoyer un message à')} @${getConvName(global.convs[global.state.activeConv])}" onkeydown="sendMessage(event)" oninput="resizeHeight(event)" onblur="saveCursorPosition(event)"></textarea>
+                <textarea class="selected" rows="1" placeholder="${_t('Envoyer un message à')} @${getConvName(global.convs[global.state.activeConv])}" onkeydown="sendMessage(event)" oninput="resizeHeight(event)" onblur="saveCursorPosition(event)" onpaste="pasteImageMessage(event)"></textarea>
             </label>
             <div class="icon-wrapper" onclick="silent_typing()">
                 <img class="icon" src="/static/icons/material/keyboard.svg"/>

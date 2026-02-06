@@ -66,8 +66,10 @@ export function loadConvs(){
             global.convs[key.id] = global.privateConvs[key.id]
             global.convs[key.id].ongoingCall = null; // Initialize call state
             addElement("global.privateConvs", key);
+            loadUsers(global.convs[key.id].members)
         }
-        updateElement("global.convs", global.convs)
+
+        updateElement("global.convs")
         goTo('sec-column',"column-perso",undefined, true,()=>{goTo('sec-selector',"privateMessage")})
 
     };
@@ -500,6 +502,25 @@ function dropImageMessage(event) {
 }
 window.dropImageMessage = dropImageMessage
 
+function pasteImageMessage(event) {
+    const items = event.clipboardData?.items;
+    if (!items) return;
+
+    // Iterate through clipboard items and handle images
+    for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+
+        // Check if the item is an image
+        if (item.type.indexOf('image') !== -1) {
+            const file = item.getAsFile();
+            if (file) {
+                displayMessageImage(file);
+            }
+        }
+    }
+}
+window.pasteImageMessage = pasteImageMessage
+
 import imageEditor from "/static/imageEditor.mjs"
 
 /**
@@ -529,7 +550,12 @@ function displayMessageImage(file){
     const ctx = canvas.getContext('2d');
     const img = new Image()
     reader.onload = function(e) {
-        global.state.currentMessageImages = [reader.result]
+        // Initialize array if needed, then append the new image
+        if (!global.state.currentMessageImages) {
+            global.state.currentMessageImages = []
+        }
+        global.state.currentMessageImages.push(reader.result)
+
         img.onload = function() {
             const size = Math.max(img.width,img.height)
             canvas.width = size;

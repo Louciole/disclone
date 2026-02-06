@@ -50,7 +50,9 @@ function goToConv(convId){
     }else{
         targetElt = document.getElementById("friendCat")
     }
-    targetElt.classList.remove("selected")
+    if (targetElt){
+        targetElt.classList.remove("selected")
+    }
 
     global.state.activeConv = convId
     loadConv(convId)
@@ -63,6 +65,7 @@ function goToConv(convId){
     targetElt = document.getElementById("conv".concat(convId))
     targetElt.classList.add("selected")
 
+    global.state.isServer = false
     goTo('content','conversation',undefined,false)
 
     // Attach scroll listener to mark notifications as read
