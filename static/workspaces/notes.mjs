@@ -253,28 +253,33 @@ class Editor {
     onInput(blockId, event) {
         const block = this.blocks[blockId];
         if (block.type === "text") {
-            const parser = new InitiatorParser(event.currentTarget.textContent)
+            const parser = new InitiatorParser(event.currentTarget.innerText)
             const parsedInitiator = parser.parse()
             if (parsedInitiator.initiator) {
                 block.type = parsedInitiator.initiator.type
                 block.content = parsedInitiator.content
                 event.currentTarget.setAttribute("data-placeholder", blockTypes[block.type].placeholder)
                 event.currentTarget.classList.add("note-"+block.type)
-                event.currentTarget.textContent = block.content
+                event.currentTarget.innerText = block.content
+                this.putCursorToEnd(event.currentTarget)
             }else{
                 const cursorPosition = this.saveCursorPosition(event.currentTarget);
-                block.content = event.currentTarget.textContent
-                event.currentTarget.innerHTML = MDToPreview(event.currentTarget.textContent)
+                block.content = event.currentTarget.innerText
+                event.currentTarget.innerHTML = MDToPreview(event.currentTarget.innerText)
                 this.restoreCursorPosition(event.currentTarget, cursorPosition);
             }
         }else{
             const cursorPosition = this.saveCursorPosition(event.currentTarget);
-            block.content = event.currentTarget.textContent
-            event.currentTarget.innerHTML = MDToPreview(event.currentTarget.textContent)
+            block.content = event.currentTarget.innerText
+            event.currentTarget.innerHTML = MDToPreview(event.currentTarget.innerText)
             this.restoreCursorPosition(event.currentTarget, cursorPosition);
         }
 
-        console.log("Input event:",this.blocks[blockId], event.currentTarget.textContent);
+        if (block.content === "\n" || block.content.trim() === "") {
+            block.content = ""
+            event.currentTarget.innerText = ""
+        }
+        console.log("Input event:",this.blocks[blockId], event.currentTarget.innerText);
     }
 
     onKeyDown(blockId, event) {
@@ -287,7 +292,7 @@ class Editor {
         if(event.key === "Backspace" && block.content === ""){
             block.content = blockTypes[block.type].initiator
             event.currentTarget.classList.remove("note-"+block.type)
-            event.currentTarget.textContent = block.content
+            event.currentTarget.innerText = block.content
 
             this.putCursorToEnd(event.currentTarget)
 
@@ -296,6 +301,23 @@ class Editor {
             block.type = "text"
             event.currentTarget.setAttribute("data-placeholder", blockTypes[block.type].placeholder)
             event.preventDefault();
+        }else if(event.key === "Enter" && !event.shiftKey) {
+            event.preventDefault();
+
+            // create a new block with the content after the cursor
+            const cursorPosition = this.saveCursorPosition(event.currentTarget);
+            const contentBeforeCursor = block.content.slice(0, cursorPosition);
+            const contentAfterCursor = block.content.slice(cursorPosition);
+
+            block.content = contentBeforeCursor
+            event.currentTarget.innerText = block.content
+
+            this.createBlock({type: "text", content: contentAfterCursor, afterBlockId: blockId})
+            // put cursor to end of new block
+            const newBlockElement = document.querySelector(`[data-block-id="${Object.keys(this.blocks).length - 1}"] .content`)
+            this.putCursorToEnd(newBlockElement)
+            newBlockElement.focus();
+
         }
     }
 
@@ -387,10 +409,12 @@ const initiators = [
 class InitiatorParser{
     constructor(content){
         this.content = content
+        // this.content = content.trimEnd()
         this.possibleInitiators = initiators
     }
 
     parse(){
+        console.log("Parsing initiator for content:'"+ this.content+"'")
         for(let i = 0; i < this.content.length; i+=1) {
 
             const char = this.content[i]
@@ -402,8 +426,9 @@ class InitiatorParser{
                 }
             }
 
+            console.log("char", char, "possible initiators", newPossibleInitiators)
             if (newPossibleInitiators.length === 0) {
-                // if no indicator check exact match with latests possible initiators
+                // if no initiator check exact match with latests possible initiators
                 if (this.possibleInitiators.length > 0 && i === this.possibleInitiators[0].initiator.length) {
                     return {initiator: this.possibleInitiators[0], content: this.stripContent(this.content.slice(i))}
                 }
@@ -425,12 +450,15 @@ class InitiatorParser{
         if (content.startsWith(' ') || content.startsWith(' ')) {
             content = content.slice(1)
         }
+        if (content.endsWith(' ') || content.endsWith(' ')) {
+            content = content.slice(0, -1)
+        }
         return content
     }
 }
 
 const preview_equiv = {
-    "#":"${'#'.repeat(props.level)} ${content}",
+    "#":"${'#'.repeat(props.level)}${content}",
     "text":"${content}",
     "start li":"-${content}",
     "*":"<span class='preview-will-be-hidden'>*</span><i class='i'>${content}</i><span class='preview-will-be-hidden'>*</span>",
@@ -460,7 +488,7 @@ function MDToPreview(text){
 }
 
 const render_equiv = {
-    "#":"${props.level*'#'} ${content}",
+    "#":"${props.level*'#'}${content}",
     "text":"${content}",
     "start li":"<li>${content}</li>",
     "*":"<i>${content}</i>",

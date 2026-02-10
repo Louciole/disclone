@@ -1,7 +1,7 @@
 <h2>${_t('Permissions')}</h2>
 <div class="scrollable">
     ${global.state.currentServer.op ?
-    fillWith('server-right', window.rights + window.opr ) :
+    fillWith('server-right', Object.assign({}, window.rights, window.opr)) :
     fillWith('server-right', window.rights)
     }
 </div>
