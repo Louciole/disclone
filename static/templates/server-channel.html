@@ -25,22 +25,14 @@
                     </div>
                 </div>
                 <div id="imageBox">
-                    <div>
-                        <canvas class="imageCanvas"></canvas>
-                        <div class="imageMenu">
-                            <div class="icon-wrapper" onclick="removeImageMessage(event)">
-                                <img class="icon" src="/static/icons/material/trash.svg"/>
-                            </div>
-                        </div>
-                    </div>
-
+                    <div class="attachments-container"></div>
                 </div>
                 <div class="chat-input">
                     <div class="icon-wrapper">
                         <img class="icon" src="/static/icons/material/add.svg"/>
                     </div>
                     <label style="flex: 1;height: fit-content;">
-                        <textarea class="selected" rows="1" placeholder="${_t('Envoyer un message à')} #${global.convs[global.state.activeConv].name}" onkeydown="sendMessage(event)" oninput="resizeHeight(event)" onblur="saveCursorPosition(event)" onpaste="pasteImageMessage(event)"></textarea>
+                        <textarea class="selected" rows="1" placeholder="${_t('Envoyer un message à')} #${global.convs[global.state.activeConv].name}" onkeydown="sendMessage(event)" oninput="resizeHeight(event)" onblur="saveCursorPosition(event)" onpaste="pasteFileMessage(event)"></textarea>
                     </label>
                     <div class="icon-wrapper" onclick="silent_typing()">
                         <img class="icon" src="/static/icons/material/keyboard.svg"/>
@@ -74,7 +66,7 @@
                     <div class="inline">
                         <div class="search">
                             <label style="width: 100%;">
-                                <input type="text" placeholder="${_t('Trouve l\'émoji parfait')}">
+                                <input type="text" placeholder="${_t('Trouve l\'émoji parfait')}" oninput="searchEmojis(event)">
                             </label>
                             <div class="icon-wrapper">
                                 <img class="icon" src="/static/icons/material/search.svg"/>
@@ -103,7 +95,7 @@
         </div>
         <div id="member-list-wrapper"></div>
 
-        <div id="upload-wrapper" ondragleave="event.preventDefault();console.log(event.currentTarget.parentElement); event.currentTarget.parentElement.classList.remove('dragging')" ondrop="dropImageMessage(event)">
+        <div id="upload-wrapper" ondragleave="event.preventDefault();console.log(event.currentTarget.parentElement); event.currentTarget.parentElement.classList.remove('dragging')" ondrop="dropFileMessage(event)">
             <div>
                 <div>
                     <h2>${_t("Uploader vers")} #${Subscribe("global.convs["+global.state.activeConv+"].name", ()=>{return global.convs[global.state.activeConv].name})}</h2>

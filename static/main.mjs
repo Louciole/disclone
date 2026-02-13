@@ -94,19 +94,116 @@ function getSlug(name){
 }
 window.getSlug = getSlug
 
+function isImageAttachment(attachment) {
+    if (!attachment.filepath) return true;
+
+
+    return attachment.mime.startsWith("image/");
+}
+window.isImageAttachment = isImageAttachment
+
 function loadEmojis(){
 
     global.state.emojis = []
+    global.state.allEmojis = [] // Flat list for search
 
     for (let category of emojis) {
         let cat = {name:category.name, icon:category.icon, content:"",status:""}
         for (let emoji of category.content) {
-            cat.content = cat.content.concat(`<div class="item" onclick="insertStandardEmoji(event,'currentInput')">${emoji.char}</div>`)
-            cat.status = cat.status.concat(`<div class="item" onclick="insertStandardEmoji(event,'status')">${emoji.char}</div>`)
+            cat.content = cat.content.concat(`<div class="item" data-name="${emoji.name}" onclick="insertStandardEmoji(event,'currentInput')">${emoji.char}</div>`)
+            cat.status = cat.status.concat(`<div class="item" data-name="${emoji.name}" onclick="insertStandardEmoji(event,'status')">${emoji.char}</div>`)
+            // Store for search
+            global.state.allEmojis.push({
+                char: emoji.char,
+                name: emoji.name,
+                category: category.name
+            })
         }
         global.state.emojis.push(cat)
     }
 }
+
+/**
+ * Fuzzy search score - higher is better match
+ * @param {string} query - Search query
+ * @param {string} text - Text to search in
+ * @returns {number} Score (0 = no match, higher = better)
+ */
+function fuzzyScore(query, text) {
+    query = query.toLowerCase()
+    text = text.toLowerCase()
+
+    // Exact match gets highest score
+    if (text === query) return 1000
+
+    // Starts with query gets high score
+    if (text.startsWith(query)) return 500 + (query.length / text.length) * 100
+
+    // Contains query as substring
+    if (text.includes(query)) return 200 + (query.length / text.length) * 100
+
+    // Fuzzy character matching
+    let score = 0
+    let queryIndex = 0
+    let consecutiveBonus = 0
+
+    for (let i = 0; i < text.length && queryIndex < query.length; i++) {
+        if (text[i] === query[queryIndex]) {
+            score += 10 + consecutiveBonus
+            consecutiveBonus += 5 // Reward consecutive matches
+            queryIndex++
+        } else {
+            consecutiveBonus = 0
+        }
+    }
+
+    // Only return score if all query characters were found
+    return queryIndex === query.length ? score : 0
+}
+
+/**
+ * Search emojis and update the emoji board
+ * @param {Event} event - Input event
+ */
+function searchEmojis(event) {
+    const query = event.target.value.trim()
+    const emojiBoard = event.target.closest('.emoji-board')
+    const scrollable = emojiBoard.querySelector('.selector .scrollable')
+
+    // Detect if this is a status emoji board (uses 'status' target) or input board (uses 'currentInput')
+    const isStatusBoard = emojiBoard.id === 'emoji-board'
+    const insertTarget = isStatusBoard ? 'status' : 'currentInput'
+    const template = isStatusBoard ? 'emoji-cat' : 'emoji-cat-input'
+
+    if (!query) {
+        // Reset to default view
+        scrollable.innerHTML = fillWith(template, global.state.emojis)
+        return
+    }
+
+    // Search and score all emojis
+    const results = global.state.allEmojis
+        .map(emoji => ({
+            ...emoji,
+            score: fuzzyScore(query, emoji.name)
+        }))
+        .filter(emoji => emoji.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 50) // Limit results
+
+    if (results.length === 0) {
+        scrollable.innerHTML = `<div class="no-results">${_t('Aucun émoji trouvé')}</div>`
+        return
+    }
+
+    // Build results HTML
+    const resultsHtml = results.map(emoji =>
+        `<div class="item" data-name="${emoji.name}" onclick="insertStandardEmoji(event,'${insertTarget}')">${emoji.char}</div>`
+    ).join('')
+
+    scrollable.innerHTML = `<div class="search-results"><div class="cat">${resultsHtml}</div></div>`
+}
+window.searchEmojis = searchEmojis
 
 function repaintConv(sub, value){
     console.log("repainting conv", sub, value)
@@ -213,10 +310,17 @@ function sendMessage(event){
             target.value = ''
             resizeHeight(event, target)
             cancelReply()
+            removeAllAttachments()
         }
 
-        if (target.value.trim() !== '' || global.state?.currentMessageImages?.length>0){
-            xhr("sendMessage?conv=".concat(encodeURI(JSON.stringify({'id':global.state.activeConv})), "&content=", encodeURIComponent(target.value),"&reply=",global.convs[global.state.activeConv].reply), onload,"POST",true,{"attachments":global.state.currentMessageImages})
+        if (target.value.trim() !== '' || global.state?.currentMessageAttachments?.length>0){
+            // Send attachment objects with metadata for backend
+            const attachmentData = (global.state.currentMessageAttachments || []).map(a => ({
+                dataUrl: a.dataUrl,
+                filename: a.name,
+                mimeType: a.type
+            }))
+            xhr("sendMessage?conv=".concat(encodeURI(JSON.stringify({'id':global.state.activeConv})), "&content=", encodeURIComponent(target.value),"&reply=",global.convs[global.state.activeConv].reply), onload,"POST",true,{"attachments":attachmentData})
         }
         event.preventDefault()
     }else{

@@ -26,8 +26,8 @@
                 return global.convs['${element.place}']?.messages['${element.id}']?.edited ? _t('(modifié)') : '';
             }">${element.edited ? _t('(modifié)') : ''}</div>
 
-            <div class="imageMessage">
-                ${fillWith('image',element.attachments)}
+            <div class="messageAttachments">
+                ${fillWith('attachment',element.attachments)}
             </div>
         </div>
     </div>

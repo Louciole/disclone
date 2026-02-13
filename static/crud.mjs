@@ -490,36 +490,45 @@ function dropImage(event) {
 }
 window.dropImage = dropImage
 
-function dropImageMessage(event) {
+// Max file size: 50MB
+const MAX_FILE_SIZE = 50 * 1024 * 1024
+
+function dropFileMessage(event) {
     event.preventDefault()
     document.querySelector('.dragging').classList.remove('dragging')
 
     const files = event.dataTransfer.files;
-    if (files.length > 0) {
-        const file = files[0]
-        displayMessageImage(file)
+    for (let i = 0; i < files.length; i++) {
+        displayMessageAttachment(files[i])
     }
 }
-window.dropImageMessage = dropImageMessage
+window.dropFileMessage = dropFileMessage
 
-function pasteImageMessage(event) {
+function pasteFileMessage(event) {
     const items = event.clipboardData?.items;
     if (!items) return;
 
-    // Iterate through clipboard items and handle images
+    // Iterate through clipboard items and handle files (images and others)
     for (let i = 0; i < items.length; i++) {
         const item = items[i];
 
-        // Check if the item is an image
+        // Handle images
         if (item.type.indexOf('image') !== -1) {
             const file = item.getAsFile();
             if (file) {
-                displayMessageImage(file);
+                displayMessageAttachment(file);
+            }
+        }
+        // Handle other files (kind === 'file' but not image)
+        else if (item.kind === 'file') {
+            const file = item.getAsFile();
+            if (file) {
+                displayMessageAttachment(file);
             }
         }
     }
 }
-window.pasteImageMessage = pasteImageMessage
+window.pasteFileMessage = pasteFileMessage
 
 import imageEditor from "/static/imageEditor.mjs"
 
@@ -542,39 +551,138 @@ function uploadResizeFile(file, cropRatio = 1) {
 }
 window.uploadResizeImage = uploadResizeFile
 
-function displayMessageImage(file){
+/**
+ * Display attachment preview (image or file) in the message box
+ * @param {File} file - File to display
+ */
+function displayMessageAttachment(file) {
+    // Check file size
+    if (file.size > MAX_FILE_SIZE) {
+        alert(`File "${file.name}" is too large. Maximum size is 50MB.`)
+        return
+    }
+
     const reader = new FileReader();
-    const canvas = document.getElementsByClassName("imageCanvas")[0]
     const box = document.getElementById("imageBox")
     box.style.display = "block"
-    const ctx = canvas.getContext('2d');
-    const img = new Image()
-    reader.onload = function(e) {
-        // Initialize array if needed, then append the new image
-        if (!global.state.currentMessageImages) {
-            global.state.currentMessageImages = []
-        }
-        global.state.currentMessageImages.push(reader.result)
 
-        img.onload = function() {
-            const size = Math.max(img.width,img.height)
-            canvas.width = size;
-            canvas.height = size;
-            const x = (size - img.width)/2
-            const y = (size - img.height)/2
-            ctx.drawImage(img, x, y, img.width, img.height);
+    const isImage = file.type.startsWith('image/')
+
+    reader.onload = function(e) {
+        // Initialize array if needed
+        if (!global.state.currentMessageAttachments) {
+            global.state.currentMessageAttachments = []
         }
-        img.src = e.target.result;
+
+        // Store attachment metadata
+        const attachment = {
+            dataUrl: reader.result,
+            name: file.name,
+            type: file.type,
+            isImage: isImage
+        }
+        global.state.currentMessageAttachments.push(attachment)
+
+        // Render preview
+        renderAttachmentPreviews()
     }
     reader.readAsDataURL(file);
 }
 
-function removeImageMessage(event){
+/**
+ * Render all attachment previews in the imageBox
+ */
+function renderAttachmentPreviews() {
+    const box = document.getElementById("imageBox")
+    const container = box.querySelector('.attachments-container')
+    if (!container) return
+
+    container.innerHTML = ''
+
+    const attachments = global.state.currentMessageAttachments || []
+    attachments.forEach((attachment, index) => {
+        const wrapper = document.createElement('div')
+        wrapper.className = 'attachment-preview'
+
+        if (attachment.isImage) {
+            // Image preview - square canvas like original displayMessageImage
+            const canvas = document.createElement('canvas')
+            canvas.className = 'imageCanvas'
+            const ctx = canvas.getContext('2d')
+            const img = new Image()
+            img.onload = function() {
+                // Square canvas based on the larger dimension
+                const size = Math.max(img.width, img.height)
+                canvas.width = size
+                canvas.height = size
+                // Center the image
+                const x = (size - img.width) / 2
+                const y = (size - img.height) / 2
+                ctx.drawImage(img, x, y, img.width, img.height)
+            }
+            img.src = attachment.dataUrl
+            wrapper.appendChild(canvas)
+        } else {
+            // File preview
+            const filePreview = document.createElement('div')
+            filePreview.className = 'file-preview'
+
+            const icon = document.createElement('img')
+            icon.className = 'icon'
+            icon.src = '/static/icons/material/paperclip.svg'
+
+            const fileName = document.createElement('span')
+            fileName.className = 'file-name'
+            fileName.textContent = attachment.name.length > 20
+                ? attachment.name.substring(0, 17) + '...'
+                : attachment.name
+
+            filePreview.appendChild(icon)
+            filePreview.appendChild(fileName)
+            wrapper.appendChild(filePreview)
+        }
+
+        // Delete button
+        const menu = document.createElement('div')
+        menu.className = 'imageMenu'
+        menu.innerHTML = `
+            <div class="icon-wrapper" onclick="removeAttachment(${index})">
+                <img class="icon" src="/static/icons/material/trash.svg"/>
+            </div>
+        `
+        wrapper.appendChild(menu)
+
+        container.appendChild(wrapper)
+    })
+}
+window.renderAttachmentPreviews = renderAttachmentPreviews
+
+/**
+ * Remove a specific attachment by index
+ * @param {number} index - Index of attachment to remove
+ */
+function removeAttachment(index) {
+    if (!global.state.currentMessageAttachments) return
+
+    global.state.currentMessageAttachments.splice(index, 1)
+
+    if (global.state.currentMessageAttachments.length === 0) {
+        removeAllAttachments()
+    } else {
+        renderAttachmentPreviews()
+    }
+}
+window.removeAttachment = removeAttachment
+
+/**
+ * Remove all attachments and hide the box
+ */
+function removeAllAttachments() {
     const box = document.getElementById("imageBox")
     box.style.display = "none"
-    global.state.currentMessageImages = []
+    global.state.currentMessageAttachments = []
 }
-window.removeImageMessage = removeImageMessage
+window.removeAllAttachments = removeAllAttachments
 
 /**
  * Open banner editor with file picker (opens loadImage menu directly)

@@ -1238,7 +1238,14 @@ class Disclone(Server):
 
         attachmentList = []
         for attachment in attachments:
-            attachmentList.append(self.saveFile(attachment))
+            dataUrl = attachment.get('dataUrl', '')
+            filename = attachment.get('filename', 'file')
+            mimeType = attachment.get('mimeType', '')
+
+            filepath = self.saveFile(dataUrl)
+            attach = {"mime":mimeType, "filename": filename, "filepath": filepath}
+            attachmentList.append(attach)
+
         conv = json.loads(conv)
         if not conv.get("id"):
             conv["id"] = self.newConv("Noname", [uid, conv["dest"]])
