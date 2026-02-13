@@ -16,8 +16,7 @@ function checkAndMarkConvAsRead() {
     if (!scrollable) return
 
     // Check if scrolled to bottom (within 50px threshold)
-    const scrollBottom = scrollable.scrollHeight - scrollable.scrollTop - scrollable.clientHeight
-    const isAtBottom = scrollBottom < 50
+    const isAtBottom = scrollable.scrollTop > -50
 
     if (isAtBottom && global.user.notifs) {
         // Find notification for current conversation
@@ -86,15 +85,15 @@ window.goToConv = goToConv
 function goToChannel(id){
     let targetElt
     if(global.state.activeChan){
-        targetElt = document.getElementById("channel".concat(global.state.activeChan))
+        targetElt = document.getElementById("channel".concat(global.state.activeChan.slug))
         targetElt?.classList.remove("selected")
     }
 
     global.state.activeConv = id
-    global.state.activeChan = "-conv-"+id
+    global.state.activeChan = {id:id, slug:"-conv-"+id, type:"conv"}
     loadChan(id)
 
-    targetElt = document.getElementById("channel".concat(global.state.activeChan))
+    targetElt = document.getElementById("channel".concat(global.state.activeChan.slug))
     targetElt.classList.add("selected")
 
     goTo('content','server-channel',undefined,false)
@@ -104,17 +103,17 @@ window.goToChannel = goToChannel
 function goToVocalChannel(id){
     let targetElt
     if(global.state.activeChan){
-        targetElt = document.getElementById("channel".concat(global.state.activeChan))
+        targetElt = document.getElementById("channel".concat(global.state.activeChan.slug))
         targetElt?.classList.remove("selected")
     }
 
-    global.state.activeChan = "-voc-"+id
+    global.state.activeChan = {id:id, slug:"-voc-"+id, type:"voc"}
 
     if (!global.convs) global.convs = {}
     const room = lookFor(id, global.state.currentServer.dirs.rooms)
     global.convs[id] = {id: id, name: room ? room.name : "Note Channel", type: "note"}
 
-    targetElt = document.getElementById("channel".concat(global.state.activeChan))
+    targetElt = document.getElementById("channel".concat(global.state.activeChan.slug))
     targetElt.classList.add("selected")
 
     goTo('content','server-vocal-content',undefined,false)
@@ -124,17 +123,17 @@ window.goToVocalChannel = goToVocalChannel
 function goToNoteChannel(id){
     let targetElt
     if(global.state.activeChan){
-        targetElt = document.getElementById("channel".concat(global.state.activeChan))
+        targetElt = document.getElementById("channel".concat(global.state.activeChan.slug))
         targetElt?.classList.remove("selected")
     }
 
-    global.state.activeChan = "-note-"+id
+    global.state.activeChan = {id:id, slug:"-note-"+id, type:"note"}
 
     if (!global.convs) global.convs = {}
     const room = lookFor(id, global.state.currentServer.dirs.rooms)
     global.convs[id] = {id: id, name: room ? room.name : "Salon vocal", type: "vocal"}
 
-    targetElt = document.getElementById("channel".concat(global.state.activeChan))
+    targetElt = document.getElementById("channel".concat(global.state.activeChan.slug))
     targetElt.classList.add("selected")
 
 
@@ -149,17 +148,17 @@ window.goToNoteChannel = goToNoteChannel
 function goToDriveChannel(id){
     let targetElt
     if(global.state.activeChan){
-        targetElt = document.getElementById("channel".concat(global.state.activeChan))
+        targetElt = document.getElementById("channel".concat(global.state.activeChan.slug))
         targetElt?.classList.remove("selected")
     }
 
-    global.state.activeChan = "-drive-"+id
+    global.state.activeChan = {id:id, slug:"-drive-"+id, type:"drive"}
 
     if (!global.convs) global.convs = {}
     const drive = lookFor(id, global.state.currentServer.dirs.drives)
     global.convs[id] = {id: id, name: drive ? drive.name : "Salon de stockage", type: "drive"}
 
-    targetElt = document.getElementById("channel".concat(global.state.activeChan))
+    targetElt = document.getElementById("channel".concat(global.state.activeChan.slug))
     targetElt.classList.add("selected")
 
     if (!global.driveCurrentFolder) global.driveCurrentFolder = {}

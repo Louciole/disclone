@@ -1,4 +1,5 @@
 import {Markdown} from "../markdown/markdown.mjs";
+import {xhr} from "../framework/templating.mjs";
 
 class Editor {
     constructor() {
@@ -24,7 +25,8 @@ class Editor {
 
     createBlock({type = "text", content = "", position = null, afterBlockId = null}) {
         this.DOMElement = document.getElementById("note-editor");
-        const newBlockId = Object.keys(this.blocks).length // TODO should be given by backend or UUID
+        // generate uuid for block id
+        const newBlockId = crypto.randomUUID()
 
         // Calculate position
         if (position !== null && afterBlockId === null) {
@@ -51,10 +53,15 @@ class Editor {
             }
         }
 
-        this.blocks[newBlockId] = {"id":newBlockId, "type":type, "content": content, position: position};
+        this.blocks[newBlockId] = {"uuid":newBlockId, "type":type, "content": content, position: position};
         this.DOMElement.insertAdjacentHTML("beforeend", fillWith('note-block', [this.blocks[newBlockId]]));
         this.reorderDOM()
         this.checkAndNormalizePositions()
+
+        const onload = function () {
+
+        }
+        xhr("/saveBlock?channel="+global.state.activeChan.id+"&block="+JSON.stringify(this.blocks[newBlockId])+"&op=create", onload)
     }
 
     moveBlock(blockId, newPosition) {
@@ -387,6 +394,16 @@ class Editor {
         this.putCursorToEnd(element);
     }
 
+    saveBlock(blockId){
+        const block = this.blocks[blockId];
+
+        const onSaved = function () {
+
+        }
+
+        xhr("/saveBlock", onSaved)
+    }
+
 }
 window.NoteEditor = Editor;
 
@@ -396,6 +413,7 @@ const blockTypes = {
     "heading2": {placeholder: "Heading 2", initiator: "##"},
     "heading3": {placeholder: "Heading 3", initiator: "###"},
     "small": {placeholder: "small text", initiator: "-#"},
+    "showcase": {placeholder: "insert metric", initiator: "/showcase"},
 }
 
 const initiators = [
@@ -403,6 +421,7 @@ const initiators = [
     {"type":"heading2", "initiator":"##"},
     {"type":"heading3", "initiator":"###"},
     {"type":"small", "initiator":"-#"},
+    {"type":"showcase", "initiator":"/showcase"},
 ]
 
 
@@ -511,8 +530,164 @@ const render_equiv = {
 }
 
 function MDToRender(text){
+    //evaluating functions
+    const parsed = parseFunctions(text)
+    const evaluated = evaluateFunctions(parsed)
+
+    //rendering MD
     const engine = new Markdown()
-    const tokens = engine.tokenize(text)
+    const tokens = engine.tokenize(evaluated)
     console.log("text",text,"tokens",tokens)
     return engine.render(tokens, render_equiv)
+}
+
+function func_dashboard(dashboardName){
+    const onload = function(){
+    }
+
+    const request = xhr("getDashboard?server="+global.state.currentServer.id+"&service_id="+dashboardName, onload, "GET", false)
+
+    if (request.status !== 200) {
+        return "ERROR loading dashboard: "+request.status
+    }
+
+    const json = JSON.parse(request.responseText)
+    return json.users.count
+}
+
+
+const functions = {
+    'DASHBOARD': func_dashboard,
+}
+
+function parseFunctions(text) {
+    //functions are in the format {{FUNCTION_NAME(arg1, arg2)}}
+    const result = []
+    const functionRegex = /{{([A-Z_]+)\((.*?)\)}}/g
+    let lastIndex = 0
+    let match
+
+    while ((match = functionRegex.exec(text)) !== null) {
+        // Add text before the function if any
+        if (match.index > lastIndex) {
+            result.push({
+                type: 'text',
+                content: text.substring(lastIndex, match.index)
+            })
+        }
+
+        // Parse function name and arguments
+        const functionName = match[1]
+        const argsString = match[2].trim()
+
+        // Parse arguments
+        const args = parseArguments(argsString)
+
+        result.push({
+            type: 'function',
+            name: functionName,
+            args: args
+        })
+
+        lastIndex = functionRegex.lastIndex
+    }
+
+    // Add remaining text after last function
+    if (lastIndex < text.length) {
+        result.push({
+            type: 'text',
+            content: text.substring(lastIndex)
+        })
+    }
+
+    return result
+}
+
+function parseArguments(argsString) {
+    const args = []
+    if (!argsString) return args
+
+    let currentArg = ''
+    let inString = false
+    let stringChar = null
+
+    for (let i = 0; i < argsString.length; i++) {
+        const char = argsString[i]
+
+        if (!inString) {
+            if (char === '"' || char === "'") {
+                inString = true
+                stringChar = char
+                currentArg += char
+            } else if (char === ',') {
+                // End of argument
+                const trimmed = currentArg.trim()
+                if (trimmed) {
+                    args.push(parseArgument(trimmed))
+                }
+                currentArg = ''
+            } else {
+                currentArg += char
+            }
+        } else {
+            // Inside string
+            if (char === '\\' && i + 1 < argsString.length) {
+                currentArg += char
+                i++
+                currentArg += argsString[i]
+            } else if (char === stringChar) {
+                inString = false
+                stringChar = null
+                currentArg += char
+            } else {
+                currentArg += char
+            }
+        }
+    }
+
+    // Add last argument
+    const trimmed = currentArg.trim()
+    if (trimmed) {
+        args.push(parseArgument(trimmed))
+    }
+
+    return args
+}
+
+function parseArgument(arg) {
+    arg = arg.trim()
+
+    // String (remove quotes)
+    if ((arg.startsWith('"') && arg.endsWith('"')) || (arg.startsWith("'") && arg.endsWith("'"))) {
+        return arg.slice(1, -1)
+    }
+
+    // Boolean
+    if (arg === 'true') return true
+    if (arg === 'false') return false
+
+    // Number
+    if (!isNaN(arg) && arg !== '') {
+        return parseFloat(arg)
+    }
+
+    // Default to string
+    return arg
+}
+
+function evaluateFunctions(contentArray){
+    let content = ""
+    contentArray.forEach(part => {
+        if (part.type === "text") {
+            content += part.content
+        } else if (part.type === "function") {
+            const func = functions[part.name]
+            if (func) {
+                content += func(...part.args)
+            } else {
+                console.warn("Unknown function:", part.name)
+            }
+        }
+    })
+    return content
 }

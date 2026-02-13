@@ -4795,6 +4795,13 @@ input:checked + .slider:before {
     color: var(--text2bis);
 }
 
-
+.note-showcase{
+    background: var(--bg3);
+    border: solid 1px var(--text2bis);
+    padding: 1rem;
+    border-radius: 0.6rem;
+    font-size: 1.8rem;
+    width: fit-content !important;
+}
 
 

@@ -202,7 +202,8 @@ create table if not exists note_block (
     parent_block integer REFERENCES note_block(id),
     type varchar(50) NOT NULL,
     position float NOT NULL DEFAULT 0.1,
-    content text default ''
+    content text default '',
+    uuid varchar(36) NOT NULL UNIQUE
 );
 
 create table if not exists API_key (

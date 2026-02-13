@@ -1621,6 +1621,37 @@ class Disclone(Server):
         elif property == "description":
             self.db.edit("server", id, "description", value)
 
+    @Server.expose
+    def saveBlock(self, channel, block, op="edit"):
+        uid = self.getUser()
+
+        chan_info = self.db.getSomething("notes_channel", channel)
+        if not chan_info:
+            raise HTTPError(self.response, 404)
+
+        server_id = chan_info.server
+        if not self.checkAccessRights(uid, server_id, "edit"):
+            raise HTTPError(self.response, 403)
+
+        if op == "create":
+            block["channel"] = channel
+            block_id = self.db.insertDict("notes_block", block, getId=True)
+            return str(block_id)
+        elif op == "delete":
+            block_info = self.db.getSomething("notes_block", block["id"])
+            if not block_info or block_info["channel"] != channel:
+                raise HTTPError(self.response, 404)
+            self.db.deleteSomething("notes_block", block["id"])
+        elif op == "edit":
+            block_info = self.db.getSomething("notes_block", block["id"])
+
+            forbidden_fields = ["id", "channel", "uuid"]
+
+            for key in block:
+                if key not in forbidden_fields and block[key] != block_info.get(key):
+                    self.db.edit("notes_block", block["uuid"], key, block[key], "uuid")
+
+
 
     @Server.expose
     def serverDisplay(self, invite):
