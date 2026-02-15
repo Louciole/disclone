@@ -23,7 +23,7 @@ B62 = string.digits + string.ascii_letters
 PATH = dirname(abspath(__file__))
 
 
-class Disclone(Server):
+class Mycelium(Server):
     features = {"websockets": True, "errors": {404: "/static/404.html"}}
     clients = []
     _admin_cache = None  # Cache for admin user IDs
@@ -58,8 +58,8 @@ class Disclone(Server):
             raise HTTPError(self.response,404,"Not Found")
 
     def onLogin(self, uid):
-        if not self.db.getSomething("disclone_account", uid):
-            self.db.insertDict("disclone_account", {"id": uid, "username": '#' + str(uid)})
+        if not self.db.getSomething("mycelium_account", uid):
+            self.db.insertDict("mycelium_account", {"id": uid, "username": '#' + str(uid)})
         if not self.db.getSomething("status", uid):
             self.db.insertDict("status", {"id": uid})
 
@@ -520,7 +520,7 @@ class Disclone(Server):
     @Server.expose
     def getUsersInfo(self, users):
         uid = self.getUser()
-        users = self.db.getFilters("disclone_account", ["id", "in", json.loads(users)])
+        users = self.db.getFilters("mycelium_account", ["id", "in", json.loads(users)])
         self.getUsersStatus(users)
         return (json.dumps(users, default=str))
 
@@ -533,7 +533,7 @@ class Disclone(Server):
             raise HTTPError(self.response,403, "forbidden")
 
         if cat=="user":
-            users = self.db.getFilters("disclone_account", ["id", "in", json.loads(items)])
+            users = self.db.getFilters("mycelium_account", ["id", "in", json.loads(items)])
             for user in users:
                 self.db.insertDict("subscription", {"client":client,"account": user["id"]})
 
@@ -689,7 +689,7 @@ class Disclone(Server):
     @Server.expose
     def getUserInfo(self):
         uid = self.getUser()
-        user = self.db.getSomething("disclone_account", uid)
+        user = self.db.getSomething("mycelium_account", uid)
         self.getUsersStatus([user],detailed=True)
         user["notifs"] = self.db.getAll("offline_notifs", uid, "account")
         user["additional_emails"] = self.uniauth.getAll("additional_mail", uid, "account")
@@ -726,7 +726,7 @@ class Disclone(Server):
     @Server.expose
     def uploadImage(self):
         uid = self.getUser()
-        user = self.db.getSomething("disclone_account", uid)
+        user = self.db.getSomething("mycelium_account", uid)
         self.getUsersStatus([user],detailed=True)
         return json.dumps(user, default=str)
 
@@ -736,7 +736,7 @@ class Disclone(Server):
         if not key:
             raise HTTPError(self.response, 403, "forbidden")
 
-        key_user = self.db.getSomething("disclone_account", key["owner"])
+        key_user = self.db.getSomething("mycelium_account", key["owner"])
         if not key_user or not self.isAdmin(key_user["id"]):
             raise HTTPError(self.response, 403, "forbidden")
 
@@ -836,7 +836,7 @@ class Disclone(Server):
 
         # Add uploader info for each file
         for file in files:
-            uploader = self.db.getSomething("disclone_account", file["uploader"])
+            uploader = self.db.getSomething("mycelium_account", file["uploader"])
             if uploader:
                 file["uploader_name"] = uploader["display"]
                 file["uploader_username"] = uploader["username"]
@@ -1024,7 +1024,7 @@ class Disclone(Server):
 
         # Add creator info for each folder
         for folder in folders:
-            creator = self.db.getSomething("disclone_account", folder["creator"])
+            creator = self.db.getSomething("mycelium_account", folder["creator"])
             if creator:
                 folder["creator_name"] = creator["display"]
                 folder["creator_username"] = creator["username"]
@@ -1161,7 +1161,7 @@ class Disclone(Server):
 
         for user_op_serv in users_op_servs:
             uid = user_op_serv["account"]
-            # Check if user has disclone_admin right
+            # Check if user has mycelium_admin right
             if self._hasAdminRight(uid):
                 admin_ids.add(uid)
 
@@ -1169,7 +1169,7 @@ class Disclone(Server):
         self._admin_cache_time = datetime.datetime.now()
 
     def _hasAdminRight(self, uid):
-        """Check if user has disclone_admin right (helper for cache refresh)"""
+        """Check if user has mycelium_admin right (helper for cache refresh)"""
         users_op_servs = self.db.cur.execute(
             "SELECT * FROM op_servs, accessServer WHERE op_servs.server = accessServer.server AND accessServer.account = %s",
             (uid,)
@@ -1177,7 +1177,7 @@ class Disclone(Server):
 
         for user_op_serv in users_op_servs:
             server_id = user_op_serv["server"]
-            if self.checkAccessRights(uid, server_id, "disclone_admin"):
+            if self.checkAccessRights(uid, server_id, "mycelium_admin"):
                 return True
 
         return False
@@ -1337,7 +1337,7 @@ class Disclone(Server):
     def friends(self, action, arg=""):
         uid = self.getUser()
         if action == "add":
-            friend = self.db.getSomething("disclone_account", arg, "username")
+            friend = self.db.getSomething("mycelium_account", arg, "username")
             if not friend:
                 return "user not found"
             if friend['id'] == uid:
@@ -1401,8 +1401,8 @@ class Disclone(Server):
             return "forbidden"
         elif element == "username":
             if re.fullmatch(REGEX_USERNAME, value):
-                if not self.db.getSomething("disclone_account", value, element):
-                    self.db.edit("disclone_account", uid, element, value)
+                if not self.db.getSomething("mycelium_account", value, element):
+                    self.db.edit("mycelium_account", uid, element, value)
                     return "ok"
                 else:
                     return "this " + element + " already exists"
@@ -1419,14 +1419,14 @@ class Disclone(Server):
             self.sendStatusUpdates(uid)
         elif element == "pfp":
             filename = self.saveFile(value)
-            self.db.edit("disclone_account", uid, element, filename)
+            self.db.edit("mycelium_account", uid, element, filename)
             return json.dumps({"pfp": filename}, default=str)
         elif element == "banner":
             filename = self.saveFile(value)
-            self.db.edit("disclone_account", uid, element, filename)
+            self.db.edit("mycelium_account", uid, element, filename)
             return json.dumps({"banner": filename}, default=str)
         else:
-            self.db.edit("disclone_account", uid, element, value)
+            self.db.edit("mycelium_account", uid, element, value)
 
     @Server.expose
     def addEmail(self, email):
@@ -1599,8 +1599,8 @@ class Disclone(Server):
             if field == "permissions":
                 permissions = json.loads(value)
                 serv_op = self.db.getSomething("op_servs", id, "server")
-                if permissions.get("disclone-admin") is not None and serv_op == []: # restrict disclone_admin right to op servers
-                    print("forbidden disclone admin")
+                if permissions.get("mycelium-admin") is not None and serv_op == []: # restrict mycelium_admin right to op servers
+                    print("forbidden mycelium admin")
                     raise HTTPError(self.response, 403)
 
             self.db.edit("role", targetId, field, value)
@@ -1722,9 +1722,9 @@ class Disclone(Server):
         if not self.checkAccessRights(uid, server, "dashboard-read"):
             raise HTTPError(self.response, 403, "forbidden")
 
-        #if disclone get from self
-        if service_id == "disclone":
-            self.db.cur.execute("SELECT COUNT(*) FROM disclone_account", ())
+        #if mycelium get from self
+        if service_id == "mycelium":
+            self.db.cur.execute("SELECT COUNT(*) FROM mycelium_account", ())
             board = {"users": self.db.cur.fetchone()}
             return json.dumps(board, default=str)
         #if uniauth get from uniauth
@@ -1948,4 +1948,4 @@ class Disclone(Server):
                     user['status'] = {'icon': 'orange', 'text': params['text'], 'emoji': params['emoji']}
 
 REGEX_USERNAME = re.compile(r'^(?=.{3,}$)[a-zA-Z0-9_\-\.]*$')
-server = Disclone(path=PATH, configFile="/server.ini")
+server = Mycelium(path=PATH, configFile="/server.ini")

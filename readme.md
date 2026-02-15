@@ -1,10 +1,10 @@
-# Disclone.
+# Mycelium.
 
-❓️A shitty Discord clone based on Vesta. <br>  
-🌍 Production : https://disclone.carbonlab.dev <br>
+❓️A rich and ethical communication software to build your digital home. <br>  
+🌍 Production : https://mycelium.carbonlab.dev <br>
 🟢 Status : https://status.carbonlab.dev <br>
-🏀 Roadmap : https://smoop.carbonlab.dev/project?uid=6&access=read-only <br>
-🏡 Home : https://gitlab.com/Louciole/disclone
+🏀 Roadmap : https://synapse.carbonlab.dev/project?uid=6&access=read-only <br>
+🏡 Home : https://gitlab.com/Louciole/mycelium
 
 
 ## 🏎️ getting started
@@ -22,9 +22,18 @@
    or you can just copy your local file
 
 
-3. Install the dependencies
+3. create a venv
 
-       bash install.sh  
+
+4. install dependencies
+
+   `pip install -r requirements.txt`
+
+
+5. run `vesta install` to import vesta's files
+
+
+6. run `python server.py` to start the server
 
 ## 🖥️ Work
 If you plan to commit something don't forget to IGNORE the *.ini file

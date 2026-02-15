@@ -1,10 +1,10 @@
-# 🎉 Contributing to Disclone
+# 🎉 Contributing to Mycelium
 
-Thank you for considering contributing to Disclone! Your help is invaluable in making this project a success.
+Thank you for considering contributing to Mycelium! Your help is invaluable in making this project a success.
 
-- GitLab: [GitLab Link](https://gitlab.com/Louciole/disclone/)
-- GitHub [Mirror]: [GitHub Link](https://github.com/Louciole/disclone)
-- Issues: [GitLab Issues](https://gitlab.com/Louciole/disclone/-/issues)
+- GitLab: [GitLab Link](https://gitlab.com/Louciole/mycelium/)
+- GitHub [Mirror]: [GitHub Link](https://github.com/Louciole/mycelium)
+- Issues: [GitLab Issues](https://gitlab.com/Louciole/mycelium/-/issues)
 - Documentation: [Vesta Docs](https://louciole.gitlab.io/vesta-docs/)
 - Documentation Repo: [GitLab](https://gitlab.com/Louciole/vesta-docs)
 
@@ -21,7 +21,7 @@ Thank you for considering contributing to Disclone! Your help is invaluable in m
 
 ## ✅ Task List
 
-Check out our to-do list on Smooth Projects: [Smooth Projects Link](https://smoop.carbonlab.dev/project?uid=11&&access=read-only)
+Check out our to-do list on Synapse: [Synapse Link](https://synapse.carbonlab.dev/project?uid=6&access=read-only)
 
 ---
 
@@ -35,11 +35,10 @@ Check out our to-do list on Smooth Projects: [Smooth Projects Link](https://smoo
 
 ## 🎨 Style
 
-- **Commit messages** should be funny and contain at least one emoji. 😄
 - **Code** should be as simple and minimalistic as possible.
 
 ---
 
 ## 🐛 Issues and Feedback
 
-Found a bug? Have an amazing feature idea? Share your thoughts by [opening an issue on GitLab](https://gitlab.com/Louciole/disclone/-/issues).
+Found a bug? Have an amazing feature idea? Share your thoughts by [opening an issue on GitLab](https://gitlab.com/Louciole/mycelium/-/issues).

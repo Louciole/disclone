@@ -1,10 +1,11 @@
 server{
     listen 80;
     server_name disclone.carbonlab.dev;
+    server_name mycelium.carbonlab.dev;
 
     location /static/ {
         autoindex off;
-        root /var/www/html/disclone;
+        root /var/www/html/mycelium;
     }
 
     location / {

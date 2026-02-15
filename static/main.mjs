@@ -482,7 +482,7 @@ function deleteServer(){
 window.deleteServer = deleteServer
 
 initNavigation()
-printWatermark("Disclone@carbonlab.dev", "https://github.com/Louciole/disclone")
+printWatermark("Mycelium@carbonlab.dev", "https://github.com/Louciole/mycelium")
 await initTranslations()
 goTo('content',"friends",undefined,true,()=>{goTo('friends-block','main-friend')})
 loadTemplate("profile-info.html")

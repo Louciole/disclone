@@ -1,14 +1,13 @@
 import {xhr} from "./framework/templating.mjs";
 
 const rights = {
-    "dashboard-read": {'name': 'dashboard-read', 'category': 'dashboard', 'description': 'See the dashboards'},
-    "dashboard-create": {'name': 'dashboard-create' ,'category': 'dashboard', 'description': 'Create a new dashboard'},
     "server-admin": {'name': 'server-admin' ,'category': 'advanced', 'description': 'Administrate the server, delete it, do everything'},
 }
 window.rights = rights;
 
 const op_rights = {
-    "disclone-admin": {'name': 'disclone-admin' ,'category': 'disclone', 'description': 'Administrate Disclone, create admin API-keys'},
+    "dashboard-read": {'name': 'dashboard-read', 'category': 'dashboard', 'description': 'Query the dashboards'},
+    "mycelium-admin": {'name': 'mycelium-admin' ,'category': 'mycelium', 'description': 'Administrate Mycelium, create admin API-keys'},
 }
 window.opr = op_rights;
 

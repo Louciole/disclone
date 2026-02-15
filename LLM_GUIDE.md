@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-**Project**: Discord Clone (Disclone)  
+**Project**: Discord Clone (Mycelium)  
 **Type**: Real-time communication platform  
 **Stack**: Python (Vesta framework) + Vanilla JavaScript  
 **Database**: PostgreSQL  
@@ -184,7 +184,7 @@ wsl sudo service postgresql start
 
 # 2. Lancer le serveur
 wsl
-cd /mnt/c/Users/haber/IdeaProjects/disclone
+cd /mnt/c/Users/haber/IdeaProjects/mycelium
 source venv/bin/activate
 python server.py
 
@@ -206,7 +206,7 @@ npm run test:integration
 wsl
 
 # 2. Navigate to project directory
-cd /mnt/c/Users/haber/IdeaProjects/disclone
+cd /mnt/c/Users/haber/IdeaProjects/mycelium
 
 # 3. Activate virtual environment
 source venv/bin/activate
@@ -488,7 +488,7 @@ self.db.deleteSomething("table_name", id)
 ```
 
 ### Common Tables
-- `disclone_account` - User accounts
+- `mycelium_account` - User accounts
 - `conversation` - Conversations/channels
 - `accessconversation` - User-conversation relationships
 - `call_session` - Active calls

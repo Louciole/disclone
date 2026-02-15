@@ -1,6 +1,6 @@
-create table if not exists disclone_account(
+create table if not exists mycelium_account(
     id int NOT NULL PRIMARY KEY,
-    display varchar(24) DEFAULT 'Disclone User',
+    display varchar(24) DEFAULT 'Mycelium User',
     username varchar(24) NOT NULL,
     inscription TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     pronouns varchar(24),
