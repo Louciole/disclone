@@ -165,6 +165,32 @@ export function loadChan(key){
     }
 }
 
+export function loadNote(key){
+    const onload = function() {
+        import("./workspaces/notes.mjs").then(()=>{
+            global.state.noteEditor = new NoteEditor()
+            goTo('content','server-note-content',undefined,false)
+        })
+    };
+
+    const request = xhr("getNoteContent?id="+JSON.stringify(key), onload, "GET",false)
+    const elements = JSON.parse(request.responseText)
+
+    global.notes[key] = {}
+    for(let element in elements){
+        global.notes[key][element] = elements[element]
+    }
+
+    // Convert array to dict
+    const blocksArray = global.notes[key].blocks || []
+    global.notes[key].blocks = {}
+
+    for(let block of blocksArray){
+        global.notes[key].blocks[block.uuid] = block
+
+    }
+}
+
 export function loadUser(){
     let request = new XMLHttpRequest();
     request.open('POST', "/getUserInfo", true);
@@ -330,7 +356,7 @@ export function sendTyping(){
     if( !global.settings.silent_typing && (!global.state.lastTyping || global.state.lastTyping+5000 < new Date().valueOf())){
         const message = {"type" : 'typing', "uid": global.user.id, "conv": global.state.activeConv};
         global.state.lastTyping = new Date().valueOf()
-        global.state.socket.send(JSON.stringify(message))
+        global.state.websocket.send(JSON.stringify(message))
     }
 }
 

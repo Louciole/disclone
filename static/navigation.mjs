@@ -1,5 +1,5 @@
 import global from "./framework/global.mjs"
-import {loadChan, loadConv, loadServer, lookFor} from "./crud.mjs";
+import {loadChan, loadConv, loadNote, loadServer, lookFor} from "./crud.mjs";
 import {setElement} from "./framework/vesta.mjs";
 import {closeFM, goTo} from "./framework/navigation.mjs";
 import {xhr} from "./framework/templating.mjs";
@@ -130,17 +130,11 @@ function goToNoteChannel(id){
     global.state.activeChan = {id:id, slug:"-note-"+id, type:"note"}
 
     if (!global.convs) global.convs = {}
-    const room = lookFor(id, global.state.currentServer.dirs.rooms)
-    global.convs[id] = {id: id, name: room ? room.name : "Salon vocal", type: "vocal"}
+    loadNote(id)
 
     targetElt = document.getElementById("channel".concat(global.state.activeChan.slug))
     targetElt.classList.add("selected")
 
-
-    import("./workspaces/notes.mjs").then(()=>{
-        global.state.noteEditor = new NoteEditor()
-        goTo('content','server-note-content',undefined,false)
-    })
 
 }
 window.goToNoteChannel = goToNoteChannel

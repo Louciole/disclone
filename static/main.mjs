@@ -21,6 +21,7 @@ const notifElt = document.getElementById("notif")
 global.state.pendingConvMembers = {}
 global.users = {}
 global.convs = {}
+global.notes = {}
 global.privateConvs = {}
 
 

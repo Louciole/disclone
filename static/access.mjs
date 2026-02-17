@@ -11,6 +11,8 @@ const op_rights = {
 }
 window.opr = op_rights;
 
+const allRights = {...rights, ...op_rights}
+
 function getRights() {
     if (global.state.currentServer.userRights){
         return global.state.currentServer.userRights;
@@ -38,7 +40,7 @@ function getRights() {
 function checkServRights(right) {
     const userRights = getRights();
 
-    if(rights[right].category === 'dashboard') {
+    if(allRights[right].category === 'dashboard') {
         if (!global.state.currentServer.op) {
             return false;
         }

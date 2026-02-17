@@ -1142,6 +1142,7 @@ section{
     overflow: clip;
     max-width: 77vw;
     word-wrap: break-word;
+    list-style: inside;
 }
 
 .message .content>p, .mdBlock>p{
@@ -3841,6 +3842,7 @@ input:checked + .slider:before {
     width: 100%;
     display: flex;
     flex-direction: column;
+    align-items: center;
 }
 
 /* State: Banner - Compact horizontal layout */
@@ -3966,18 +3968,6 @@ input:checked + .slider:before {
     max-height: 50svh;
     min-height: 400px;
     padding: 2rem;
-}
-
-.call-waiting .call-header {
-    text-align: center;
-    margin-bottom: 2rem;
-}
-
-.call-waiting .call-title {
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: var(--text);
-    margin-bottom: 0.5rem;
 }
 
 .call-waiting .call-subtitle {
@@ -4405,6 +4395,7 @@ input:checked + .slider:before {
 .call-actions {
     display: flex;
     gap: 0.5rem;
+    padding-bottom: 1rem;
 }
 
 @keyframes slideIn {
@@ -4845,6 +4836,7 @@ input:checked + .slider:before {
     outline: none;
     white-space: pre-wrap;
     width: 100%;
+    list-style: inside;
 }
 
 .editor .editable-block:empty{
@@ -4952,4 +4944,22 @@ input:checked + .slider:before {
     width: fit-content !important;
 }
 
+.global-state-callManager-callState{
+    width: 100%;
+    background: var(--bg5);
+    max-height: 34svh;
+    display: flex;
+}
 
+.call-banner-small .call-participant{
+    background: none !important;
+    height: 120px;
+}
+.call-banner-small .local-video-container{
+    display: none;
+}
+
+.call-banner-small .participant-status-ring{
+    width: 80px;
+    height: 80px;
+}

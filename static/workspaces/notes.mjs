@@ -3,14 +3,13 @@ import {xhr} from "../framework/templating.mjs";
 
 class Editor {
     constructor() {
-        this.blocks = {}
-        this.blocks[0]={"id":0, "type":"text", "content": "", position:0.1}
+        if (Object.keys(global.notes[global.state.activeChan.id].blocks).length !== 0) {
+            this.blocks = global.notes[global.state.activeChan.id].blocks
+        }else{
+            this.blocks = {}
+            this.createBlock({},false)
+        }
         this.draggedBlockId = null
-    }
-
-    createNote(title) {
-        // this.createBlock("heading", "# " + title);
-        this.createBlock("text", "put your content here...");
     }
 
     getSortedBlocks() {
@@ -23,7 +22,7 @@ class Editor {
         })
     }
 
-    createBlock({type = "text", content = "", position = null, afterBlockId = null}) {
+    createBlock({type = "text", content = "", position = null, afterBlockId = null}, addDom = true) {
         this.DOMElement = document.getElementById("note-editor");
         // generate uuid for block id
         const newBlockId = crypto.randomUUID()
@@ -54,14 +53,18 @@ class Editor {
         }
 
         this.blocks[newBlockId] = {"uuid":newBlockId, "type":type, "content": content, position: position};
-        this.DOMElement.insertAdjacentHTML("beforeend", fillWith('note-block', [this.blocks[newBlockId]]));
-        this.reorderDOM()
+
+        if (addDom){
+            this.DOMElement.insertAdjacentHTML("beforeend", fillWith('note-block', [this.blocks[newBlockId]]));
+            this.reorderDOM()
+        }
+
         this.checkAndNormalizePositions()
 
         const onload = function () {
 
         }
-        xhr("/saveBlock?channel="+global.state.activeChan.id+"&block="+JSON.stringify(this.blocks[newBlockId])+"&op=create", onload)
+        xhr("/saveBlock?channel="+global.state.activeChan.id+"&block="+encodeURIComponent(JSON.stringify(this.blocks[newBlockId]))+"&op=create", onload)
     }
 
     moveBlock(blockId, newPosition) {
@@ -72,7 +75,8 @@ class Editor {
         this.reorderDOM()
         this.checkAndNormalizePositions()
 
-        // TODO: sync to backend
+        this.saveBlock(block.uuid)
+
         console.log("Block moved:", blockId, "new position:", newPosition)
     }
 
@@ -82,7 +86,7 @@ class Editor {
         const container = document.getElementById("note-editor")
 
         sortedBlocks.forEach(block => {
-            const blockElement = container.querySelector(`[data-block-id="${block.id}"]`)
+            const blockElement = container.querySelector(`[data-block-id="${block.uuid}"]`)
             if (blockElement) {
                 container.appendChild(blockElement)
             }
@@ -96,7 +100,7 @@ class Editor {
 
         for (let i = 1; i < sortedBlocks.length; i++) {
             const diff = sortedBlocks[i].position - sortedBlocks[i-1].position
-            if (diff < 0.0001 && diff > 0) {
+            if (diff < 0.0001) {
                 needsNormalization = true
                 break
             }
@@ -112,15 +116,24 @@ class Editor {
         const sortedBlocks = this.getSortedBlocks()
         sortedBlocks.forEach((block, index) => {
             block.position = (index + 1) * 0.1
+            this.saveBlock(block.uuid)
         })
+
         console.log("Positions normalized")
     }
 
     deleteBlock(blockId) {
+        delete this.blocks[blockId]
+        delete global.notes[global.state.activeChan.id].blocks[blockId]
+        const blockElement = document.querySelector(`[data-block-id="${blockId}"]`)
+        if (blockElement) {
+            blockElement.remove()
+        }
 
-    }
+        const onload = function () {
 
-    editBlock(block, newContent) {
+        }
+        xhr("/saveBlock?channel="+global.state.activeChan.id+"&block="+ JSON.stringify({uuid:blockId})+"&op=delete", onload)
 
     }
 
@@ -165,8 +178,8 @@ class Editor {
 
         // Check if this drop would result in no movement
         const sortedBlocks = this.getSortedBlocks()
-        const draggedIndex = sortedBlocks.findIndex(b => b.id === this.draggedBlockId)
-        const targetIndex = sortedBlocks.findIndex(b => b.id === blockId)
+        const draggedIndex = sortedBlocks.findIndex(b => b.uuid === this.draggedBlockId)
+        const targetIndex = sortedBlocks.findIndex(b => b.uuid === blockId)
 
         // Don't show indicator if drop would result in same position
         if (isAbove) {
@@ -208,8 +221,8 @@ class Editor {
 
         // Calculate new position based on drop location
         const sortedBlocks = this.getSortedBlocks()
-        const draggedIndex = sortedBlocks.findIndex(b => b.id === this.draggedBlockId)
-        const targetIndex = sortedBlocks.findIndex(b => b.id === blockId)
+        const draggedIndex = sortedBlocks.findIndex(b => b.uuid === this.draggedBlockId)
+        const targetIndex = sortedBlocks.findIndex(b => b.uuid === blockId)
 
         // Determine if we're dropping above or below
         const blockElement = event.currentTarget.closest('.block')
@@ -293,6 +306,9 @@ class Editor {
         const block = this.blocks[blockId];
 
         if (block.type === "text") {
+            if (event.key === "Backspace" && block.content === "" ) {
+                this.deleteBlock(blockId)
+            }
             return
         }
 
@@ -332,6 +348,7 @@ class Editor {
         // switching from editor preview to rendered view
         const block = this.blocks[blockId];
         event.currentTarget.innerHTML = MDToRender(block.content)
+        this.saveBlock(blockId)
     }
 
     onFocus(blockId, event) {
@@ -401,7 +418,7 @@ class Editor {
 
         }
 
-        xhr("/saveBlock", onSaved)
+        xhr("/saveBlock?channel="+global.state.activeChan.id+"&block="+encodeURIComponent(JSON.stringify(block))+"&op=edit", onSaved)
     }
 
 }
@@ -479,7 +496,7 @@ class InitiatorParser{
 const preview_equiv = {
     "#":"${'#'.repeat(props.level)}${content}",
     "text":"${content}",
-    "start li":"-${content}",
+    "start li":"-${content}\n",
     "*":"<span class='preview-will-be-hidden'>*</span><i class='i'>${content}</i><span class='preview-will-be-hidden'>*</span>",
     "**":"<span class='preview-will-be-hidden'>**</span><b>${content}</b><span class='preview-will-be-hidden'>**</span>",
     ">":"<span class='answer'>${content}</span>",
@@ -540,6 +557,7 @@ function MDToRender(text){
     console.log("text",text,"tokens",tokens)
     return engine.render(tokens, render_equiv)
 }
+window.MDToRender = MDToRender
 
 function func_dashboard(dashboardName){
     const onload = function(){

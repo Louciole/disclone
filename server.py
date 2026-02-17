@@ -652,6 +652,20 @@ class Mycelium(Server):
             return json.dumps(content, default=str)
 
     @Server.expose
+    def getNoteContent(self, id):
+        uid = self.getUser()
+        chan = self.db.getSomething("notes_channel", id)
+        if not chan:
+            raise HTTPError(self.response, 404, "Not Found")
+
+        conv = self.db.getFilters("accessserver", ["server", "=", chan["server"], "and", "account", "=", uid])
+        # TODO handle access rights
+        if conv:
+            content = {"name": chan["name"], "id": id}
+            content["blocks"] = self.db.getFilters("note_block", ["channel", "=", id])
+            return json.dumps(content, default=str)
+
+    @Server.expose
     def getServContent(self, servID, channelID=None):
         uid = self.getUser()
         #TODO handle access rights
@@ -665,8 +679,7 @@ class Mycelium(Server):
                 content["notes"] = self.db.getAll("notes_channel", servID,"server")
                 # content["whiteboard"] = self.db.getAll("drive_channel", servID,"server")
                 op = self.db.getSomething("op_servs", servID, "server")
-                if op and self.checkAccessRights(uid, servID, "dashboard-read"):
-                    content["dashboards"] = self.db.getAll("serv_dashboard", servID, "server")
+                if op:
                     content["op"] = True
                 content["cat"] = self.db.getAll("server_cat", servID,"server")
                 content["roles"] = self.db.getAll("role", servID,"server")
@@ -1553,27 +1566,6 @@ class Mycelium(Server):
                 return
 
             raise HTTPError(self.response, 403, "forbidden")
-        if property == "dashboard":
-            op = self.db.getSomething("op_servs", id, "server")
-            if not op:
-                raise HTTPError(self.response, 403, "forbidden")
-
-            if not self.checkAccessRights(uid, id, "dashboard-create"):
-                raise HTTPError(self.response, 403, "forbidden")
-
-            if action == "create":
-                self.db.insertDict("serv_dashboard", {"name": "new dashboard", "server": id})
-                return
-
-            chan = self.db.getSomething("serv_dashboard", targetId)
-            if not chan or chan["server"] != int(id) or field == "server":
-                raise HTTPError(self.response, 403, "forbidden")
-
-            if action == "delete":
-                self.db.deleteSomething("serv_dashboard", targetId)
-                return
-
-            self.db.edit("serv_dashboard", targetId, field, value)
         elif property == "role":
             if action == "create":
                 id = self.db.insertDict("role", {"name": "new role", "server": id}, getId=True)
@@ -1636,27 +1628,31 @@ class Mycelium(Server):
         if not chan_info:
             raise HTTPError(self.response, 404)
 
-        server_id = chan_info.server
+        server_id = chan_info["server"]
         if not self.checkAccessRights(uid, server_id, "edit"):
             raise HTTPError(self.response, 403)
 
+        block = json.loads(block)
         if op == "create":
             block["channel"] = channel
-            block_id = self.db.insertDict("notes_block", block, getId=True)
+            block_id = self.db.insertDict("note_block", block, getId=True)
             return str(block_id)
         elif op == "delete":
-            block_info = self.db.getSomething("notes_block", block["id"])
-            if not block_info or block_info["channel"] != channel:
+            block_info = self.db.getSomething("note_block", str(block["uuid"]), "uuid")
+            if not block_info or int(block_info["channel"]) != int(channel):
                 raise HTTPError(self.response, 404)
-            self.db.deleteSomething("notes_block", block["id"])
+            self.db.deleteSomething("note_block", block_info["id"])
         elif op == "edit":
-            block_info = self.db.getSomething("notes_block", block["id"])
+            block_info = self.db.getSomething("note_block", str(block["uuid"]), "uuid")
+
+            if not block_info:
+                raise HTTPError(self.response, 404)
 
             forbidden_fields = ["id", "channel", "uuid"]
 
             for key in block:
                 if key not in forbidden_fields and block[key] != block_info.get(key):
-                    self.db.edit("notes_block", block["uuid"], key, block[key], "uuid")
+                    self.db.edit("note_block", block["uuid"], key, block[key], "uuid")
 
 
 

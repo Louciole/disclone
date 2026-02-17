@@ -1,27 +1,28 @@
-<!-- Unified Call Component - Single layout with dynamic participants and actions -->
 ${Subscribe('global.state.callManager.callState', () => {
     const callManager = global.state.callManager;
     const callState = callManager?.callState || 'none';
 
-    console.log('🎨 call-component rendering, callState:', callState);
+    console.log('call-component rendering, callState:', callState);
 
     if (callState === 'none') {
-        console.log('❌ callState is none, not rendering');
+        console.log(' callState is none, not rendering');
         return '';
     }
 
-    console.log('✅ Rendering call-component with state:', callState);
+    console.log(' Rendering call-component with state:', callState);
     console.log('   - participants:', callManager?.remoteParticipants);
     console.log('   - actions:', callManager?.availableActions);
 
+
+
     return `
-        <div class="call-component call-${callState}">
-            ${callState === 'calling' ? `
-                <div class="call-header">
-                    <div class="call-title">${_t("Appel en cours")}</div>
-                    <div class="call-subtitle">${_t("En attente de réponse")}...</div>
-                </div>
-            ` : ''}
+        <div class="call-component call-${callState} call-${callManager.displayMode}">
+<!--            ${callState === 'calling' ? `-->
+<!--                <div class="call-header">-->
+<!--                    <div class="call-title">${_t("Appel en cours")}</div>-->
+<!--                    <div class="call-subtitle">${_t("En attente de réponse")}...</div>-->
+<!--                </div>-->
+<!--            ` : ''}-->
 
             <div class="call-content">
                 <div id="remote-videos" class="remote-videos-grid">

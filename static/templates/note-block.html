@@ -1,18 +1,18 @@
-<div class="block" data-block-id="${element.id}"
-     ondragover="global.state.noteEditor.onDragOver(${element.id}, event)"
-     ondrop="global.state.noteEditor.onDrop(${element.id}, event)">
+<div class="block" data-block-id="${element.uuid}"
+     ondragover="global.state.noteEditor.onDragOver('${element.uuid}', event)"
+     ondrop="global.state.noteEditor.onDrop('${element.uuid}', event)">
     <div class="controls">
         <div class="add" onclick="global.state.noteEditor.createBlock({position: ${element.position}})">+</div>
         <div class="drag" draggable="true"
-             ondragstart="global.state.noteEditor.onDragStart(${element.id}, event)"
-             ondragend="global.state.noteEditor.onDragEnd(${element.id}, event)">
+             ondragstart="global.state.noteEditor.onDragStart('${element.uuid}', event)"
+             ondragend="global.state.noteEditor.onDragEnd('${element.uuid}', event)">
             <img src="/static/icons/material/handle.svg"/>
         </div>
     </div>
-    <span class="content editable-block" contenteditable="true"
+    <span class="content editable-block ${element.type!=='text'?'note-'+element.type:''}" contenteditable="true"
           data-placeholder="Press '/' for commands"
-          oninput="global.state.noteEditor.onInput(${element.id}, event)"
-          onkeydown="global.state.noteEditor.onKeyDown(${element.id}, event)"
-          onblur="global.state.noteEditor.onBlur(${element.id}, event)"
-          onfocus="global.state.noteEditor.onFocus(${element.id}, event)"></span>
+          oninput="global.state.noteEditor.onInput('${element.uuid}', event)"
+          onkeydown="global.state.noteEditor.onKeyDown('${element.uuid}', event)"
+          onblur="global.state.noteEditor.onBlur('${element.uuid}', event)"
+          onfocus="global.state.noteEditor.onFocus('${element.uuid}', event)">${MDToRender(element.content)}</span>
 </div>

@@ -26,6 +26,7 @@ export class CallManager {
         this.mode = 'p2p'; // 'p2p' or 'sfu'
         this.callType = 'audio'; // 'audio' or 'video'
         this.callState = 'none'; // 'none', 'banner', 'calling', 'active'
+        this.displayMode = 'banner-small'; // 'banner-small (in banner only audio flux)', 'banner-big (in banner, mixed media or only video)' //TODO add full screen mode and room mode
 
         // Media streams
         this.localStream = null;
@@ -912,7 +913,7 @@ export class CallManager {
      * Send WebSocket message to server
      */
     _sendWebSocketMessage(data) {
-        if (!global.state.socket) {
+        if (!global.state.websocket) {
             console.error('❌ WebSocket not available');
             return;
         }
@@ -922,7 +923,7 @@ export class CallManager {
             clientID: global.state.clientID
         };
 
-        global.state.socket.send(JSON.stringify(message));
+        global.state.websocket.send(JSON.stringify(message));
     }
 
     /**
@@ -1079,13 +1080,8 @@ window.joinExistingCall = async function(callId, hasVideo = false) {
     }
 };
 
-// Appel vocal - VERSION ULTRA SIMPLE
 window.startVoiceCall = async function(conversationId) {
     const callManager = global.state.callManager;
-    if (!callManager) {
-        showPermissionError('Reload page.');
-        return;
-    }
 
     try {
         await callManager.startCall(conversationId, false);

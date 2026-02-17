@@ -164,14 +164,6 @@ create table if not exists op_servs (
     server integer NOT NULL references server(id) ON DELETE CASCADE
 );
 
-create table if not exists serv_dashboard (
-    id bigserial NOT NULL PRIMARY KEY,
-    name varchar(255) NOT NULL,
-    server integer NOT NULL,
-    category integer,
-    place float NOT NULL DEFAULT 0.1
-);
-
 create table if not exists drive_channel (
     id bigserial NOT NULL PRIMARY KEY,
     name varchar(255) NOT NULL,

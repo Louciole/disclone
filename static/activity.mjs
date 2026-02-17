@@ -38,7 +38,7 @@ function resetIdle(){
         setElement("global.user.status", status)
 
         const message = {"type" : 'changeActivity', "idle": false, "clientID":global.state.clientID}
-        global.state.socket.send(JSON.stringify(message))
+        global.state.websocket.send(JSON.stringify(message))
     }
     global.state.idle = {state: false, time:new Date().valueOf()}
 }
@@ -60,7 +60,7 @@ function checkIdle(){
         global.state.idle.state = true
         setElement("global.user.status", status)
         const message = {"type" : 'changeActivity', "idle": true, "clientID":global.state.clientID};
-        global.state.socket.send(JSON.stringify(message))
+        global.state.websocket.send(JSON.stringify(message))
         console.log("client is idle")
     }
 }
