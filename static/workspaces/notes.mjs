@@ -1,5 +1,6 @@
 import {Markdown} from "../markdown/markdown.mjs";
 import {xhr} from "../framework/templating.mjs";
+import {} from "./synapse.mjs";
 
 class Editor {
     constructor() {
@@ -280,7 +281,11 @@ class Editor {
                 block.content = parsedInitiator.content
                 event.currentTarget.setAttribute("data-placeholder", blockTypes[block.type].placeholder)
                 event.currentTarget.classList.add("note-"+block.type)
-                event.currentTarget.innerText = block.content
+                if (blockTypes[block.type].template) {
+                    this.convertBlock(event.currentTarget, blockId)
+                }else{
+                    event.currentTarget.innerText = block.content
+                }
                 this.putCursorToEnd(event.currentTarget)
             }else{
                 const cursorPosition = this.saveCursorPosition(event.currentTarget);
@@ -300,6 +305,18 @@ class Editor {
             event.currentTarget.innerText = ""
         }
         console.log("Input event:",this.blocks[blockId], event.currentTarget.innerText);
+    }
+
+    convertBlock(target, blockId, newType = "interactiveElement") {
+        const block = this.blocks[blockId]
+        if(newType === "interactiveElement"){
+            target.oninput = ""
+            target.onkeydown = ""
+            target.onblur = ""
+            target.onfocus = ""
+            target.contenteditable = "false"
+            target.innerHTML = blockTypes[block.type].template()
+        }
     }
 
     onKeyDown(blockId, event) {
@@ -431,6 +448,7 @@ const blockTypes = {
     "heading3": {placeholder: "Heading 3", initiator: "###"},
     "small": {placeholder: "small text", initiator: "-#"},
     "showcase": {placeholder: "insert metric", initiator: "/showcase"},
+    "synapse": {template: ()=>{return getTemplate("synapse-root")}, initiator: "/synapse"},
 }
 
 const initiators = [
@@ -439,6 +457,7 @@ const initiators = [
     {"type":"heading3", "initiator":"###"},
     {"type":"small", "initiator":"-#"},
     {"type":"showcase", "initiator":"/showcase"},
+    {"type":"synapse", "initiator":"/synapse"},
 ]
 
 
