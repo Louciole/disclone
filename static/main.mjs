@@ -14,6 +14,7 @@ import {xhr} from "./framework/templating.mjs";
 import {initTranslations} from "./translations/translation.mjs";
 import CallManager from "/static/webrtc.mjs";
 import {} from "/static/constants.mjs"; // Expose and parseJsonArray globally
+import {} from "/static/mentions.mjs"; // Mention autocomplete system
 
 
 global.state.currentTab = document.getElementById("logo")

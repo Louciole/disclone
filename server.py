@@ -1272,6 +1272,15 @@ class Mycelium(Server):
         msgId = self.db.insertDict("message", message, getId=True)
         message["id"] = msgId
 
+        channel = self.db.getSomething("textual_channel", conv["id"])
+
+        if channel:
+            self.notifyChannelMesage(uid, channel, message)
+        else:
+            self.notifyConvMessage(uid, conv, message)
+        return json.dumps(attachmentList)
+
+    def notifyConvMessage(self,uid ,conv, message):
         members = self.db.getAll("accessconversation", conv["id"], "conversation")
         for user in members:
             if user["account"] != uid:
@@ -1283,7 +1292,48 @@ class Mycelium(Server):
                 else :
                     self.db.insertDict("offline_notifs", {"account": user['account'] , "conversation": conv["id"]})
 
-        return json.dumps(attachmentList)
+    def notifyChannelMesage(self, uid, channel, message):
+        if channel:
+            server_id = channel["server"]
+            mention_targets = set()
+
+            # Parse <@everyone> – notify all server members
+            if "<@everyone>" in message["body"]:
+                server_members = self.db.getFilters("accessserver", ["server", "=", server_id])
+                for m in server_members:
+                    mention_targets.add(m["account"])
+
+            # Parse <@here> – notify online server members
+            if "<@here>" in message["body"]:
+                server_members = self.db.getFilters("accessserver", ["server", "=", server_id])
+                for m in server_members:
+                    online = self.db.getSomething("active_client", m["account"], "userid")
+                    if online:
+                        mention_targets.add(m["account"])
+
+            # Parse <@&roleId> – notify all members with that role
+            role_mentions = re.findall(r'<@&(\d+)>', message["body"])
+            for role_id in role_mentions:
+                role_members = self.db.getFilters("role_attribution", ["role", "=", int(role_id), "and", "server", "=", server_id])
+                for rm in role_members:
+                    mention_targets.add(rm["account"])
+
+            # Parse <@userId> – notify specific users (for explicit @user mentions)
+            user_mentions = re.findall(r'<@(\d+)>', message["body"])
+            for mentioned_uid in user_mentions:
+                mention_targets.add(int(mentioned_uid))
+
+            # Send mention notifications to users not already notified
+            mention_targets.discard(uid)  # Don't notify the sender
+            for target_uid in mention_targets:
+                self.sendNotification(target_uid, {"type": "message", "content": message})
+
+                notif = self.db.getFilters("offline_notifs", ["account", "=", target_uid, "and", "conversation", "=", channel["id"]])
+                if notif:
+                    self.db.edit("offline_notifs", notif[0]["id"], "number", notif[0]["number"] + 1)
+                else:
+                    self.db.insertDict("offline_notifs", {"account": target_uid, "conversation": channel["id"]})
+
 
     @Server.expose
     def consultNotifs(self, notifId):

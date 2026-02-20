@@ -4963,3 +4963,131 @@ input:checked + .slider:before {
     width: 80px;
     height: 80px;
 }
+
+
+/* ─── Mentions ───────────────────────────────────────────────────────────── */
+
+.mention {
+    background: rgba(88, 101, 242, 0.2);
+    color: #dee0fc;
+    padding: 0 3px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background 0.15s, color 0.15s;
+}
+
+.mention:hover {
+    background: rgba(88, 101, 242, 0.5);
+    color: #fff;
+}
+
+.mention-role {
+    background: color-mix(in srgb, var(--role-color, #A8A8A8) 20%, transparent);
+    color: var(--role-color, #A8A8A8);
+}
+
+.mention-role:hover {
+    background: color-mix(in srgb, var(--role-color, #A8A8A8) 40%, transparent);
+    color: #fff;
+}
+
+.mention-channel {
+    background: transparent;
+    color: #00b0f4;
+    font-weight: 500;
+}
+
+.mention-channel:hover {
+    background: rgba(0, 176, 244, 0.15);
+    text-decoration: underline;
+}
+
+.mention-everyone,
+.mention-here {
+    background: rgba(250, 166, 26, 0.15);
+    color: #faa61a;
+}
+
+.mention-everyone:hover,
+.mention-here:hover {
+    background: rgba(250, 166, 26, 0.3);
+    color: #fff;
+}
+
+/* ─── Mention Autocomplete Popup ─────────────────────────────────────────── */
+
+.mention-autocomplete {
+    display: none;
+    flex-direction: column;
+    width: calc(100% - 2rem);
+    max-height: 260px;
+    overflow-y: auto;
+    background: var(--bg2);
+    border: 1px solid var(--bg4);
+    border-radius: 8px;
+    padding: 6px 0;
+    z-index: 100;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+}
+
+.mention-ac-item {
+    display: flex;
+    align-items: center;
+    padding: 6px 12px;
+    gap: 10px;
+    cursor: pointer;
+    transition: background 0.1s;
+}
+
+.mention-ac-item:hover,
+.mention-ac-item.selected {
+    background: var(--bg4);
+}
+
+.mention-ac-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--bg5);
+    background-size: cover;
+    background-position: center;
+    flex-shrink: 0;
+}
+
+.mention-ac-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin: 0 7px;
+}
+
+.mention-ac-icon {
+    width: 18px;
+    height: 18px;
+    opacity: 0.6;
+    margin: 0 5px;
+}
+
+.mention-ac-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.mention-ac-name {
+    color: var(--text);
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mention-ac-sub {
+    color: var(--text2);
+    font-size: 0.75rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
