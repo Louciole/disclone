@@ -236,39 +236,32 @@ function Save(endpoint="change"){
                 setElement("global.state.currentServer.".concat(target), global.state["currentForm"][key].value)
             }else if (endpoint === "editChannel") {
                 const id = global.state.modaltarget.dataset.id
+                const type = global.state.modaltarget.dataset.type
                 const newValue = global.state["currentForm"][key].value
 
                 const channelId = parseInt(id)
                 let channelArray = null
                 let channelIndex = -1
 
-                channelIndex = global.state.currentServer.dirs.channels.findIndex(ch => ch.id === channelId)
-                if (channelIndex !== -1) {
+
+                if (type === "voc") {
+                    channelArray = global.state.currentServer.dirs.rooms
+                }else if (type === "conv") {
                     channelArray = global.state.currentServer.dirs.channels
+                }else if (type === "note") {
+                    channelArray = global.state.currentServer.dirs.notes
+                }else if (type === "drive") {
+                    channelArray = global.state.currentServer.dirs.drives
                 }
 
-                if (channelIndex === -1) {
-                    channelIndex = global.state.currentServer.dirs.rooms.findIndex(ch => ch.id === channelId)
-                    if (channelIndex !== -1) {
-                        channelArray = global.state.currentServer.dirs.rooms
-                    }
-                }
-
-                if (channelIndex === -1) {
-                    channelIndex = global.state.currentServer.dirs.drives.findIndex(ch => ch.id === channelId)
-                    if (channelIndex !== -1) {
-                        channelArray = global.state.currentServer.dirs.drives
-                    }
-                }
-
-                if (channelArray && channelIndex !== -1) {
+                if (channelArray) {
+                    channelIndex =  channelArray.findIndex(ch => ch.id === channelId)
                     channelArray[channelIndex].name = newValue
-
                     orderServDirs(global.state.currentServer)
                 }
 
                 // Envoyer la requête en arrière-plan (si ça échoue, on pourrait rollback)
-                xhr("editServer?id=".concat(global.state.currentServer.id, "&property=channel&value=", encodeURIComponent(newValue), "&field=name&targetId=", id), undefined, "POST", false)
+                xhr("editServer?id=".concat(global.state.currentServer.id, "&property=channel&value=", encodeURIComponent(newValue), "&field=name&targetId=", id, "&channelType=", type), undefined, "POST", false)
             }else if (endpoint === "editRole") {
                 const id = global.state.currentRole.id
                 xhr("editServer?id=".concat(global.state.currentServer.id, "&property=role&value=", encodeURIComponent(global.state["currentForm"][key].value), "&field=name&targetId=", id), undefined, "POST", false)
@@ -299,6 +292,7 @@ function sendMessage(event){
         const target = event.currentTarget
 
         const onload = function(){
+            if (handleQuotaError(this)) return
             const attachments = this.responseText
             const currentDate = new Date();
             const timestamp = currentDate.getTime();

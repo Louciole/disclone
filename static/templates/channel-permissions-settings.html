@@ -1,0 +1,91 @@
+<h1>${_t("Permissions du salon")}</h1>
+<p>${_t("Utilise les permissions pour personnaliser qui peut faire quoi dans ce salon")}</p>
+
+${(() => {
+    const chId = global.state.modaltarget.dataset.id;
+    const chType = global.state.editingChannelType || 'textual';
+    const typeMap = { textual: 'channels', vocal: 'rooms', drive: 'drives', note: 'notes' };
+    const dirKey = typeMap[chType];
+    const ch = (global.state.currentServer.dirs[dirKey] || []).find(c => c.id === parseInt(chId));
+    global.state._editingChannel = ch;
+    return '';
+})()}
+
+<div class="channel-privacy">
+    <div class="inline space-between">
+        <h2>${_t("Salon privé")}</h2>
+        <label class="switch">
+            <input type="checkbox" id="is-channel-private-checkbox" onchange="toggleChannelPrivacy()" ${global.state._editingChannel?.is_private ? 'checked' : ''}>
+            <span class="slider"></span>
+        </label>
+    </div>
+    <p>${_t("En définissant un salon comme privé, seuls les rôles et membres sélectionnés pourront le voir.")}</p>
+
+    <div id="channel-role-selector" style="display: ${global.state._editingChannel?.is_private ? '' : 'none'}">
+        <h2>${_t("Rôles autorisés")}</h2>
+        <div id="allowed-roles-list" class="allowed-roles-list">
+            ${(() => {
+                const chId = parseInt(global.state.modaltarget.dataset.id);
+                const chType = global.state.editingChannelType || 'textual';
+                const chanPerms = (global.state.currentServer.channel_permissions || []).filter(
+                    p => p.channel === chId && p.channel_type === chType
+                );
+                let html = '';
+                for (const perm of chanPerms) {
+                    const role = global.state.currentServer.roles[perm.role];
+                    if (!role) continue;
+                    html += `<div class="allowed-role-item inline space-between">
+                        <div class="inline">
+                            <div class="circle" style="background-color: ${role.color}"></div>
+                            <span>${role.name}</span>
+                        </div>
+                        <div class="icon-wrapper" onclick="removeChannelRole(${chId}, '${chType}', ${perm.role})">
+                            <img class="icon" src="/static/icons/material/closeFilled.svg"/>
+                        </div>
+                    </div>`;
+                }
+                return html;
+            })()}
+        </div>
+        <div id="role-selection-container" style="display: none"></div>
+        <div class="btn" onclick="openRoleSelectionModal()">${_t("Ajouter des rôles autorisés")}</div>
+    </div>
+</div>
+
+<hr>
+
+<h1>${_t("Permissions avancées")}</h1>
+<div id="advanced-channel-permissions">
+    ${(() => {
+        const chId = parseInt(global.state.modaltarget.dataset.id);
+        const chType = global.state.editingChannelType || 'textual';
+        const chanPerms = (global.state.currentServer.channel_permissions || []).filter(
+            p => p.channel === chId && p.channel_type === chType
+        );
+        if (chanPerms.length === 0) return `<p class="muted">${_t("Ajoutez des rôles pour configurer les permissions avancées")}</p>`;
+        let html = '';
+        for (const perm of chanPerms) {
+            const role = global.state.currentServer.roles[perm.role];
+            if (!role) continue;
+            const perms = typeof perm.permissions === 'string' ? JSON.parse(perm.permissions) : perm.permissions;
+            html += `<div class="channel-role-permissions">
+                <h3 style="color: ${role.color}">${role.name}</h3>`;
+            const cr = window.channel_rights;
+            for (const rightKey in cr) {
+                const right = cr[rightKey];
+                const isChecked = rightKey in perms;
+                html += `<div class="permission">
+                    <div class="inline space-between">
+                        <p>${right.description}</p>
+                        <label class="switch">
+                            <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="editChannelRolePerm(event, ${chId}, '${chType}', ${perm.role}, '${rightKey}')">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>`;
+            }
+            html += '</div>';
+        }
+        return html;
+    })()}
+</div>

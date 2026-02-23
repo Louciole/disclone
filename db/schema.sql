@@ -8,7 +8,8 @@ create table if not exists mycelium_account(
     faction integer,
     pfp text,
     banner text,
-    current_room integer
+    current_room integer,
+    storage_usage bigint DEFAULT 0
 );
 
 create table if not exists status(
@@ -29,7 +30,8 @@ create table if not exists server (
     languages jsonb DEFAULT '[]',
     is_featured boolean DEFAULT false,
     description text,
-    member_count integer DEFAULT 0
+    member_count integer DEFAULT 0,
+    storage_usage bigint DEFAULT 0
 );
 
 create table if not exists accessServer (
@@ -78,7 +80,8 @@ create table if not exists textual_channel (
     name varchar(255) NOT NULL,
     server integer NOT NULL references server(id) ON DELETE CASCADE,
     category integer,
-    place float NOT NULL DEFAULT 0.1
+    place float NOT NULL DEFAULT 0.1,
+    is_private boolean DEFAULT false
 ) inherits (conversationElement);
 
 create table if not exists accessConversation (
@@ -169,7 +172,8 @@ create table if not exists drive_channel (
     name varchar(255) NOT NULL,
     server integer NOT NULL references server(id) ON DELETE CASCADE,
     category integer,
-    place float NOT NULL DEFAULT 0.1
+    place float NOT NULL DEFAULT 0.1,
+    is_private boolean DEFAULT false
 );
 
 create table if not exists vocal_channel (
@@ -177,7 +181,8 @@ create table if not exists vocal_channel (
     name varchar(255) NOT NULL,
     server integer NOT NULL references server(id) ON DELETE CASCADE,
     category integer,
-    place float NOT NULL DEFAULT 0.1
+    place float NOT NULL DEFAULT 0.1,
+    is_private boolean DEFAULT false
 );
 
 create table if not exists notes_channel (
@@ -185,7 +190,8 @@ create table if not exists notes_channel (
     name varchar(255) NOT NULL,
     server integer NOT NULL references server(id) ON DELETE CASCADE,
     category integer,
-    place float NOT NULL DEFAULT 0.1
+    place float NOT NULL DEFAULT 0.1,
+    is_private boolean DEFAULT false
 );
 
 create table if not exists note_block (
@@ -246,3 +252,16 @@ create table if not exists call_session (
 
 create index if not exists idx_call_session_conversation on call_session(conversation_id);
 create index if not exists idx_call_session_active on call_session(active);
+
+create table if not exists channel_permission (
+    id bigserial NOT NULL PRIMARY KEY,
+    channel integer NOT NULL,
+    channel_type varchar(20) NOT NULL,
+    role integer NOT NULL references role(id) ON DELETE CASCADE,
+    server integer NOT NULL references server(id) ON DELETE CASCADE,
+    permissions jsonb DEFAULT '{}'
+);
+
+create index if not exists idx_channel_permission_channel on channel_permission(channel, channel_type);
+create index if not exists idx_channel_permission_role on channel_permission(role);
+

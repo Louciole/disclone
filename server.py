@@ -4,23 +4,25 @@ from unicodedata import category
 from vesta import Server, HTTPError, HTTPRedirect
 import json
 import re
-import signal
+import os
+import mimetypes
 import string
 import random
 import datetime
 import requests
-import base64
 
 # websockets imports
-import asyncio
 import websockets
-import threading
 
 from os.path import abspath, dirname
 from callManager import CallManager
 
 B62 = string.digits + string.ascii_letters
 PATH = dirname(abspath(__file__))
+
+# Storage quota constants (in bytes)
+USER_STORAGE_QUOTA = 15 * 1024 * 1024 * 1024  # 15 GB
+SERVER_STORAGE_QUOTA = 5 * 1024 * 1024 * 1024  # 5 GB
 
 
 class Mycelium(Server):
@@ -307,6 +309,14 @@ class Mycelium(Server):
         uid = self.getUser()
         if not self.checkAccessRights(uid, id, "server-admin"):
             raise HTTPError(self.response, 403, "forbidden")
+
+        # If this is a personal server, deduct its usage from the owner's quota
+        personal = self.db.getFilters("personal_server", ["server", "=", id])
+        if personal:
+            server = self.db.getSomething("server", id)
+            if server and server.get("storage_usage", 0) > 0:
+                self._adjustUserStorage(personal[0]["owner"], -server["storage_usage"])
+
         self.db.deleteSomething("server", id)
         raise HTTPRedirect(self.response, "/channels")
 
@@ -644,12 +654,12 @@ class Mycelium(Server):
         if not chan:
             raise HTTPError(self.response, 404, "Not Found")
 
-        conv = self.db.getFilters("accessserver", ["server", "=", chan["server"], "and", "account", "=", uid])
-        # TODO handle access rights
-        if conv:
-            content = {"name": chan["name"], "id": convId}
-            content["messages"] = self.db.getFilters("message", ["place", "=", convId, "order by timestamp"])
-            return json.dumps(content, default=str)
+        if not self.checkChannelAccess(uid, convId, "textual", "view"):
+            raise HTTPError(self.response, 403, "forbidden")
+
+        content = {"name": chan["name"], "id": convId}
+        content["messages"] = self.db.getFilters("message", ["place", "=", convId, "order by timestamp"])
+        return json.dumps(content, default=str)
 
     @Server.expose
     def getNoteContent(self, id):
@@ -658,17 +668,16 @@ class Mycelium(Server):
         if not chan:
             raise HTTPError(self.response, 404, "Not Found")
 
-        conv = self.db.getFilters("accessserver", ["server", "=", chan["server"], "and", "account", "=", uid])
-        # TODO handle access rights
-        if conv:
-            content = {"name": chan["name"], "id": id}
-            content["blocks"] = self.db.getFilters("note_block", ["channel", "=", id])
-            return json.dumps(content, default=str)
+        if not self.checkChannelAccess(uid, id, "note", "view"):
+            raise HTTPError(self.response, 403, "forbidden")
+
+        content = {"name": chan["name"], "id": id}
+        content["blocks"] = self.db.getFilters("note_block", ["channel", "=", id])
+        return json.dumps(content, default=str)
 
     @Server.expose
     def getServContent(self, servID, channelID=None):
         uid = self.getUser()
-        #TODO handle access rights
         serv = self.db.getFilters("accessserver", ["account", "=", uid, "and", "server", "=", servID])
         if serv:
             content = {}
@@ -684,10 +693,17 @@ class Mycelium(Server):
                 content["cat"] = self.db.getAll("server_cat", servID,"server")
                 content["roles"] = self.db.getAll("role", servID,"server")
 
-                if self.db.getSomething("personal_server", uid, "owner"):
+                personal = self.db.getFilters("personal_server", ["server", "=", servID])
+                if personal:
                     content["type"] = "personal"
+                    owner = self.db.getSomething("mycelium_account", personal[0]["owner"])
+                    content["storage_usage"] = owner.get("storage_usage", 0) if owner else 0
+                    content["storage_quota"] = USER_STORAGE_QUOTA
                 else:
                     content["type"] = "standard"
+                    server_data = self.db.getSomething("server", servID)
+                    content["storage_usage"] = server_data.get("storage_usage", 0) if server_data else 0
+                    content["storage_quota"] = SERVER_STORAGE_QUOTA
 
                 content["members"] = self.db.getFilters("accessserver", ["server", "=", servID])
                 for i in range(0, len(content["members"])):
@@ -695,6 +711,15 @@ class Mycelium(Server):
                     for j in range (0,len(userRoles)):
                         userRoles[j] = userRoles[j]["role"]
                     content["members"][i] = {"id": content["members"][i]["account"], "roles": userRoles}
+
+                # Filter private channels: only show if user has view access
+                content["channels"] = [ch for ch in content["channels"] if not ch.get("is_private") or self.checkChannelAccess(uid, ch["id"], "textual", "view")]
+                content["rooms"] = [ch for ch in content["rooms"] if not ch.get("is_private") or self.checkChannelAccess(uid, ch["id"], "vocal", "view")]
+                content["drives"] = [ch for ch in content["drives"] if not ch.get("is_private") or self.checkChannelAccess(uid, ch["id"], "drive", "view")]
+                content["notes"] = [ch for ch in content["notes"] if not ch.get("is_private") or self.checkChannelAccess(uid, ch["id"], "note", "view")]
+
+                # Include channel_permissions for this server
+                content["channel_permissions"] = self.db.getAll("channel_permission", servID, "server") or []
             else:
                 content["messages"] = self.db.getFilters("message", ["place", "=", channelID, "order by timestamp"])
             return json.dumps(content, default=str)
@@ -707,7 +732,28 @@ class Mycelium(Server):
         user["notifs"] = self.db.getAll("offline_notifs", uid, "account")
         user["additional_emails"] = self.uniauth.getAll("additional_mail", uid, "account")
         user["isAdmin"] = self.isAdmin(uid)
+        user["storage_quota"] = USER_STORAGE_QUOTA
         return json.dumps(user, default=str)
+
+    @Server.expose
+    def getStorageUsage(self, server_id=None):
+        """Get storage usage for a user or server."""
+        uid = self.getUser()
+        if server_id:
+            # Check access
+            access = self.db.getFilters("accessserver", ["account", "=", uid, "and", "server", "=", server_id])
+            if not access:
+                raise HTTPError(self.response, 403, "forbidden")
+            personal = self.db.getFilters("personal_server", ["server", "=", server_id])
+            if personal and personal != []:
+                owner = self.db.getSomething("mycelium_account", personal[0]["owner"])
+                return json.dumps({"storage_usage": owner.get("storage_usage", 0), "storage_quota": USER_STORAGE_QUOTA, "target_type": "user"})
+            else:
+                server = self.db.getSomething("server", server_id)
+                return json.dumps({"storage_usage": server.get("storage_usage", 0), "storage_quota": SERVER_STORAGE_QUOTA, "target_type": "server"})
+        else:
+            user = self.db.getSomething("mycelium_account", uid)
+            return json.dumps({"storage_usage": user.get("storage_usage", 0), "storage_quota": USER_STORAGE_QUOTA, "target_type": "user"})
 
     @Server.expose
     def getDebugOTP(self, email):
@@ -800,6 +846,10 @@ class Mycelium(Server):
         if not access:
             raise HTTPError(self.response, 403, "No access to this drive")
 
+        # Check channel-level access for private drives
+        if drive.get("is_private") and not self.checkChannelAccess(uid, drive_id, "drive", "send-messages"):
+            raise HTTPError(self.response, 403, "No permission for this drive channel")
+
         # If parent_folder is specified, verify it exists and belongs to the same drive
         if parent_folder and parent_folder != "null":
             parent_folder = int(parent_folder)
@@ -884,9 +934,6 @@ class Mycelium(Server):
         if not access:
             raise HTTPError(self.response, 403, "No access to this file")
 
-        # Return the file as binary
-        import os
-        import mimetypes
 
         filepath = self.path + "/static/attachments/" + file_info["filepath"]
 
@@ -921,8 +968,6 @@ class Mycelium(Server):
         Returns:
             Success message
         """
-        import os
-
         uid = self.getUser()
 
         # Get file info
@@ -947,16 +992,19 @@ class Mycelium(Server):
             if not self.checkAccessRights(uid, drive["server"], "edit"):
                 raise HTTPError(self.response, 403, "Only uploader or server admins can delete files")
 
-        # Delete the physical file
+        # Delete the physical file only if no other record references it
         filepath = self.path + "/static/attachments/" + file_info["filepath"]
-        try:
-            if os.path.exists(filepath):
-                os.remove(filepath)
-        except Exception as e:
-            print(f"Error deleting file {filepath}: {e}")
+        if self._isFilepathOrphaned(file_info["filepath"], exclude_drive_file_id=file_id):
+            try:
+                if os.path.exists(filepath):
+                    os.remove(filepath)
+            except Exception as e:
+                print(f"Error deleting file {filepath}: {e}")
 
         # Delete from database
         self.db.deleteSomething("drive_file", file_id)
+
+        self._adjustStorage(drive["server"], -file_info.get("size", 0))
 
         return json.dumps({"status": "ok", "message": "File deleted successfully"})
 
@@ -1055,8 +1103,6 @@ class Mycelium(Server):
         Returns:
             Success message
         """
-        import os
-
         uid = self.getUser()
 
         # Get folder info
@@ -1081,18 +1127,32 @@ class Mycelium(Server):
             if not self.checkAccessRights(uid, drive["server"], "edit"):
                 raise HTTPError(self.response, 403, "Only creator or server admins can delete folders")
 
-        # Get all files in this folder and delete them
-        files_in_folder = self.db.getAll("drive_file", folder_id, "parent_folder")
-        for file_info in files_in_folder:
-            filepath = self.path + "/static/attachments/" + file_info["filepath"]
-            try:
-                if os.path.exists(filepath):
-                    os.remove(filepath)
-            except Exception as e:
-                print(f"Error deleting file {filepath}: {e}")
+        # Recursively collect all files in this folder tree for storage tracking and cleanup
+        total_size = 0
+
+        def collect_folder_files(fid):
+            nonlocal total_size
+            files = self.db.getAll("drive_file", fid, "parent_folder")
+            for f in files:
+                total_size += f.get("size", 0)
+                filepath = self.path + "/static/attachments/" + f["filepath"]
+                try:
+                    if os.path.exists(filepath):
+                        os.remove(filepath)
+                except Exception as e:
+                    print(f"Error deleting file {filepath}: {e}")
+            # Recurse into subfolders
+            subfolders = self.db.getAll("drive_folder", fid, "parent_folder")
+            for sf in subfolders:
+                collect_folder_files(sf["id"])
+
+        collect_folder_files(folder_id)
 
         # Delete folder from database (CASCADE will handle files and subfolders)
         self.db.deleteSomething("drive_folder", folder_id)
+
+        if total_size > 0:
+            self._adjustStorage(drive["server"], -total_size)
 
         return json.dumps({"status": "ok", "message": "Folder deleted successfully"})
 
@@ -1128,18 +1188,20 @@ class Mycelium(Server):
         name = filenameParts[0]
         extension = filenameParts[1] if len(filenameParts) > 1 else ''
 
-        # Category is set to the drive_id to organize files by drive
-        filepath = self.saveFile(content, name=name, ext=extension, category=f"drive_{drive_id}")
-
-        # Calculate file size (approximate from base64)
-        # Remove data URI prefix if present
+        # Calculate file size (approximate from base64) before saving
         if "," in content:
             content_data = content.split(",")[1]
         else:
             content_data = content
-
-        # Base64 encoded size is roughly 4/3 of original size
         file_size = int(len(content_data) * 3 / 4)
+
+        # Check storage quota before saving file to disk
+        drive = self.db.getSomething("drive_channel", drive_id)
+        if drive:
+            self._checkQuota(drive["server"], file_size)
+
+        # Category is set to the drive_id to organize files by drive
+        filepath = self.saveFile(content, name=name, ext=extension, category=f"drive_{drive_id}")
 
         # Insert file record into database
         file_id = self.db.insertDict("drive_file", {
@@ -1150,6 +1212,9 @@ class Mycelium(Server):
             "uploader": user_id,
             "parent_folder": parent_folder
         }, getId=True)
+
+        if drive:
+            self._adjustStorage(drive["server"], file_size)
 
         return file_id
 
@@ -1211,6 +1276,101 @@ class Mycelium(Server):
         self._admin_cache = None
         self._admin_cache_time = None
 
+    # --------------------------------STORAGE QUOTA--------------------------------
+
+    def _estimateBase64Size(self, data):
+        """Estimate the actual file size from base64-encoded data."""
+        if "," in data:
+            data = data.split(",")[1]
+        return int(len(data) * 3 / 4)
+
+    def _adjustStorage(self, server_id, delta):
+        """Add delta bytes (negative to decrement) to the right target for a server."""
+        if delta == 0:
+            return
+        personal = self.db.getFilters("personal_server", ["server", "=", server_id])
+        if personal:
+            self.db.cur.execute(
+                "UPDATE mycelium_account SET storage_usage = GREATEST(0, storage_usage + %s) WHERE id = %s",
+                (delta, personal[0]["owner"])
+            )
+        else:
+            self.db.cur.execute(
+                "UPDATE server SET storage_usage = GREATEST(0, storage_usage + %s) WHERE id = %s",
+                (delta, server_id)
+            )
+
+    def _adjustUserStorage(self, uid, delta):
+        """Add delta bytes (negative to decrement) directly to a user's storage_usage."""
+        if delta == 0:
+            return
+        self.db.cur.execute(
+            "UPDATE mycelium_account SET storage_usage = GREATEST(0, storage_usage + %s) WHERE id = %s",
+            (delta, uid)
+        )
+
+    def _checkQuota(self, server_id, size):
+        """Raise HTTPError 413 if adding size bytes would exceed the server's quota."""
+        personal = self.db.getFilters("personal_server", ["server", "=", server_id])
+        if personal:
+            target = self.db.getSomething("mycelium_account", personal[0]["owner"])
+            quota, target_type = USER_STORAGE_QUOTA, "user"
+        else:
+            target = self.db.getSomething("server", server_id)
+            quota, target_type = SERVER_STORAGE_QUOTA, "server"
+        usage = target.get("storage_usage", 0) if target else 0
+        if usage + size > quota:
+            raise HTTPError(self.response, 413, json.dumps({
+                "error": "storage_quota_exceeded",
+                "current_usage": usage,
+                "quota": quota,
+                "target_type": target_type
+            }))
+
+    def _checkUserQuota(self, uid, size):
+        """Raise HTTPError 413 if adding size bytes would exceed the user's personal quota."""
+        user = self.db.getSomething("mycelium_account", uid)
+        usage = user.get("storage_usage", 0) if user else 0
+        if usage + size > USER_STORAGE_QUOTA:
+            raise HTTPError(self.response, 413, json.dumps({
+                "error": "storage_quota_exceeded",
+                "current_usage": usage,
+                "quota": USER_STORAGE_QUOTA,
+                "target_type": "user"
+            }))
+
+    def _isFilepathOrphaned(self, filepath, exclude_message_id=None, exclude_drive_file_id=None):
+        """
+        Return True if no other message attachment or drive_file still references this filepath.
+        Pass the IDs being deleted so they are excluded from the check.
+        """
+        # Check drive_file table
+        if exclude_drive_file_id:
+            drive_refs = self.db.cur.execute(
+                "SELECT id FROM drive_file WHERE filepath = %s AND id != %s",
+                (filepath, exclude_drive_file_id)
+            ).fetchall()
+        else:
+            drive_refs = self.db.cur.execute(
+                "SELECT id FROM drive_file WHERE filepath = %s",
+                (filepath,)
+            ).fetchall()
+        if drive_refs:
+            return False
+
+        # Check message.attachments JSON column for any remaining reference
+        if exclude_message_id:
+            msg_refs = self.db.cur.execute(
+                "SELECT id FROM message WHERE attachments::text LIKE %s AND id != %s",
+                (f'%{filepath}%', exclude_message_id)
+            ).fetchall()
+        else:
+            msg_refs = self.db.cur.execute(
+                "SELECT id FROM message WHERE attachments::text LIKE %s",
+                (f'%{filepath}%',)
+            ).fetchall()
+        return not msg_refs
+
     @Server.expose
     def setServerFeatured(self, server_id, featured):
         """
@@ -1249,35 +1409,48 @@ class Mycelium(Server):
     def sendMessage(self, conv, content, reply=False, attachments = []):
         uid = self.getUser()
 
+        total_attachment_size = sum(
+            self._estimateBase64Size(a.get('dataUrl', ''))
+            for a in attachments if a.get('dataUrl')
+        )
+
+        # Determine channel/server and check quota before saving
+        conv_parsed = json.loads(conv)
+        channel = self.db.getSomething("textual_channel", conv_parsed.get("id")) if conv_parsed.get("id") else None
+        if total_attachment_size > 0:
+            if channel:
+                self._checkQuota(channel["server"], total_attachment_size)
+            else:
+                self._checkUserQuota(uid, total_attachment_size)
+
         attachmentList = []
         for attachment in attachments:
-            dataUrl = attachment.get('dataUrl', '')
-            filename = attachment.get('filename', 'file')
-            mimeType = attachment.get('mimeType', '')
+            filepath = self.saveFile(attachment.get('dataUrl', ''))
+            attachmentList.append({"mime": attachment.get('mimeType', ''), "filename": attachment.get('filename', 'file'), "filepath": filepath})
 
-            filepath = self.saveFile(dataUrl)
-            attach = {"mime":mimeType, "filename": filename, "filepath": filepath}
-            attachmentList.append(attach)
-
-        conv = json.loads(conv)
+        conv = conv_parsed
         if not conv.get("id"):
             conv["id"] = self.newConv("Noname", [uid, conv["dest"]])
 
         message = {"sender": uid, "place": conv["id"], "body": content, "attachments": json.dumps(attachmentList)}
-        if reply and reply!="undefined" and reply!="null" :
+        if reply and reply != "undefined" and reply != "null":
             message["reply"] = reply
-
-
 
         msgId = self.db.insertDict("message", message, getId=True)
         message["id"] = msgId
 
         channel = self.db.getSomething("textual_channel", conv["id"])
-
         if channel:
+            if channel.get("is_private") and not self.checkChannelAccess(uid, conv["id"], "textual", "send-messages"):
+                raise HTTPError(self.response, 403, "no permission to send messages in this channel")
             self.notifyChannelMesage(uid, channel, message)
+            if total_attachment_size > 0:
+                self._adjustStorage(channel["server"], total_attachment_size)
         else:
             self.notifyConvMessage(uid, conv, message)
+            if total_attachment_size > 0:
+                self._adjustUserStorage(uid, total_attachment_size)
+
         return json.dumps(attachmentList)
 
     def notifyConvMessage(self,uid ,conv, message):
@@ -1325,6 +1498,11 @@ class Mycelium(Server):
 
             # Send mention notifications to users not already notified
             mention_targets.discard(uid)  # Don't notify the sender
+
+            # For private channels, filter targets to only those who can view the channel
+            if channel.get("is_private"):
+                mention_targets = {t for t in mention_targets if self.checkChannelAccess(t, channel["id"], "textual", "view")}
+
             for target_uid in mention_targets:
                 self.sendNotification(target_uid, {"type": "message", "content": message})
 
@@ -1364,7 +1542,7 @@ class Mycelium(Server):
 
     @Server.expose
     def deleteMessage(self, message):
-        print("editing message", message)
+        print("deleting message", message)
         uid = self.getUser()
 
         messageId = message
@@ -1372,6 +1550,35 @@ class Mycelium(Server):
 
         if not message or message["sender"] != uid:
             raise HTTPError(self.response, 403, "forbidden")
+
+        # Clean up attachments and decrement storage
+        attachments = message.get("attachments")
+        if attachments:
+            if isinstance(attachments, str):
+                try:
+                    attachments = json.loads(attachments)
+                except:
+                    attachments = []
+            total_size = 0
+            for attach in attachments:
+                rel_path = attach.get("filepath", "")
+                if not rel_path:
+                    continue
+                full_path = self.path + "/static/attachments/" + rel_path
+                if os.path.exists(full_path) and self._isFilepathOrphaned(rel_path, exclude_message_id=messageId):
+                    total_size += os.path.getsize(full_path)
+                    try:
+                        os.remove(full_path)
+                    except Exception as e:
+                        print(f"Error deleting attachment {full_path}: {e}")
+
+            # Decrement storage
+            if total_size > 0:
+                channel = self.db.getSomething("textual_channel", message["place"])
+                if channel:
+                    self._adjustStorage(channel["server"], -total_size)
+                else:
+                    self._adjustUserStorage(message["sender"], -total_size)
 
         self.db.deleteSomething("message", messageId)
 
@@ -1532,6 +1739,7 @@ class Mycelium(Server):
 
         return json.dumps({"success": True})
 
+    # noinspection PyPackageRequirements
     def checkAccessRights(self, uid, server, action):
         if not self.db.getFilters("accessserver", ["account", "=", uid, "and", "server", "=", server]):
             return False
@@ -1561,12 +1769,190 @@ class Mycelium(Server):
 
         return userRights
 
+    def _getChannelTable(self, channelType):
+        """Map channel type string to table name."""
+        tables = {
+            "textual": "textual_channel",
+            "vocal": "vocal_channel",
+            "drive": "drive_channel",
+            "note": "notes_channel"
+        }
+        return tables.get(channelType)
+
+    def checkChannelAccess(self, uid, channelId, channelType, action="view"):
+        """Check if a user can perform an action on a channel.
+        For non-private channels, all server members have access.
+        For private channels, only users whose roles have the permission (or server owner/admin) can access.
+        """
+        table = self._getChannelTable(channelType)
+        if not table:
+            return False
+
+        chan = self.db.getSomething(table, channelId)
+        if not chan:
+            return False
+
+        serverId = chan["server"]
+
+        # Check server membership
+        if not self.db.getFilters("accessserver", ["account", "=", uid, "and", "server", "=", serverId]):
+            return False
+
+        # Non-private channels: all server members have access
+        if not chan.get("is_private"):
+            return True
+
+        # Server owner always has access
+        serverInfos = self.db.getSomething("server", serverId)
+        if serverInfos["owner"] == uid:
+            return True
+
+        # Server-admin role holders have access
+        userRights = self.getRights(serverId, uid)
+        if "server-admin" in userRights:
+            return True
+
+        # Check channel_permission for user's roles
+        userRoles = self.db.getFilters("role_attribution", ["account", "=", uid, "and", "server", "=", serverId])
+        for userRole in userRoles:
+            perms = self.db.getFilters("channel_permission", [
+                "channel", "=", channelId, "and",
+                "channel_type", "=", channelType, "and",
+                "role", "=", userRole["role"]
+            ])
+            if perms:
+                rolePerms = perms[0].get("permissions", {})
+                if isinstance(rolePerms, str):
+                    rolePerms = json.loads(rolePerms)
+                if action in rolePerms:
+                    return True
+
+        return False
+
+    def _getChannelType(self, channelId):
+        """Detect channel type from its ID by checking all channel tables."""
+        for ctype, table in [("textual", "textual_channel"), ("drive", "drive_channel"), ("vocal", "vocal_channel"), ("note", "notes_channel")]:
+            chan = self.db.getSomething(table, channelId)
+            if chan:
+                return ctype, chan
+        return None, None
+
+    @Server.expose
+    def editChannelPermissions(self, channelId, channelType, action, roleId=None, permission=None, value=None):
+        """Manage channel privacy and per-role channel permissions.
+        Actions:
+            togglePrivacy - toggle is_private on the channel
+            addRole - add a role to the channel's allowed roles
+            removeRole - remove a role from the channel's allowed roles
+            editPermission - toggle a specific permission for a role on this channel
+        """
+        uid = self.getUser()
+
+        table = self._getChannelTable(channelType)
+        if not table:
+            raise HTTPError(self.response, 400, "invalid channel type")
+
+        chan = self.db.getSomething(table, channelId)
+        if not chan:
+            raise HTTPError(self.response, 404, "channel not found")
+
+        serverId = chan["server"]
+        if not self.checkAccessRights(uid, serverId, "server-admin"):
+            raise HTTPError(self.response, 403, "forbidden")
+
+        if action == "togglePrivacy":
+            newValue = not chan.get("is_private", False)
+            self.db.edit(table, channelId, "is_private", newValue)
+            return json.dumps({"is_private": newValue})
+
+        elif action == "addRole":
+            if not roleId:
+                raise HTTPError(self.response, 400, "roleId required")
+            # Check role belongs to this server
+            role = self.db.getSomething("role", roleId)
+            if not role or role["server"] != int(serverId):
+                raise HTTPError(self.response, 403, "role not in server")
+            # Check if already exists
+            existing = self.db.getFilters("channel_permission", [
+                "channel", "=", channelId, "and",
+                "channel_type", "=", channelType, "and",
+                "role", "=", roleId
+            ])
+            if existing:
+                return json.dumps(existing[0], default=str)
+            permId = self.db.insertDict("channel_permission", {
+                "channel": channelId,
+                "channel_type": channelType,
+                "role": roleId,
+                "server": serverId,
+                "permissions": json.dumps({"view": "", "send-messages": ""})
+            }, getId=True)
+            perm = self.db.getSomething("channel_permission", permId)
+            return json.dumps(perm, default=str)
+
+        elif action == "removeRole":
+            if not roleId:
+                raise HTTPError(self.response, 400, "roleId required")
+            existing = self.db.getFilters("channel_permission", [
+                "channel", "=", channelId, "and",
+                "channel_type", "=", channelType, "and",
+                "role", "=", roleId
+            ])
+            if existing:
+                self.db.deleteSomething("channel_permission", existing[0]["id"])
+            return json.dumps({"success": True})
+
+        elif action == "editPermission":
+            if not roleId or not permission:
+                raise HTTPError(self.response, 400, "roleId and permission required")
+            existing = self.db.getFilters("channel_permission", [
+                "channel", "=", channelId, "and",
+                "channel_type", "=", channelType, "and",
+                "role", "=", roleId
+            ])
+            if not existing:
+                raise HTTPError(self.response, 404, "role not added to channel")
+            perms = existing[0].get("permissions", {})
+            if isinstance(perms, str):
+                perms = json.loads(perms)
+            if value == "true":
+                perms[permission] = ""
+            else:
+                perms.pop(permission, None)
+            self.db.edit("channel_permission", existing[0]["id"], "permissions", json.dumps(perms))
+            return json.dumps({"permissions": perms})
+
+        raise HTTPError(self.response, 400, "invalid action")
+
+    @Server.expose
+    def getChannelPermissions(self, channelId, channelType):
+        """Get all channel_permission rows for a specific channel."""
+        uid = self.getUser()
+
+        table = self._getChannelTable(channelType)
+        if not table:
+            raise HTTPError(self.response, 400, "invalid channel type")
+
+        chan = self.db.getSomething(table, channelId)
+        if not chan:
+            raise HTTPError(self.response, 404, "channel not found")
+
+        serverId = chan["server"]
+        if not self.db.getFilters("accessserver", ["account", "=", uid, "and", "server", "=", serverId]):
+            raise HTTPError(self.response, 403, "forbidden")
+
+        perms = self.db.getFilters("channel_permission", [
+            "channel", "=", channelId, "and",
+            "channel_type", "=", channelType
+        ])
+        return json.dumps(perms or [], default=str)
+
     @Server.expose
     def editServer(self, property, id, value=None, field=None, action=None, targetId=None, channelType=None):
         uid = self.getUser()
         forbidden_fields = ["id", "owner", "is_featured", "member_count"]
         if field in forbidden_fields or not self.checkAccessRights(uid, id, "edit"):
-            raise HTTPError(self.response, 403, "forbidden")
+            raise HTTPError(self.response, 403)
 
         if property == "channel":
             if action == "create":
@@ -1589,30 +1975,21 @@ class Mycelium(Server):
                 # Retourner le canal créé avec son type
                 return json.dumps({"channel": channel, "type": channel_type}, default=str)
 
-            chan = self.db.getSomething("textual_channel", targetId)
+            if channelType == "vocal":
+                table_name = "room"
+            elif channelType == "drive":
+                table_name = "drive_channel"
+            elif channelType == "note":
+                table_name = "notes_channel"
+            else:
+                table_name= "textual_channel"
+
+            chan = self.db.getSomething(table_name, targetId)
             if chan and chan["server"] == int(id) and field != "server":
                 if action == "delete":
-                    self.db.deleteSomething("textual_channel", targetId)
+                    self.db.deleteSomething(table_name, targetId)
                     return
-                self.db.edit("textual_channel", targetId, field, value)
-                return
-
-            # Vérifier si c'est un drive channel
-            chan = self.db.getSomething("drive_channel", targetId)
-            if chan and chan["server"] == int(id) and field != "server":
-                if action == "delete":
-                    self.db.deleteSomething("drive_channel", targetId)
-                    return
-                self.db.edit("drive_channel", targetId, field, value)
-                return
-
-            # Vérifier si c'est un room (vocal)
-            chan = self.db.getSomething("room", targetId)
-            if chan and chan["server"] == int(id):
-                if action == "delete":
-                    self.db.deleteSomething("room", targetId)
-                    return
-                # Les rooms n'ont pas de nom pour l'instant dans le schema
+                self.db.edit(table_name, targetId, field, value)
                 return
 
             raise HTTPError(self.response, 403, "forbidden")
@@ -1622,18 +1999,21 @@ class Mycelium(Server):
                 return str(id)
 
             role = self.db.getSomething("role", targetId)
+            print("editing role", role, targetId, field, value, id)
             if not role or role["server"] != int(id) or field == "server":
-                raise HTTPError(self.response, 403, "forbidden")
+                raise HTTPError(self.response, 403)
 
             if action == "delete":
                 self.db.deleteSomething("role", targetId)
                 return
 
             if action == "attribute":
-                if self.db.getFilters("role_attribution", ["account", "=", targetId, "and", "role", "=", value, "and", "server", "=", id]):
+                print("attributing role", targetId, value, id)
+                if self.db.getFilters("role_attribution", ["account", "=", value, "and", "role", "=", targetId, "and", "server", "=", id]):
+                    print("already attributed")
                     raise HTTPError(self.response, 403, "already attributed")
 
-                self.db.insertDict("role_attribution", {"account": targetId, "role": value, "server":id}, getId=True)
+                self.db.insertDict("role_attribution", {"account": value, "role": targetId, "server":id}, getId=True)
                 # Invalidate admin cache as role attribution might have changed admin rights
                 self.invalidateAdminCache()
                 return str(id)

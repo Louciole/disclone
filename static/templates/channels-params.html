@@ -1,8 +1,17 @@
 <section class="settings-menu" id="channels-params" style="display:none">
+  ${(() => {
+    const elId = global.state.modaltarget?.id || '';
+    if (elId.startsWith('channel-voc-')) global.state.editingChannelType = 'vocal';
+    else if (elId.startsWith('channel-drive-')) global.state.editingChannelType = 'drive';
+    else if (elId.startsWith('channel-note-')) global.state.editingChannelType = 'note';
+    else global.state.editingChannelType = 'textual';
+    return '';
+  })()}
   <div id="settings-list-params" class="scrollable settings-list">
     <section id="">
       <h3>${global.state.modaltarget.innerText}</h3>
-      <div class="item selected" onclick="goTo('setting-content', 'channel-main-settings',{'category':'currentSettingTab' ,'event': event})">${_t("Vue d'ensemble")}</div>
+      <div class="item selected" onclick="goTo('setting-server-content', 'channel-main-settings',{'category':'currentSettingTab' ,'event': event})">${_t("Vue d'ensemble")}</div>
+      <div class="item" onclick="goTo('setting-server-content', 'channel-permissions-settings',{'category':'currentSettingTab' ,'event': event})">${_t("Permissions")}</div>
       <hr>
       <div class="item">${_t("Supprimer le salon")}
         <div class="grey circle"></div>

@@ -1,0 +1,7 @@
+<span class="block-progress-line">
+    ${100*element.data/element.goal}%
+    <span class="progress-bar">
+        <span style="background:var(--accent); height:100%;width:${100*element.data/element.goal}%"></span>
+        <span style="background:var(--bg); height:100%; width:${100 - (100*element.data/element.goal)}%"></span>
+    </span>
+</span>

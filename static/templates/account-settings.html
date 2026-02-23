@@ -40,6 +40,23 @@
     </div>
 </div>
 <hr>
+<h3>${_t("STORAGE")}</h3>
+<p>${_t("Your personal storage used across messages and your personal server.")}</p>
+<div style="margin-top: 0.5rem;">
+    ${Subscribe("global.user.storage_usage", () => {
+        const usage = global.user.storage_usage || 0;
+        const quota = global.user.storage_quota || (15 * 1024 * 1024 * 1024);
+        const pct = Math.min(100, (100 * usage / quota)).toFixed(1);
+        return `<div style="color: var(--text2); margin-bottom: 0.3rem; font-size: 0.9rem;">${formatFileSize(usage)} / ${formatFileSize(quota)} (${pct}%)</div>
+            <span class="block-progress-line">
+                <span class="progress-bar">
+                    <span style="background:${pct > 90 ? 'var(--red)' : 'var(--accent)'}; height:100%;width:${pct}%"></span>
+                    <span style="background:var(--bg); height:100%; width:${100 - pct}%"></span>
+                </span>
+            </span>`;
+    })}
+</div>
+<hr>
 <h3>${_t("ACCOUNT DELETION")}</h3>
 <p>${_t("Attention la suppression concerne TOUS les services carbonlab")}</p>
 <div class="btn red" onclick="goodbye()">${_t("Delete account")}</div>

@@ -23,6 +23,24 @@
     <div class="btn green" onclick="Save('editServer')">${_t("Enregistrer les modifications")}</div>
 </div>
 <hr>
+<h2>${_t("STORAGE")}</h2>
+<p>${_t("Storage used by this server (drive files, attachments, icons).")}</p>
+<div style="margin-top: 0.5rem;">
+    ${Subscribe("global.state.currentServer.storage_usage", () => {
+        const usage = global.state.currentServer?.storage_usage || 0;
+        const quota = global.state.currentServer?.storage_quota || (5 * 1024 * 1024 * 1024);
+        const pct = Math.min(100, (100 * usage / quota)).toFixed(1);
+        const isPersonal = global.state.currentServer?.type === 'personal';
+        return `<div style="color: var(--text2); margin-bottom: 0.3rem; font-size: 0.9rem;">${formatFileSize(usage)} / ${formatFileSize(quota)} (${pct}%) ${isPersonal ? '(' + _t('personal quota') + ')' : ''}</div>
+            <span class="block-progress-line">
+                <span class="progress-bar">
+                    <span style="background:${pct > 90 ? 'var(--red)' : 'var(--accent)'}; height:100%;width:${pct}%"></span>
+                    <span style="background:var(--bg); height:100%; width:${100 - pct}%"></span>
+                </span>
+            </span>`;
+    })}
+</div>
+<hr>
 <h2>${_t("TYPE DE SERVEUR")}</h2>
 <p>${_t("Each user can have a personal server, they are meant to be your own server, where you store your data and invite your friends")}</p>
 <div class="btn red ${global.state.currentServer.type=='personal'?'hidden':''}" style="margin-top:0.6rem" onclick="makePersonalServer()">${_t('convertir en serveur perso ')} (OWNER ONLY)

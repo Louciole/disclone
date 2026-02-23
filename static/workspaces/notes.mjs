@@ -576,15 +576,18 @@ const render_equiv = {
 }
 
 function MDToRender(text){
-    //evaluating functions
-    const parsed = parseFunctions(text)
-    const evaluated = evaluateFunctions(parsed)
+
 
     //rendering MD
     const engine = new Markdown()
-    const tokens = engine.tokenize(evaluated)
+    const tokens = engine.tokenize(text)
     console.log("text",text,"tokens",tokens)
-    return engine.render(tokens, render_equiv)
+    const rendered = engine.render(tokens, render_equiv)
+
+    //evaluating functions
+    const parsed = parseFunctions(rendered)
+    const evaluated = evaluateFunctions(parsed)
+    return evaluated
 }
 window.MDToRender = MDToRender
 
@@ -602,49 +605,79 @@ function func_dashboard(dashboardName){
     return json.users.count
 }
 
+function func_progress(data, goal, type="linear"){
+    if (type === "linear") {
+        return fillWith("block-progress-line", [{data: data, goal: goal}])
+    }else if (type === "circular") {
+        return fillWith("block-progress-circle", [{data: data, goal: goal}])
+    }
+
+    return "Unknown progress type '"+type+"'"
+}
+
 
 const functions = {
     'DASHBOARD': func_dashboard,
+    'PROGRESS': func_progress,
 }
 
 function parseFunctions(text) {
-    //functions are in the format {{FUNCTION_NAME(arg1, arg2)}}
+    // functions are in the format {{FUNCTION_NAME(arg1, arg2)}}
+    // We scan character by character to correctly handle nested {{ }} and balanced parens
     const result = []
-    const functionRegex = /{{([A-Z_]+)\((.*?)\)}}/g
-    let lastIndex = 0
-    let match
+    let i = 0
 
-    while ((match = functionRegex.exec(text)) !== null) {
-        // Add text before the function if any
-        if (match.index > lastIndex) {
-            result.push({
-                type: 'text',
-                content: text.substring(lastIndex, match.index)
-            })
+    while (i < text.length) {
+        // Look for opening {{
+        const start = text.indexOf('{{', i)
+        if (start === -1) {
+            result.push({ type: 'text', content: text.substring(i) })
+            break
         }
 
-        // Parse function name and arguments
-        const functionName = match[1]
-        const argsString = match[2].trim()
+        // Text before this function
+        if (start > i) {
+            result.push({ type: 'text', content: text.substring(i, start) })
+        }
 
-        // Parse arguments
-        const args = parseArguments(argsString)
+        // Find the matching }} by tracking brace depth
+        let depth = 0
+        let end = -1
+        for (let j = start; j < text.length - 1; j++) {
+            if (text[j] === '{' && text[j + 1] === '{') {
+                depth++
+                j++ // skip second {
+            } else if (text[j] === '}' && text[j + 1] === '}') {
+                depth--
+                if (depth === 0) {
+                    end = j + 2 // position after }}
+                    break
+                }
+                j++ // skip second }
+            }
+        }
 
-        result.push({
-            type: 'function',
-            name: functionName,
-            args: args
-        })
+        if (end === -1) {
+            // No matching }}, treat rest as text
+            result.push({ type: 'text', content: text.substring(start) })
+            break
+        }
 
-        lastIndex = functionRegex.lastIndex
-    }
+        const inner = text.substring(start + 2, end - 2) // content between {{ and }}
 
-    // Add remaining text after last function
-    if (lastIndex < text.length) {
-        result.push({
-            type: 'text',
-            content: text.substring(lastIndex)
-        })
+        // Match FUNCTION_NAME(...)
+        const funcMatch = inner.match(/^([A-Z_]+)\(([\s\S]*)\)$/)
+        if (funcMatch) {
+            const functionName = funcMatch[1]
+            const argsString = funcMatch[2].trim()
+            const args = parseArguments(argsString)
+            result.push({ type: 'function', name: functionName, args: args })
+        } else {
+            // Not a valid function syntax, treat as text
+            result.push({ type: 'text', content: text.substring(start, end) })
+        }
+
+        i = end
     }
 
     return result
@@ -657,31 +690,15 @@ function parseArguments(argsString) {
     let currentArg = ''
     let inString = false
     let stringChar = null
+    let parenDepth = 0
+    let braceDepth = 0
 
     for (let i = 0; i < argsString.length; i++) {
         const char = argsString[i]
 
-        if (!inString) {
-            if (char === '"' || char === "'") {
-                inString = true
-                stringChar = char
-                currentArg += char
-            } else if (char === ',') {
-                // End of argument
-                const trimmed = currentArg.trim()
-                if (trimmed) {
-                    args.push(parseArgument(trimmed))
-                }
-                currentArg = ''
-            } else {
-                currentArg += char
-            }
-        } else {
-            // Inside string
+        if (inString) {
             if (char === '\\' && i + 1 < argsString.length) {
-                currentArg += char
-                i++
-                currentArg += argsString[i]
+                currentArg += char + argsString[++i]
             } else if (char === stringChar) {
                 inString = false
                 stringChar = null
@@ -689,14 +706,35 @@ function parseArguments(argsString) {
             } else {
                 currentArg += char
             }
+        } else {
+            if (char === '"' || char === "'") {
+                inString = true
+                stringChar = char
+                currentArg += char
+            } else if (char === '(') {
+                parenDepth++
+                currentArg += char
+            } else if (char === ')') {
+                parenDepth--
+                currentArg += char
+            } else if (char === '{' && argsString[i + 1] === '{') {
+                braceDepth++
+                currentArg += char
+            } else if (char === '}' && argsString[i + 1] === '}') {
+                braceDepth--
+                currentArg += char
+            } else if (char === ',' && parenDepth === 0 && braceDepth === 0) {
+                const trimmed = currentArg.trim()
+                if (trimmed) args.push(parseArgument(trimmed))
+                currentArg = ''
+            } else {
+                currentArg += char
+            }
         }
     }
 
-    // Add last argument
     const trimmed = currentArg.trim()
-    if (trimmed) {
-        args.push(parseArgument(trimmed))
-    }
+    if (trimmed) args.push(parseArgument(trimmed))
 
     return args
 }
@@ -704,7 +742,7 @@ function parseArguments(argsString) {
 function parseArgument(arg) {
     arg = arg.trim()
 
-    // String (remove quotes)
+    // Quoted string
     if ((arg.startsWith('"') && arg.endsWith('"')) || (arg.startsWith("'") && arg.endsWith("'"))) {
         return arg.slice(1, -1)
     }
@@ -714,15 +752,24 @@ function parseArgument(arg) {
     if (arg === 'false') return false
 
     // Number
-    if (!isNaN(arg) && arg !== '') {
-        return parseFloat(arg)
+    if (!isNaN(arg) && arg !== '') return parseFloat(arg)
+
+    // Nested function call: FUNCNAME(...) — evaluate it immediately
+    const nestedMatch = arg.match(/^([A-Z_]+)\(([\s\S]*)\)$/)
+    if (nestedMatch) {
+        const funcName = nestedMatch[1]
+        const func = functions[funcName]
+        if (func) {
+            const innerArgs = parseArguments(nestedMatch[2].trim())
+            return func(...innerArgs)
+        }
     }
 
-    // Default to string
+    // Default: plain string
     return arg
 }
 
-function evaluateFunctions(contentArray){
+function evaluateFunctions(contentArray) {
     let content = ""
     contentArray.forEach(part => {
         if (part.type === "text") {

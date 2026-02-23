@@ -152,6 +152,10 @@ function handleDriveFileSelect(event) {
         const parent_folder = getCurrentDriveFolder()
 
         const onload = function() {
+            if (handleQuotaError(this)) {
+                event.target.value = ''
+                return
+            }
             console.log("File uploaded:", this.responseText)
             // Reload drive content
             loadDriveContent(drive_id, parent_folder)

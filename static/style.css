@@ -577,6 +577,7 @@ section{
 
 #member-list .pfp{
     cursor: pointer;
+    min-height: 2rem;
 }
 
 #message-menu{
@@ -1959,7 +1960,8 @@ input[type="text"]{
 
 .message h1, .note-heading1{
     margin: 0;
-    font-size: 1.8rem;
+    font-size: 2rem;
+    font-weight: 700;
 }
 .message h2, .note-heading2{
     margin: 0;
@@ -3327,7 +3329,10 @@ img[src="/static/attachments/null"]{
     flex-direction: column;
     align-items: center;
     padding: 1rem;
+    box-sizing: border-box;
     gap: 0.8rem;
+    overflow-x: hidden;
+    overflow-y: auto;
 }
 
 #member-list > .inline{
@@ -4832,6 +4837,13 @@ input:checked + .slider:before {
     cursor: text;
 }
 
+.editor{
+    background: var(--bg4);
+    padding: 2rem 15rem;
+    min-height: 100%;
+    color: var(--text);
+}
+
 .editor .editable-block{
     outline: none;
     white-space: pre-wrap;
@@ -4854,6 +4866,7 @@ input:checked + .slider:before {
 
 .editor .block{
     display: flex;
+    padding-bottom: 0.6rem;
 }
 
 .editor .block .add{
@@ -5090,4 +5103,120 @@ input:checked + .slider:before {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+.channel-privacy {
+    margin: 1rem 0;
+    border: 1px solid var(--text2bis);
+    padding: 1rem;
+    border-radius: 0.6rem;
+    background: var(--text3);
+}
+
+.channel-privacy h2{
+    margin: 0;
+}
+
+.channel-privacy p {
+    color: var(--text2);
+    margin: 0.5rem 0;
+}
+
+.allowed-roles-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    margin: 0.5rem 0;
+}
+
+.allowed-role-item {
+    padding: 0.5rem 0.8rem;
+    border-radius: 0.4rem;
+    background: var(--bg3);
+}
+
+.allowed-role-item .circle {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+}
+
+.role-selection-popup {
+    background: var(--bg2);
+    border: 1px solid var(--bg4);
+    border-radius: 0.5rem;
+    padding: 0.3rem;
+    max-height: 200px;
+    overflow-y: auto;
+    margin: 0.5rem 0;
+}
+
+.role-selection-popup .item {
+    padding: 0.5rem 0.8rem;
+    border-radius: 0.3rem;
+    cursor: pointer;
+    gap: 0.5rem;
+}
+
+.role-selection-popup .item:hover {
+    background: var(--bg4);
+}
+
+.role-selection-popup .circle {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.channel-role-permissions {
+    padding: 1rem 0;
+    border-bottom: solid 1px var(--bg3);
+}
+
+.channel-role-permissions h3 {
+    font-size: 1rem;
+    margin: 0 0 0.5rem 0;
+}
+
+#role-selection-container{
+    position: fixed;
+}
+
+.block-progress-line, .block-progress-circle{
+    display: flex;
+    height: 1rem;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.block-progress-circle .progress-circle{
+    display: flex;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    margin-left: 8px;
+    align-items: center;
+    justify-content: center;
+}
+
+.block-progress-circle .progress-circle .inner-circle{
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--bg4);
+}
+
+
+span.progress-bar {
+    width: 80%;
+    max-width: 400px;
+    height: 8px;
+    display: flex;
+    border-radius: 4px;
+    flex-direction: row;
+    align-items: center;
+    overflow: clip;
 }

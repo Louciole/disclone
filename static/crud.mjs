@@ -578,6 +578,37 @@ function uploadResizeFile(file, cropRatio = 1) {
 window.uploadResizeImage = uploadResizeFile
 
 /**
+ * Show storage quota exceeded alert
+ */
+function showQuotaExceeded(targetType) {
+    if (targetType === 'user') {
+        alert(_t("Your personal storage is full (15 GB). Please delete some files or upgrade your plan to upload more."))
+    } else {
+        alert(_t("This server's storage is full (5 GB). Please delete some files or upgrade the server's storage plan."))
+    }
+}
+window.showQuotaExceeded = showQuotaExceeded
+
+/**
+ * Handle 413 quota exceeded response from server
+ * @param {XMLHttpRequest} response
+ * @returns {boolean} true if quota was exceeded
+ */
+function handleQuotaError(response) {
+    if (response.status === 413) {
+        try {
+            const err = JSON.parse(response.responseText)
+            showQuotaExceeded(err.target_type || 'server')
+        } catch(e) {
+            showQuotaExceeded('server')
+        }
+        return true
+    }
+    return false
+}
+window.handleQuotaError = handleQuotaError
+
+/**
  * Display attachment preview (image or file) in the message box
  * @param {File} file - File to display
  */
@@ -738,6 +769,7 @@ function uploadProfileImage(field="pfp"){
 
     imageEditor.getCroppedImageData(outputSize).then(result => {
         const onload = function () {
+            if (handleQuotaError(this)) return
             if (global.state.uploadImage === "serverAvatar") {
                 global.state.uploadImage = ""
                 try {
@@ -827,6 +859,8 @@ export function loadServer(id){
         }
 
         serv["type"]= resp.type
+        serv["channel_permissions"] = resp.channel_permissions || []
+        serv["storage_quota"] = resp.storage_quota || 0
 
         // Restore preserved properties
         Object.assign(serv, preservedProps);
@@ -994,7 +1028,7 @@ function attributeRole(roleId){
         elt.style.display = "none"
     }
 
-    xhr("editServer?id="+global.state.currentServer.id+"&property=role&action=attribute&value="+roleId+"&targetId="+global.state.profileInfo.id, onload)
+    xhr("editServer?id="+global.state.currentServer.id+"&property=role&action=attribute&value="+global.state.profileInfo.id+"&targetId="+roleId, onload)
 }
 window.attributeRole = attributeRole
 
