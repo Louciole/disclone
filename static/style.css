@@ -2963,6 +2963,33 @@ select {
     border-radius: 2px;
 }
 
+#server-selector .conv.dragging{
+    opacity: 0.3;
+}
+
+#server-selector .group > .title.dragging{
+    opacity: 0.3;
+}
+
+#server-selector .drop-indicator{
+    height: 2px;
+    background: var(--accent);
+    margin: 1px 0;
+    border-radius: 1px;
+    pointer-events: none;
+}
+
+.cat-rename-input{
+    background: var(--bg4);
+    color: var(--text);
+    border: 1px solid var(--accent);
+    border-radius: 4px;
+    padding: 0.1rem 0.3rem;
+    font-size: 0.75rem;
+    width: 100%;
+    outline: none;
+}
+
 #upload-wrapper{
     display: flex;
     align-items: center;
@@ -4910,33 +4937,6 @@ input:checked + .slider:before {
     margin: 0rem 0;
     border-radius: 1px;
     position: relative;
-    pointer-events: none;
-}
-
-.drop-indicator::before{
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 6px;
-    height: 6px;
-    background: #22c55e;
-    border-radius: 50%;
-
-    pointer-events: none;
-}
-
-.drop-indicator::after{
-    content: '';
-    position: absolute;
-    right: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 6px;
-    height: 6px;
-    background: #22c55e;
-    border-radius: 50%;
     pointer-events: none;
 }
 

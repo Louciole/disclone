@@ -11,13 +11,16 @@
     <div class="cat">
         <div class="item"  style="${checkServRights('server-admin') ? '' : 'display:none'}" onclick="openMenu('server-params')"><p>${_t("Paramètres du serveur")}</p><img class="icon" src="/static/icons/material/settings.svg"></div>
         <div class="item" style="${checkServRights('server-admin') ? '' : 'display:none'}" onclick="openMenu('create-channel')"><p>${_t("Créer un salon")}</p><img class="icon" src="/static/icons/material/add.svg"></div>
-        <div class="item" style="${checkServRights('server-admin') ? '' : 'display:none'}"><p>${_t("Créer une catégorie")}</p><img class="icon" src="/static/icons/material/add.svg"></div>
+        <div class="item" style="${checkServRights('server-admin') ? '' : 'display:none'}" onclick="createCat()"><p>${_t("Créer une catégorie")}</p><img class="icon" src="/static/icons/material/add.svg"></div>
     </div>
     <hr>
     <div class="item red"><p>${_t("Quitter le serveur")}</p><img class="red icon" src="/static/icons/material/trash.svg"></div>
 </div>
 <div class="modale" id="edit-channel-modale">
     <div class="item" onclick="openMenu('channels-params')">${_t("Edit channel")}</div>
+</div>
+<div class="modale" id="edit-cat-modale">
+    <div class="item" onclick="openMenu('cat-params')">${_t("Edit category")}</div>
 </div>
 <section class="menu-wrapper" id="create-channel" style="display:none" onclick="event.target === event.currentTarget && (event.currentTarget.style.display='none')">
     <div class="menu" onclick="event.stopPropagation()">

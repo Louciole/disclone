@@ -1,0 +1,17 @@
+<h1>${_t("Vue d'ensemble")}</h1>
+
+<div class="channel-name">
+    <h2>${_t("Nom de la catégorie")}</h2>
+    <input id="cat-name-input" type="text" placeholder="${_t('nom de la catégorie')}" value="${global.state.editingCatName}" oninput="updatePreview('formCat', event, 'global.state.editingCatName')">
+</div>
+
+<hr>
+
+<div id="formCat" class="save-settings" style="display: none">
+    <p>${_t("Attention, il reste des modifications non enregistrées !")}</p>
+    <div class="underlhover" onclick="reset()">${_t("Réinitialiser")}</div>
+    <div class="btn green" onclick="saveCatSettings()">${_t("Enregistrer les modifications")}</div>
+</div>
+
+
+

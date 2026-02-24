@@ -683,7 +683,7 @@ class Mycelium(Server):
             content = {}
             if not channelID:
                 content["channels"] = self.db.getAll("textual_channel", servID,"server")
-                content["rooms"] = self.db.getAll("vocal_channel", servID,"server")
+                content["vocals"] = self.db.getAll("vocal_channel", servID,"server")
                 content["drives"] = self.db.getAll("drive_channel", servID,"server")
                 content["notes"] = self.db.getAll("notes_channel", servID,"server")
                 # content["whiteboard"] = self.db.getAll("drive_channel", servID,"server")
@@ -714,7 +714,7 @@ class Mycelium(Server):
 
                 # Filter private channels: only show if user has view access
                 content["channels"] = [ch for ch in content["channels"] if not ch.get("is_private") or self.checkChannelAccess(uid, ch["id"], "textual", "view")]
-                content["rooms"] = [ch for ch in content["rooms"] if not ch.get("is_private") or self.checkChannelAccess(uid, ch["id"], "vocal", "view")]
+                content["vocals"] = [ch for ch in content["vocals"] if not ch.get("is_private") or self.checkChannelAccess(uid, ch["id"], "vocal", "view")]
                 content["drives"] = [ch for ch in content["drives"] if not ch.get("is_private") or self.checkChannelAccess(uid, ch["id"], "drive", "view")]
                 content["notes"] = [ch for ch in content["notes"] if not ch.get("is_private") or self.checkChannelAccess(uid, ch["id"], "note", "view")]
 
@@ -1773,6 +1773,7 @@ class Mycelium(Server):
         """Map channel type string to table name."""
         tables = {
             "textual": "textual_channel",
+            "conv": "textual_channel",
             "vocal": "vocal_channel",
             "drive": "drive_channel",
             "note": "notes_channel"
@@ -1956,43 +1957,69 @@ class Mycelium(Server):
 
         if property == "channel":
             if action == "create":
-                # Déterminer le type de channel à créer
                 channel_type = channelType if channelType else "textual"
+                table = self._getChannelTable(channel_type) or "textual_channel"
 
+                defaults = {"server": id}
                 if channel_type == "vocal":
-                    channel_id = self.db.insertDict("room", {"server": id}, getId=True)
-                    channel = self.db.getSomething("room", channel_id)
+                    defaults["name"] = "Salon vocal"
                 elif channel_type == "drive":
-                    channel_id = self.db.insertDict("drive_channel", {"name": "new storage", "server": id}, getId=True)
-                    channel = self.db.getSomething("drive_channel", channel_id)
+                    defaults["name"] = "new storage"
                 elif channel_type == "note":
-                    channel_id = self.db.insertDict("notes_channel", {"name": "new note", "server": id}, getId=True)
-                    channel = self.db.getSomething("notes_channel", channel_id)
-                else:  # textual par défaut
-                    channel_id = self.db.insertDict("textual_channel", {"name": "new channel", "server": id}, getId=True)
-                    channel = self.db.getSomething("textual_channel", channel_id)
+                    defaults["name"] = "new note"
+                else:
+                    defaults["name"] = "new channel"
 
-                # Retourner le canal créé avec son type
+                channel_id = self.db.insertDict(table, defaults, getId=True)
+                channel = self.db.getSomething(table, channel_id)
                 return json.dumps({"channel": channel, "type": channel_type}, default=str)
 
-            if channelType == "vocal":
-                table_name = "room"
-            elif channelType == "drive":
-                table_name = "drive_channel"
-            elif channelType == "note":
-                table_name = "notes_channel"
-            else:
-                table_name= "textual_channel"
+            table_name = self._getChannelTable(channelType) or "textual_channel"
 
             chan = self.db.getSomething(table_name, targetId)
-            if chan and chan["server"] == int(id) and field != "server":
+            if chan and chan["server"] == int(id):
                 if action == "delete":
                     self.db.deleteSomething(table_name, targetId)
                     return
+                allowed_channel_fields = ("name", "place", "category")
+                if field not in allowed_channel_fields:
+                    raise HTTPError(self.response, 400, "invalid field for channel")
+                # Coerce special field values
+                if field == "category":
+                    value = int(value) if value else None
+                elif field == "place":
+                    value = float(value)
                 self.db.edit(table_name, targetId, field, value)
                 return
 
             raise HTTPError(self.response, 403, "forbidden")
+
+        elif property == "cat":
+            if action == "create":
+                cat_id = self.db.insertDict("server_cat", {"name": "New Category", "server": id}, getId=True)
+                cat = self.db.getSomething("server_cat", cat_id)
+                return json.dumps(cat, default=str)
+
+            cat = self.db.getSomething("server_cat", targetId)
+            if not cat or cat["server"] != int(id):
+                raise HTTPError(self.response, 403, "forbidden")
+
+            if action == "delete":
+                # Unassign all channels from this category
+                for table in ["textual_channel", "vocal_channel", "drive_channel", "notes_channel"]:
+                    channels = self.db.getFilters(table, ["category", "=", targetId])
+                    for ch in channels:
+                        self.db.edit(table, ch["id"], "category", None)
+                self.db.deleteSomething("server_cat", targetId)
+                return json.dumps({"status": "ok"})
+
+            if field in ("name", "place"):
+                val = float(value) if field == "place" else value
+                self.db.edit("server_cat", targetId, field, val)
+                return json.dumps({"status": "ok"})
+
+            raise HTTPError(self.response, 400, "invalid field for category")
+
         elif property == "role":
             if action == "create":
                 id = self.db.insertDict("role", {"name": "new role", "server": id}, getId=True)

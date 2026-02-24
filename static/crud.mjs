@@ -842,10 +842,10 @@ export function loadServer(id){
             serv.op = resp.op
         }
         const dashboards = resp.dashboards ? resp.dashboards : []
-        const rooms = resp.rooms ? resp.rooms : []
+        const vocals = resp.vocals ? resp.vocals : []
         const drives = resp.drives ? resp.drives : []
         const notes = resp.notes ? resp.notes : []
-        serv["dirs"] = {"channels" : resp.channels, "dashboards" : dashboards , "rooms" : rooms, "drives" : drives, "notes": notes, "cat" : resp.cat}
+        serv["dirs"] = {"channels" : resp.channels, "dashboards" : dashboards , "vocals" : vocals, "drives" : drives, "notes": notes, "cat" : resp.cat}
 
         serv["members"] = {}
         let userList = []
@@ -889,62 +889,33 @@ function firstGreater(arr, target) {
 
 export function orderServDirs(serv){
     serv?.dirs?.cat.sort((a, b) => a.place - b.place);
-    serv?.dirs?.channels.sort((a, b) => a.place - b.place);
-    serv?.dirs?.dashboards.sort((a, b) => a.place - b.place);
-    serv?.dirs?.rooms.sort((a, b) => a.place - b.place);
-    serv?.dirs?.drives.sort((a, b) => a.place - b.place);
 
     for (let cat of serv.dirs.cat){
         cat.channels = []
     }
 
-    let ordered = Object.values(serv.dirs.cat)
-    for (let chan of serv.dirs.channels){
-        chan.type = "textual"
+    // Collect all channel types with their type tag
+    const allChannels = [
+        ...(serv.dirs.channels || []).map(c => ({...c, type: "textual"})),
+        ...(serv.dirs.vocals || []).map(c => ({...c, type: "vocal", name: c.name || "Salon vocal"})),
+        ...(serv.dirs.drives || []).map(c => ({...c, type: "drive"})),
+        ...(serv.dirs.notes || []).map(c => ({...c, type: "note"})),
+    ]
+    allChannels.sort((a, b) => a.place - b.place)
+
+    let ordered = [...serv.dirs.cat]
+    for (let chan of allChannels){
         if (chan.category){
-            lookFor(chan.category,serv.dirs.cat).channels.push(chan)
+            const cat = lookFor(chan.category, serv.dirs.cat)
+            if (cat) {
+                cat.channels.push(chan)
+            } else {
+                ordered.splice(firstGreater(ordered, chan.place) ?? ordered.length, 0, chan)
+            }
         }else{
-            //insert between categories
-            ordered.splice(firstGreater(ordered,chan.place), 0, chan);
+            ordered.splice(firstGreater(ordered, chan.place) ?? ordered.length, 0, chan)
         }
     }
-    for (let room of serv.dirs.rooms){
-        room.type = "vocal"
-        room.name = room.name || "Salon vocal"
-        if (room.category){
-            lookFor(room.category,serv.dirs.cat).channels.push(room)
-        }else{
-            //insert between categories
-            ordered.splice(firstGreater(ordered,room.place), 0, room);
-        }
-    }
-    for (let drive of serv.dirs.drives){
-        drive.type = "drive"
-        if (drive.category){
-            lookFor(drive.category,serv.dirs.cat).channels.push(drive)
-        }else{
-            //insert between categories
-            ordered.splice(firstGreater(ordered,drive.place), 0, drive);
-        }
-    }
-    for (let chan of serv.dirs.dashboards){
-        chan.type = "dashboard"
-        if (chan.category){
-            lookFor(chan.category,serv.dirs.cat).dashboards.push(chan)
-        }else{
-            //insert between categories
-            ordered.splice(firstGreater(ordered,chan.place), 0, chan);
-        }
-    }
-    for (let chan of serv.dirs.notes){
-        chan.type = "note"
-        if (chan.category){
-            lookFor(chan.category,serv.dirs.cat).notes.push(chan)
-        }else{
-            ordered.splice(firstGreater(ordered,chan.place), 0, chan);
-        }
-    }
-    console.log("ME ",ordered)
     setElement("global.state.currentServer['displayed-dirs']", ordered)
 }
 
@@ -972,7 +943,7 @@ function createChan(type = 'textual'){
             } else if (channelTypeStr === 'vocal') {
                 newChannel.type = 'vocal';
                 newChannel.name = newChannel.name || "Salon vocal";
-                global.state.currentServer.dirs.rooms.push(newChannel);
+                global.state.currentServer.dirs.vocals.push(newChannel);
             } else if (channelTypeStr === 'drive') {
                 newChannel.type = 'drive';
                 global.state.currentServer.dirs.drives.push(newChannel);
@@ -995,6 +966,74 @@ function createChan(type = 'textual'){
     if(menu) menu.style.display = 'none';
 }
 window.createChan = createChan
+
+function createCat(){
+    const onload = function() {
+        try {
+            const cat = JSON.parse(this.responseText)
+            global.state.currentServer.dirs.cat.push(cat)
+            orderServDirs(global.state.currentServer)
+        } catch(e) {
+            console.error("Error creating category:", e)
+        }
+    }
+    xhr("editServer?id="+global.state.currentServer.id+"&property=cat&action=create", onload)
+}
+window.createCat = createCat
+
+function deleteCatFromMenu(){
+    const catId = global.state.editingCatId
+    if (!catId) return
+    // Close the modale if open
+    if (global.state.activeFM) {
+        global.state.activeFM.classList.remove("visible")
+        global.state.activeFM = undefined
+    }
+    // Close settings menu if open
+    const menu = document.getElementById('cat-params')
+    if (menu) menu.style.display = 'none'
+    deleteCat(catId)
+}
+window.deleteCatFromMenu = deleteCatFromMenu
+
+function saveCatSettings(){
+    const catId = global.state.editingCatId
+    if (!catId) return
+    const input = document.getElementById('cat-name-input')
+    if (!input) return
+    const newName = input.value.trim()
+    if (!newName) return
+
+    xhr("editServer?id="+global.state.currentServer.id+"&property=cat&targetId="+catId+"&field=name&value="+encodeURIComponent(newName))
+    const cat = lookFor(parseInt(catId), global.state.currentServer.dirs.cat)
+    if (cat) cat.name = newName
+    orderServDirs(global.state.currentServer)
+
+    // Hide save bar
+    const form = document.getElementById('formCat')
+    if (form) form.style.display = 'none'
+    delete global.state["currentForm"]
+}
+window.saveCatSettings = saveCatSettings
+
+function deleteCat(catId){
+    if (!confirm(_t("Delete this category? Channels inside will be moved out."))) return
+    const onload = function(){
+        // Remove category from dirs
+        const idx = global.state.currentServer.dirs.cat.findIndex(c => c.id == catId)
+        if (idx > -1) global.state.currentServer.dirs.cat.splice(idx, 1)
+        // Unassign channels locally
+        const allArrays = [global.state.currentServer.dirs.channels, global.state.currentServer.dirs.vocals, global.state.currentServer.dirs.drives, global.state.currentServer.dirs.notes]
+        for (const arr of allArrays) {
+            for (const ch of arr) {
+                if (ch.category == catId) ch.category = null
+            }
+        }
+        orderServDirs(global.state.currentServer)
+    }
+    xhr("editServer?id="+global.state.currentServer.id+"&property=cat&targetId="+catId+"&action=delete", onload)
+}
+window.deleteCat = deleteCat
 
 function createRole(){
     const onload = function() {

@@ -1,7 +1,7 @@
 <section class="settings-menu" id="channels-params" style="display:none">
   ${(() => {
     const elId = global.state.modaltarget?.id || '';
-    if (elId.startsWith('channel-voc-')) global.state.editingChannelType = 'vocal';
+    if (elId.startsWith('channel-vocal-')) global.state.editingChannelType = 'vocal';
     else if (elId.startsWith('channel-drive-')) global.state.editingChannelType = 'drive';
     else if (elId.startsWith('channel-note-')) global.state.editingChannelType = 'note';
     else global.state.editingChannelType = 'textual';

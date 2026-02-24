@@ -26,7 +26,7 @@ function checkChannelRight(channelId, channelType, right) {
 
     // Find the channel object
     let channel = null
-    const typeMap = { textual: 'channels', vocal: 'rooms', drive: 'drives', note: 'notes' }
+    const typeMap = { textual: 'channels', vocal: 'vocals', drive: 'drives', note: 'notes' }
     const dirKey = typeMap[channelType]
     if (dirKey && serv.dirs && serv.dirs[dirKey]) {
         channel = serv.dirs[dirKey].find(ch => ch.id === channelId)
@@ -64,7 +64,7 @@ function toggleChannelPrivacy() {
         const isPrivate = resp.is_private
 
         // Update channel data in dirs
-        const typeMap = { textual: 'channels', vocal: 'rooms', drive: 'drives', note: 'notes' }
+        const typeMap = { textual: 'channels', vocal: 'vocals', drive: 'drives', note: 'notes' }
         const dirKey = typeMap[channelType]
         if (dirKey && global.state.currentServer.dirs[dirKey]) {
             const ch = global.state.currentServer.dirs[dirKey].find(c => c.id === parseInt(channelId))

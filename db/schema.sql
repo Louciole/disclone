@@ -143,10 +143,6 @@ create table if not exists role (
     permissions jsonb DEFAULT '{}'
 );
 
-create table if not exists room (
-    id bigserial NOT NULL PRIMARY KEY,
-    server integer references server(id) ON DELETE CASCADE
-);
 
 create table if not exists role_attribution (
     id bigserial NOT NULL PRIMARY KEY,

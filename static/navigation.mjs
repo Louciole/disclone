@@ -107,10 +107,10 @@ function goToVocalChannel(id){
         targetElt?.classList.remove("selected")
     }
 
-    global.state.activeChan = {id:id, slug:"-voc-"+id, type:"voc"}
+    global.state.activeChan = {id:id, slug:"-vocal-"+id, type:"vocal"}
 
     if (!global.convs) global.convs = {}
-    const room = lookFor(id, global.state.currentServer.dirs.rooms)
+    const room = lookFor(id, global.state.currentServer.dirs.vocals)
     global.convs[id] = {id: id, name: room ? room.name : "Note Channel", type: "note"}
 
     targetElt = document.getElementById("channel".concat(global.state.activeChan.slug))

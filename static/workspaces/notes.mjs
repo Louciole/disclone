@@ -1,6 +1,7 @@
 import {Markdown} from "../markdown/markdown.mjs";
 import {xhr} from "../framework/templating.mjs";
 import {} from "./synapse.mjs";
+import {normalizeIfNeeded} from "../drag.mjs";
 
 class Editor {
     constructor() {
@@ -95,32 +96,10 @@ class Editor {
     }
 
     checkAndNormalizePositions() {
-        // Check if positions are getting too close (< 0.0001 apart)
-        const sortedBlocks = this.getSortedBlocks()
-        let needsNormalization = false
-
-        for (let i = 1; i < sortedBlocks.length; i++) {
-            const diff = sortedBlocks[i].position - sortedBlocks[i-1].position
-            if (diff < 0.0001) {
-                needsNormalization = true
-                break
-            }
-        }
-
-        if (needsNormalization) {
-            this.normalizePositions()
-        }
-    }
-
-    normalizePositions() {
-        // Reset all positions to clean intervals
-        const sortedBlocks = this.getSortedBlocks()
-        sortedBlocks.forEach((block, index) => {
-            block.position = (index + 1) * 0.1
-            this.saveBlock(block.uuid)
+        const blocks = Object.values(this.blocks)
+        normalizeIfNeeded(blocks, 'position', (item) => {
+            this.saveBlock(item.uuid)
         })
-
-        console.log("Positions normalized")
     }
 
     deleteBlock(blockId) {

@@ -244,8 +244,8 @@ function Save(endpoint="change"){
                 let channelIndex = -1
 
 
-                if (type === "voc") {
-                    channelArray = global.state.currentServer.dirs.rooms
+                if (type === "vocal") {
+                    channelArray = global.state.currentServer.dirs.vocals
                 }else if (type === "conv") {
                     channelArray = global.state.currentServer.dirs.channels
                 }else if (type === "note") {
