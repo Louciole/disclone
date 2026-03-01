@@ -86,7 +86,8 @@ function editMsg(msg_id){
         div.style.width = 'calc(100% - 1rem);'
         div.style.height = 'fit-content'
         div.classList.add('edit')
-        div.innerHTML = `<textarea onkeydown="onEdition(event,${msg_id})" rows="5" maxlength="5000" oninput="resizeHeight(event)" onblur="saveCursorPosition(event)">${msg.body}</textarea>
+        const editValue = msg.poll ? msg.poll.question : msg.body
+        div.innerHTML = `<textarea onkeydown="onEdition(event,${msg_id})" rows="5" maxlength="5000" oninput="resizeHeight(event)" onblur="saveCursorPosition(event)">${editValue}</textarea>
 <div class="helper">échap pour <div class=action onclick="cancelEdition(${msg_id})">annuler</div> • entrée pour <div class="action" onclick="saveEdition(${msg_id})">enregistrer</div></div>`
 
 

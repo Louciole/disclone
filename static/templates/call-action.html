@@ -1,6 +1,6 @@
 <!-- Call action template - renders different actions based on type -->
 ${element.type === 'join' ? `
-    <button class="btn-join" onclick="joinExistingCall(${element.callId}, ${element.isVideo})">${_t("Rejoindre")}</button>
+    <button class="btn-join" data-haptic="medium" onclick="joinExistingCall(${element.callId}, ${element.isVideo})">${_t("Rejoindre")}</button>
 ` : element.type === 'controls' ?
     getTemplate('call-controls')
 : element.type === 'info' ? `

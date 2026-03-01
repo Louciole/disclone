@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android notification channels for Mycelium.
+  After `npx cap add android`, place this file at:
+    android/app/src/main/res/xml/notification_channels.xml
+  and register it in MainApplication.java / MainActivity.java.
+
+  Alternatively, Capacitor LocalNotifications plugin creates channels automatically
+  when you pass channelId in schedule() — this file is for reference/manual override.
+-->
+<resources>
+    <!-- Message notifications: default importance -->
+    <channel
+        android:id="messages"
+        android:name="Messages"
+        android:description="New message notifications"
+        android:importance="default"
+        android:sound="notification"
+        android:showBadge="true" />
+
+    <!-- Incoming call notifications: HIGH importance so heads-up shows -->
+    <channel
+        android:id="calls"
+        android:name="Calls"
+        android:description="Incoming call notifications"
+        android:importance="high"
+        android:sound="ringtone"
+        android:showBadge="true"
+        android:bypassDnd="true" />
+</resources>
+

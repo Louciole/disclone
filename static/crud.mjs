@@ -113,6 +113,10 @@ export function loadConv(key){
 
     for(let message of messagesArray){
         message.body = message.body.replace(/</g, "&lt;")
+        if (typeof message.attachments === 'string') {
+            try { message.attachments = JSON.parse(message.attachments) } catch(e) { message.attachments = [] }
+        }
+        if (!message.attachments) message.attachments = []
 
         // si ça fait moins de 3 minutes de différence, que c'est la même personne et que la date n'a pas changée et que le message n'est pas une réponse
         global.convs[key].messages[message.id] = message
@@ -151,6 +155,10 @@ export function loadChan(key){
 
     for(let message of messagesArray){
         message.body = message.body.replace(/</g, "&lt;")
+        if (typeof message.attachments === 'string') {
+            try { message.attachments = JSON.parse(message.attachments) } catch(e) { message.attachments = [] }
+        }
+        if (!message.attachments) message.attachments = []
 
         global.convs[key].messages[message.id] = message
 
@@ -328,7 +336,10 @@ function newMessageGroup(conv, message){
  */
 export function handleMessageGroup(message){
     console.log("handleMessageGroup",message)
-    message.attachments = message.attachments ? JSON.parse(message.attachments) : []
+    if (typeof message.attachments === 'string') {
+        try { message.attachments = JSON.parse(message.attachments) } catch(e) { message.attachments = [] }
+    }
+    if (!message.attachments) message.attachments = []
 
     const lastMsgId = getLastMessageId(message.place)
     if (lastMsgId !== null){
@@ -645,6 +656,7 @@ function displayMessageAttachment(file) {
     }
     reader.readAsDataURL(file);
 }
+window.displayMessageAttachment = displayMessageAttachment
 
 /**
  * Render all attachment previews in the imageBox

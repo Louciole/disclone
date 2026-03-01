@@ -15,6 +15,9 @@ import {initTranslations} from "./translations/translation.mjs";
 import CallManager from "/static/webrtc.mjs";
 import {} from "/static/constants.mjs"; // Expose and parseJsonArray globally
 import {} from "/static/mentions.mjs"; // Mention autocomplete system
+import {} from "/static/poll.mjs"; // Poll creation and voting
+// Capacitor bridge — only activates when running inside a native shell
+import { hideSplash, registerPushNotifications } from "/static/capacitor-bridge.mjs";
 
 
 global.state.currentTab = document.getElementById("logo")
@@ -63,6 +66,66 @@ export function postWS(){
 
     console.log("Client ready", global)
     hideLoadingScreen()
+
+    // Hide native splash screen once the app is ready
+    hideSplash();
+
+    // Register for push notifications now that the user is authenticated
+    // (requires google-services.json / Firebase to be configured)
+    registerPushNotifications();
+
+    // ── Capacitor deep-link / notification navigation hooks ──
+    window.addEventListener('cap:navigateToConv', (e) => {
+        const { convId } = e.detail;
+        if (!convId || !global.convs[convId]) return;
+        global.state.isServer = false;
+        global.state.activeConv = convId;
+        goTo('content', 'conv', undefined, true);
+    });
+
+    window.addEventListener('cap:deepLinkInvite', (e) => {
+        const { token } = e.detail;
+        if (token) window.location.href = `/static/invitation.html?token=${token}`;
+    });
+
+    window.addEventListener('cap:deepLinkChannel', (e) => {
+        const { serverId, channelId } = e.detail;
+        if (!serverId || !channelId) return;
+        // Navigate to the server + channel
+        const srv = global.servers?.find(s => String(s.id) === String(serverId));
+        if (srv) {
+            global.state.isServer = true;
+            global.state.currentServer = srv;
+            global.state.activeConv = parseInt(channelId);
+            goTo('content', 'conv', undefined, true);
+        }
+    });
+
+    // Quick reply from notification action
+    window.addEventListener('cap:quickReply', (e) => {
+        const { convId, message } = e.detail;
+        if (!convId || !message) return;
+        const savedConv = global.state.activeConv;
+        global.state.activeConv = convId;
+        const xhr2 = new XMLHttpRequest();
+        xhr2.open('GET', `sendMessage?conv=${encodeURI(JSON.stringify({id: convId}))}&content=${encodeURIComponent(message)}&reply=`, true);
+        xhr2.withCredentials = true;
+        xhr2.send();
+        global.state.activeConv = savedConv;
+    });
+
+    // Answer/Decline calls from notification actions
+    window.addEventListener('cap:answerCall', (e) => {
+        const { callId, callType } = e.detail;
+        if (callId && window.joinCall) window.joinCall(callId, callType === 'video');
+    });
+
+    window.addEventListener('cap:declineCall', () => {
+        const ringtone = document.getElementById('call-ringtone');
+        if (ringtone) { ringtone.pause(); ringtone.currentTime = 0; }
+        const notif = document.querySelector('.incoming-call-notification');
+        if (notif) notif.remove();
+    });
 }
 
 function statusText(){
@@ -482,6 +545,8 @@ printWatermark("Mycelium@carbonlab.dev", "https://github.com/Louciole/mycelium")
 await initTranslations()
 goTo('content',"friends",undefined,true,()=>{goTo('friends-block','main-friend')})
 loadTemplate("profile-info.html")
+loadTemplate("create-poll.html")
+loadTemplate("poll-voters.html")
 loadUser()
 xhr("friends?action=getBlocked", onBlockedLoaded)
 xhr("friends?action=get", onFriendsLoaded)

@@ -295,6 +295,56 @@ class Mycelium(Server):
     # -----------------------------------API-------------------------------------
 
     @Server.expose
+    def registerDevice(self):
+        """
+        Register a mobile device push token.
+        Called by the Capacitor app when it receives a FCM / APNs token.
+
+        POST body (JSON): { "token": "...", "platform": "ios" | "android" }
+        """
+        uid = self.getUser()
+        body = json.loads(self.request.body.decode('utf-8'))
+        token = body.get('token', '').strip()
+        platform = body.get('platform', 'android').strip()[:10]
+
+        if not token:
+            raise HTTPError(self.response, 400, "Missing token")
+
+        # Upsert: update timestamp if token already exists for this account
+        existing = self.db.getFilters("device_token", [
+            "account", "=", uid, "AND", "token", "=", token
+        ])
+        if existing:
+            self.db.execute(
+                "UPDATE device_token SET updated_at = NOW(), platform = %s WHERE account = %s AND token = %s",
+                (platform, uid, token)
+            )
+        else:
+            self.db.insertDict("device_token", {
+                "account": uid,
+                "token": token,
+                "platform": platform,
+            })
+
+        return json.dumps({"status": "ok"})
+
+    @Server.expose
+    def unregisterDevice(self):
+        """
+        Remove a device token when the user logs out.
+        POST body (JSON): { "token": "..." }
+        """
+        uid = self.getUser()
+        body = json.loads(self.request.body.decode('utf-8'))
+        token = body.get('token', '').strip()
+        if token:
+            self.db.execute(
+                "DELETE FROM device_token WHERE account = %s AND token = %s",
+                (uid, token)
+            )
+        return json.dumps({"status": "ok"})
+
+    @Server.expose
     def createServer(self):
         account_id = self.getUser()
         server_id = self.db.insertDict('server', {'name': "New Server", "owner": account_id}, getId=True)
@@ -558,6 +608,7 @@ class Mycelium(Server):
         if conv:
             content = {}
             content["messages"] = self.db.getFilters("message", ["place", "=", convId, "order by timestamp"])
+            self._enrichMessagesWithPolls(content["messages"], uid)
             return json.dumps(content, default=str)
 
 
@@ -659,6 +710,7 @@ class Mycelium(Server):
 
         content = {"name": chan["name"], "id": convId}
         content["messages"] = self.db.getFilters("message", ["place", "=", convId, "order by timestamp"])
+        self._enrichMessagesWithPolls(content["messages"], uid)
         return json.dumps(content, default=str)
 
     @Server.expose
@@ -1406,7 +1458,7 @@ class Mycelium(Server):
         self.sendStatusUpdates(uid)
 
     @Server.expose
-    def sendMessage(self, conv, content, reply=False, attachments = []):
+    def sendMessage(self, conv, content, reply=False, attachments = [], poll=None):
         uid = self.getUser()
 
         total_attachment_size = sum(
@@ -1431,6 +1483,67 @@ class Mycelium(Server):
         conv = conv_parsed
         if not conv.get("id"):
             conv["id"] = self.newConv("Noname", [uid, conv["dest"]])
+
+        # Handle poll creation
+        if poll:
+            question = poll.get("question", "").strip()
+            options = poll.get("options", [])
+            if not question:
+                raise HTTPError(self.response, 400, "Poll requires a question")
+            multiple_choice = bool(poll.get("multipleChoice", False))
+            allow_user_options = bool(poll.get("allowUserOptions", False))
+
+            # Insert message with empty body for polls
+            message = {"sender": uid, "place": conv["id"], "body": "", "attachments": "[]"}
+            if reply and reply != "undefined" and reply != "null":
+                message["reply"] = reply
+            msgId = self.db.insertDict("message", message, getId=True)
+            message["id"] = msgId
+
+            # Insert poll
+            pollId = self.db.insertDict("poll", {
+                "message": msgId,
+                "question": question,
+                "multiple_choice": multiple_choice,
+                "allow_user_options": allow_user_options
+            }, getId=True)
+
+            # Insert poll options
+            poll_options = []
+            for opt_text in options:
+                opt_text = opt_text.strip()
+                if opt_text:
+                    optId = self.db.insertDict("poll_option", {
+                        "poll": pollId,
+                        "text": opt_text,
+                        "creator": uid
+                    }, getId=True)
+                    poll_options.append({"id": optId, "text": opt_text, "creator": uid})
+
+            # Store poll reference as attachment
+            pollAttachment = [{"type": "poll", "pollId": pollId}]
+            self.db.edit("message", msgId, "attachments", json.dumps(pollAttachment))
+            message["attachments"] = json.dumps(pollAttachment)
+
+            # Enrich message with poll data for notifications
+            message["poll"] = {
+                "id": pollId,
+                "question": question,
+                "multiple_choice": multiple_choice,
+                "allow_user_options": allow_user_options,
+                "options": poll_options,
+                "votes": {}
+            }
+
+            channel = self.db.getSomething("textual_channel", conv["id"])
+            if channel:
+                if channel.get("is_private") and not self.checkChannelAccess(uid, conv["id"], "textual", "send-messages"):
+                    raise HTTPError(self.response, 403, "no permission to send messages in this channel")
+                self.notifyChannelMesage(uid, channel, message)
+            else:
+                self.notifyConvMessage(uid, conv, message)
+
+            return json.dumps({"message": message}, default=str)
 
         message = {"sender": uid, "place": conv["id"], "body": content, "attachments": json.dumps(attachmentList)}
         if reply and reply != "undefined" and reply != "null":
@@ -1496,16 +1609,26 @@ class Mycelium(Server):
             for mentioned_uid in user_mentions:
                 mention_targets.add(int(mentioned_uid))
 
-            # Send mention notifications to users not already notified
             mention_targets.discard(uid)  # Don't notify the sender
 
             # For private channels, filter targets to only those who can view the channel
             if channel.get("is_private"):
                 mention_targets = {t for t in mention_targets if self.checkChannelAccess(t, channel["id"], "textual", "view")}
 
-            for target_uid in mention_targets:
-                self.sendNotification(target_uid, {"type": "message", "content": message})
+            # Broadcast the message to ALL server members (for live display in active channel views)
+            # Mention targets additionally get offline notifications
+            all_members = self.db.getFilters("accessserver", ["server", "=", server_id])
+            for m in all_members:
+                member_uid = m["account"]
+                if member_uid == uid:
+                    continue
+                # Skip private channel members without access
+                if channel.get("is_private") and not self.checkChannelAccess(member_uid, channel["id"], "textual", "view"):
+                    continue
+                self.sendNotification(member_uid, {"type": "message", "content": message})
 
+            # Offline notifs only for mention targets
+            for target_uid in mention_targets:
                 notif = self.db.getFilters("offline_notifs", ["account", "=", target_uid, "and", "conversation", "=", channel["id"]])
                 if notif:
                     self.db.edit("offline_notifs", notif[0]["id"], "number", notif[0]["number"] + 1)
@@ -1533,12 +1656,30 @@ class Mycelium(Server):
         self.db.edit("message", message["id"], "body", content)
         self.db.edit("message", message["id"], "edited", True)
 
+        # If message has a poll, update the poll question
+        attachments = message.get("attachments")
+        if attachments:
+            if isinstance(attachments, str):
+                try:
+                    attachments = json.loads(attachments)
+                except:
+                    attachments = []
+            for att in attachments:
+                if isinstance(att, dict) and att.get("type") == "poll":
+                    self.db.edit("poll", att["pollId"], "question", content)
 
-        members = self.db.getAll("accessconversation", message["place"], "conversation")
-
-        for member in members:
-            if member["account"] != uid:
-                self.sendNotification(member["account"],{"type":"message_edited", "content":{"id":message,"content":content}})
+        notif = {"type": "message_edited", "content": {"id": message, "content": content}}
+        channel = self.db.getSomething("textual_channel", message["place"])
+        if channel:
+            members = self.db.getFilters("accessserver", ["server", "=", channel["server"]])
+            for member in members:
+                if member["account"] != uid:
+                    self.sendNotification(member["account"], notif)
+        else:
+            members = self.db.getAll("accessconversation", message["place"], "conversation")
+            for member in members:
+                if member["account"] != uid:
+                    self.sendNotification(member["account"], notif)
 
     @Server.expose
     def deleteMessage(self, message):
@@ -1582,11 +1723,201 @@ class Mycelium(Server):
 
         self.db.deleteSomething("message", messageId)
 
-        members = self.db.getAll("accessconversation", message["place"], "conversation")
+        del_notif = {"type": "message_deleted", "content": {"id": messageId}}
+        channel = self.db.getSomething("textual_channel", message["place"])
+        if channel:
+            members = self.db.getFilters("accessserver", ["server", "=", channel["server"]])
+            for member in members:
+                if member["account"] != uid:
+                    self.sendNotification(member["account"], del_notif)
+        else:
+            members = self.db.getAll("accessconversation", message["place"], "conversation")
+            for member in members:
+                if member["account"] != uid:
+                    self.sendNotification(member["account"], del_notif)
 
-        for member in members:
-            if member["account"] != uid:
-                self.sendNotification(member["account"],{"type":"message_deleted", "content":{"id":messageId}})
+    def _enrichMessagesWithPolls(self, messages, uid):
+        """Enrich messages that have poll attachments with full poll data."""
+        for msg in messages:
+            attachments = msg.get("attachments")
+            if attachments:
+                if isinstance(attachments, str):
+                    try:
+                        attachments = json.loads(attachments)
+                    except:
+                        continue
+                for att in attachments:
+                    if isinstance(att, dict) and att.get("type") == "poll":
+                        poll = self.db.getSomething("poll", att["pollId"])
+                        if poll:
+                            options = self.db.getAll("poll_option", poll["id"], "poll")
+                            votes = self.db.getAll("poll_vote", poll["id"], "poll")
+                            # Build votes dict: {option_id: [voter_ids]}
+                            votes_dict = {}
+                            for v in votes:
+                                oid = v["option"]
+                                if oid not in votes_dict:
+                                    votes_dict[oid] = []
+                                votes_dict[oid].append(v["voter"])
+                            msg["poll"] = {
+                                "id": poll["id"],
+                                "question": poll["question"],
+                                "multiple_choice": poll["multiple_choice"],
+                                "allow_user_options": poll["allow_user_options"],
+                                "options": [{"id": o["id"], "text": o["text"], "creator": o["creator"]} for o in options],
+                                "votes": {str(k): v for k, v in votes_dict.items()}
+                            }
+
+    def _getPollConvAccess(self, uid, poll_id):
+        """Check if user has access to the conversation containing a poll. Returns (poll, message) or raises 403."""
+        poll = self.db.getSomething("poll", poll_id)
+        if not poll:
+            raise HTTPError(self.response, 404, "Poll not found")
+        message = self.db.getSomething("message", poll["message"])
+        if not message:
+            raise HTTPError(self.response, 404, "Poll message not found")
+        # Check access: either via accessconversation (DMs) or server membership (channels)
+        channel = self.db.getSomething("textual_channel", message["place"])
+        if channel:
+            access = self.db.getFilters("accessserver", ["account", "=", uid, "and", "server", "=", channel["server"]])
+            if not access:
+                raise HTTPError(self.response, 403, "No access to this poll")
+            if channel.get("is_private") and not self.checkChannelAccess(uid, message["place"], "textual", "view"):
+                raise HTTPError(self.response, 403, "No access to this poll")
+        else:
+            access = self.db.getFilters("accessconversation", ["conversation", "=", message["place"], "and", "account", "=", uid])
+            if not access:
+                raise HTTPError(self.response, 403, "No access to this poll")
+        return poll, message
+
+    @Server.expose
+    def votePoll(self, pollId, optionIds):
+        uid = self.getUser()
+        poll, message = self._getPollConvAccess(uid, pollId)
+        option_ids = json.loads(optionIds) if isinstance(optionIds, str) else optionIds
+
+        if not isinstance(option_ids, list) or len(option_ids) == 0:
+            raise HTTPError(self.response, 400, "Must select at least one option")
+
+        # Enforce single-choice policy
+        if not poll["multiple_choice"] and len(option_ids) > 1:
+            raise HTTPError(self.response, 400, "This poll only allows a single answer")
+
+        # Validate all option IDs belong to this poll
+        poll_options = self.db.getAll("poll_option", poll["id"], "poll")
+        valid_option_ids = {o["id"] for o in poll_options}
+        for oid in option_ids:
+            if int(oid) not in valid_option_ids:
+                raise HTTPError(self.response, 400, "Invalid option for this poll")
+
+        # Remove previous votes for this user on this poll
+        existing_votes = self.db.getFilters("poll_vote", ["poll", "=", poll["id"], "and", "voter", "=", uid])
+        for v in existing_votes:
+            self.db.deleteSomething("poll_vote", v["id"])
+
+        # Insert new votes
+        for oid in option_ids:
+            self.db.insertDict("poll_vote", {"poll": poll["id"], "option": int(oid), "voter": uid})
+
+        # Re-fetch all votes for notification
+        all_votes = self.db.getAll("poll_vote", poll["id"], "poll")
+        votes_dict = {}
+        for v in all_votes:
+            k = str(v["option"])
+            if k not in votes_dict:
+                votes_dict[k] = []
+            votes_dict[k].append(v["voter"])
+
+        # Notify conversation members
+        notif_data = {"type": "poll_voted", "content": {
+            "messageId": message["id"],
+            "place": message["place"],
+            "pollId": poll["id"],
+            "votes": votes_dict
+        }}
+        channel = self.db.getSomething("textual_channel", message["place"])
+        if channel:
+            members = self.db.getFilters("accessserver", ["server", "=", channel["server"]])
+            for m in members:
+                if m["account"] != uid:
+                    self.sendNotification(m["account"], notif_data)
+        else:
+            members = self.db.getAll("accessconversation", message["place"], "conversation")
+            for m in members:
+                if m["account"] != uid:
+                    self.sendNotification(m["account"], notif_data)
+
+        return json.dumps({"success": True, "votes": votes_dict})
+
+    @Server.expose
+    def addPollOption(self, pollId, text):
+        uid = self.getUser()
+        poll, message = self._getPollConvAccess(uid, pollId)
+
+        if not poll["allow_user_options"]:
+            raise HTTPError(self.response, 403, "This poll does not allow user-added options")
+
+        text = text.strip()
+        if not text:
+            raise HTTPError(self.response, 400, "Option text cannot be empty")
+
+        optId = self.db.insertDict("poll_option", {
+            "poll": poll["id"],
+            "text": text,
+            "creator": uid
+        }, getId=True)
+
+        new_option = {"id": optId, "text": text, "creator": uid}
+
+        # Notify conversation members
+        notif_data = {"type": "poll_option_added", "content": {
+            "messageId": message["id"],
+            "place": message["place"],
+            "pollId": poll["id"],
+            "option": new_option
+        }}
+        channel = self.db.getSomething("textual_channel", message["place"])
+        if channel:
+            members = self.db.getFilters("accessserver", ["server", "=", channel["server"]])
+            for m in members:
+                if m["account"] != uid:
+                    self.sendNotification(m["account"], notif_data)
+        else:
+            members = self.db.getAll("accessconversation", message["place"], "conversation")
+            for m in members:
+                if m["account"] != uid:
+                    self.sendNotification(m["account"], notif_data)
+
+        return json.dumps(new_option)
+
+    @Server.expose
+    def getPollResults(self, pollId):
+        uid = self.getUser()
+        poll, message = self._getPollConvAccess(uid, pollId)
+
+        options = self.db.getAll("poll_option", poll["id"], "poll")
+        votes = self.db.getAll("poll_vote", poll["id"], "poll")
+
+        votes_dict = {}
+        for v in votes:
+            k = str(v["option"])
+            if k not in votes_dict:
+                votes_dict[k] = []
+            votes_dict[k].append(v["voter"])
+
+        total_votes = len(set(v["voter"] for v in votes))
+
+        return json.dumps({
+            "poll": {
+                "id": poll["id"],
+                "question": poll["question"],
+                "multiple_choice": poll["multiple_choice"],
+                "allow_user_options": poll["allow_user_options"]
+            },
+            "options": [{"id": o["id"], "text": o["text"], "creator": o["creator"]} for o in options],
+            "votes": votes_dict,
+            "totalVoters": total_votes
+        })
 
     @Server.expose
     def registerActivity(self, SDP):
@@ -2093,6 +2424,28 @@ class Mycelium(Server):
         if op == "create":
             block["channel"] = channel
             block_id = self.db.insertDict("note_block", block, getId=True)
+
+            # Auto-create note_database for database-type blocks
+            if block.get("type") == "database" and block.get("uuid"):
+                existing = self.db.getSomething("note_database", block["uuid"], "block_uuid")
+                if not existing:
+                    db_id = self.db.insertDict("note_database", {
+                        "block_uuid": block["uuid"],
+                        "channel": channel,
+                        "name": "Untitled Database",
+                        "view_type": "table"
+                    }, getId=True)
+                    self.db.insertDict("note_database_column", {
+                        "database_id": db_id,
+                        "name": "Name",
+                        "type": "text",
+                        "position": 0.1
+                    })
+                    self.db.insertDict("note_database_row", {
+                        "database_id": db_id,
+                        "position": 0.1
+                    })
+
             return str(block_id)
         elif op == "delete":
             block_info = self.db.getSomething("note_block", str(block["uuid"]), "uuid")
@@ -2111,7 +2464,266 @@ class Mycelium(Server):
                 if key not in forbidden_fields and block[key] != block_info.get(key):
                     self.db.edit("note_block", block["uuid"], key, block[key], "uuid")
 
+            # Auto-create note_database when block type changes to "database"
+            if block.get("type") == "database" and block_info.get("type") != "database":
+                existing = self.db.getSomething("note_database", block["uuid"], "block_uuid")
+                if not existing:
+                    db_id = self.db.insertDict("note_database", {
+                        "block_uuid": block["uuid"],
+                        "channel": channel,
+                        "name": "Untitled Database",
+                        "view_type": "table"
+                    }, getId=True)
+                    self.db.insertDict("note_database_column", {
+                        "database_id": db_id,
+                        "name": "Name",
+                        "type": "text",
+                        "position": 0.1
+                    })
+                    self.db.insertDict("note_database_row", {
+                        "database_id": db_id,
+                        "position": 0.1
+                    })
 
+    def _checkDatabaseAccess(self, uid, channel):
+        """Check that user has edit access to a notes channel. Returns server_id or raises."""
+        chan_info = self.db.getSomething("notes_channel", channel)
+        if not chan_info:
+            raise HTTPError(self.response, 404)
+        server_id = chan_info["server"]
+        if not self.checkAccessRights(uid, server_id, "edit"):
+            raise HTTPError(self.response, 403)
+        return server_id
+
+    @Server.expose
+    def getDatabaseContent(self, channel, block_uuid):
+        uid = self.getUser()
+        chan_info = self.db.getSomething("notes_channel", channel)
+        if not chan_info:
+            raise HTTPError(self.response, 404)
+        server_id = chan_info["server"]
+        if not self.db.getFilters("accessserver", ["account", "=", uid, "and", "server", "=", server_id]):
+            raise HTTPError(self.response, 403)
+
+        db_info = self.db.getSomething("note_database", block_uuid, "block_uuid")
+        if not db_info:
+            raise HTTPError(self.response, 404)
+
+        db_id = db_info["id"]
+        columns = self.db.getFilters("note_database_column", ["database_id", "=", db_id, "order by position"]) or []
+        rows = self.db.getFilters("note_database_row", ["database_id", "=", db_id, "order by position"]) or []
+
+        cells = {}
+        for row in rows:
+            row_cells = self.db.getFilters("note_database_cell", ["row_id", "=", row["id"]]) or []
+            cells[str(row["id"])] = {str(c["column_id"]): c["value"] for c in row_cells}
+
+        result = {
+            "id": db_id,
+            "block_uuid": db_info["block_uuid"],
+            "name": db_info["name"],
+            "view_type": db_info.get("view_type", "table"),
+            "gallery_cover_column": db_info.get("gallery_cover_column"),
+            "columns": columns,
+            "rows": rows,
+            "cells": cells
+        }
+        return json.dumps(result, default=str)
+
+    @Server.expose
+    def saveDatabase(self, channel, database, op="create"):
+        uid = self.getUser()
+        self._checkDatabaseAccess(uid, channel)
+        database = json.loads(database)
+
+        if op == "create":
+            block_uuid = database.get("block_uuid")
+            if not block_uuid:
+                raise HTTPError(self.response, 400)
+            # Idempotent: if database already exists for this block, return existing
+            existing = self.db.getSomething("note_database", block_uuid, "block_uuid")
+            if existing:
+                return str(existing["id"])
+            db_id = self.db.insertDict("note_database", {
+                "block_uuid": block_uuid,
+                "channel": channel,
+                "name": database.get("name", "Untitled Database"),
+                "view_type": database.get("view_type", "table")
+            }, getId=True)
+            # Create a default first column
+            self.db.insertDict("note_database_column", {
+                "database_id": db_id,
+                "name": "Name",
+                "type": "text",
+                "position": 0.1
+            })
+            # Create a default first row
+            self.db.insertDict("note_database_row", {
+                "database_id": db_id,
+                "position": 0.1
+            })
+            return str(db_id)
+        elif op == "edit":
+            db_info = self.db.getSomething("note_database", database["id"])
+            if not db_info or int(db_info["channel"]) != int(channel):
+                raise HTTPError(self.response, 404)
+            allowed = ["name", "view_type", "gallery_cover_column"]
+            for key in allowed:
+                if key in database and database[key] != db_info.get(key):
+                    self.db.edit("note_database", database["id"], key, database[key])
+        elif op == "delete":
+            db_info = self.db.getSomething("note_database", database["id"])
+            if not db_info or int(db_info["channel"]) != int(channel):
+                raise HTTPError(self.response, 404)
+            self.db.deleteSomething("note_database", database["id"])
+
+    @Server.expose
+    def saveDatabaseColumn(self, channel, database_id, column, op="create"):
+        uid = self.getUser()
+        self._checkDatabaseAccess(uid, channel)
+        column = json.loads(column)
+
+        db_info = self.db.getSomething("note_database", database_id)
+        if not db_info or int(db_info["channel"]) != int(channel):
+            raise HTTPError(self.response, 404)
+
+        valid_types = ["text", "number", "checkbox", "date", "select", "relation", "formula"]
+
+        if op == "create":
+            col_type = column.get("type", "text")
+            if col_type not in valid_types:
+                raise HTTPError(self.response, 400)
+            col_id = self.db.insertDict("note_database_column", {
+                "database_id": database_id,
+                "name": column.get("name", "Column"),
+                "type": col_type,
+                "position": column.get("position", 0.1),
+                "options": json.dumps(column.get("options", {}))
+            }, getId=True)
+            return str(col_id)
+        elif op == "edit":
+            col_info = self.db.getSomething("note_database_column", column["id"])
+            if not col_info or int(col_info["database_id"]) != int(database_id):
+                raise HTTPError(self.response, 404)
+            allowed = ["name", "type", "position", "options"]
+            for key in allowed:
+                if key in column:
+                    val = column[key]
+                    if key == "type" and val not in valid_types:
+                        raise HTTPError(self.response, 400)
+                    if key == "options":
+                        val = json.dumps(val)
+                    if str(val) != str(col_info.get(key)):
+                        self.db.edit("note_database_column", column["id"], key, val)
+        elif op == "delete":
+            col_info = self.db.getSomething("note_database_column", column["id"])
+            if not col_info or int(col_info["database_id"]) != int(database_id):
+                raise HTTPError(self.response, 404)
+            self.db.deleteSomething("note_database_column", column["id"])
+
+    @Server.expose
+    def saveDatabaseRow(self, channel, database_id, row, op="create"):
+        uid = self.getUser()
+        self._checkDatabaseAccess(uid, channel)
+        row = json.loads(row)
+
+        db_info = self.db.getSomething("note_database", database_id)
+        if not db_info or int(db_info["channel"]) != int(channel):
+            raise HTTPError(self.response, 404)
+
+        if op == "create":
+            row_id = self.db.insertDict("note_database_row", {
+                "database_id": database_id,
+                "position": row.get("position", 0.1)
+            }, getId=True)
+            return str(row_id)
+        elif op == "edit":
+            row_info = self.db.getSomething("note_database_row", row["id"])
+            if not row_info or int(row_info["database_id"]) != int(database_id):
+                raise HTTPError(self.response, 404)
+            if "position" in row:
+                self.db.edit("note_database_row", row["id"], "position", row["position"])
+        elif op == "delete":
+            row_info = self.db.getSomething("note_database_row", row["id"])
+            if not row_info or int(row_info["database_id"]) != int(database_id):
+                raise HTTPError(self.response, 404)
+            self.db.deleteSomething("note_database_row", row["id"])
+
+    @Server.expose
+    def saveDatabaseCell(self, channel, database_id, cell):
+        uid = self.getUser()
+        self._checkDatabaseAccess(uid, channel)
+        cell = json.loads(cell)
+
+        db_info = self.db.getSomething("note_database", database_id)
+        if not db_info or int(db_info["channel"]) != int(channel):
+            raise HTTPError(self.response, 404)
+
+        row_id = cell["row_id"]
+        column_id = cell["column_id"]
+        value = cell.get("value", "")
+
+        # Validate row belongs to this database
+        row_info = self.db.getSomething("note_database_row", row_id)
+        if not row_info or int(row_info["database_id"]) != int(database_id):
+            raise HTTPError(self.response, 404)
+
+        # Validate column belongs to this database
+        col_info = self.db.getSomething("note_database_column", column_id)
+        if not col_info or int(col_info["database_id"]) != int(database_id):
+            raise HTTPError(self.response, 404)
+
+        # For relation columns, validate target row exists
+        if col_info["type"] == "relation":
+            options = col_info.get("options", {})
+            if isinstance(options, str):
+                options = json.loads(options)
+            target_db_id = options.get("database_id")
+            if target_db_id and value:
+                target_row = self.db.getSomething("note_database_row", value)
+                if not target_row or int(target_row["database_id"]) != int(target_db_id):
+                    raise HTTPError(self.response, 400)
+
+        # Upsert: try update, then insert
+        existing = self.db.getFilters("note_database_cell", ["row_id", "=", row_id, "and", "column_id", "=", column_id])
+        if existing:
+            self.db.edit("note_database_cell", existing[0]["id"], "value", value)
+        else:
+            self.db.insertDict("note_database_cell", {
+                "row_id": row_id,
+                "column_id": column_id,
+                "value": value
+            })
+
+    @Server.expose
+    def getRelationDisplay(self, database_id, row_id):
+        """Get the display name (first text column value) for a row in a database."""
+        uid = self.getUser()
+        db_info = self.db.getSomething("note_database", database_id)
+        if not db_info:
+            raise HTTPError(self.response, 404)
+
+        chan_info = self.db.getSomething("notes_channel", db_info["channel"])
+        if not chan_info:
+            raise HTTPError(self.response, 404)
+        server_id = chan_info["server"]
+        if not self.db.getFilters("accessserver", ["account", "=", uid, "and", "server", "=", server_id]):
+            raise HTTPError(self.response, 403)
+
+        # Find first text column
+        columns = self.db.getFilters("note_database_column", ["database_id", "=", database_id, "order by position"]) or []
+        text_col = None
+        for col in columns:
+            if col["type"] == "text":
+                text_col = col
+                break
+
+        if not text_col:
+            return json.dumps({"display": "Row " + str(row_id)})
+
+        cell = self.db.getFilters("note_database_cell", ["row_id", "=", row_id, "and", "column_id", "=", text_col["id"]]) or []
+        display = cell[0]["value"] if cell else ""
+        return json.dumps({"display": display or "Untitled"}, default=str)
 
     @Server.expose
     def serverDisplay(self, invite):

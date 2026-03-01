@@ -1,0 +1,13 @@
+<th data-col-id="${element.id}">
+    <div class="col-header">
+        <span class="col-type-icon">${element.typeIcon}</span>
+        <input class="col-name" value="${element.name}"
+               onchange="global.state.databaseViews['${element.blockUuid}'].onColumnRename(${element.id}, event)" />
+        <span class="col-letter">${element.letter}</span>
+        <button class="col-sort"
+                onclick="global.state.databaseViews['${element.blockUuid}'].toggleSort(${element.id})">${element.sortIcon}</button>
+        <button class="col-menu-btn"
+                onclick="global.state.databaseViews['${element.blockUuid}'].openColumnMenu(${element.id}, event)">⋯</button>
+    </div>
+</th>
+

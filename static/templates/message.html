@@ -18,6 +18,7 @@
                 ` : ''}
             </div>
 
+            ${isPollMessage(element) ? fillWith('poll-message', [element]) : `
             <div class="global-convs🪟${element.place}🥹-messages🪟${element.id}🥹-body mdBlock" data-content="()=>{
             return MDToHTML(global.convs['${element.place}']?.messages['${element.id}'].body)
             }">${MDToHTML(element.body)}</div>
@@ -29,6 +30,7 @@
             <div class="messageAttachments">
                 ${fillWith('attachment',element.attachments)}
             </div>
+            `}
         </div>
     </div>
 </div>

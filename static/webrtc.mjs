@@ -1,6 +1,7 @@
 import global from "./framework/global.mjs";
 import { xhr } from "./framework/templating.mjs";
 import { setElement, pushElement, deleteVal } from "./framework/vesta.mjs";
+import { callEnded as nativeCallEnded, isNative } from "./capacitor-bridge.mjs";
 
 // STUN servers for ICE candidates - TURN servers should be added for production
 const ICE_SERVERS = [
@@ -225,6 +226,9 @@ export class CallManager {
     async joinCall(callId, video = false) {
         try {
             await this.getLocalStream(video);
+
+            // Dismiss native incoming call notification (if any)
+            if (isNative) nativeCallEnded();
 
             // Join call on server
             const response = await this._httpRequest('POST', `/joinCall?call_id=${callId}`);
@@ -903,6 +907,9 @@ export class CallManager {
         if (localVideo) {
             localVideo.srcObject = null;
         }
+
+        // Dismiss native incoming-call notification if still showing
+        if (isNative) nativeCallEnded().catch(() => {});
 
         console.log('✅ Cleanup complete');
     }

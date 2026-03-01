@@ -2,6 +2,11 @@ import {Markdown} from "../markdown/markdown.mjs";
 import {xhr} from "../framework/templating.mjs";
 import {} from "./synapse.mjs";
 import {normalizeIfNeeded} from "../drag.mjs";
+import {
+    registerFunction,
+    evaluateText
+} from "./formulaEngine.mjs";
+import {mountDatabase} from "./database.mjs";
 
 class Editor {
     constructor() {
@@ -12,6 +17,21 @@ class Editor {
             this.createBlock({},false)
         }
         this.draggedBlockId = null
+
+        // After DOM is rendered, re-mount interactive blocks (database, synapse, etc.)
+        requestAnimationFrame(() => this._mountInteractiveBlocks())
+    }
+
+    _mountInteractiveBlocks() {
+        for (const blockId in this.blocks) {
+            const block = this.blocks[blockId]
+            if (blockTypes[block.type] && blockTypes[block.type].template) {
+                const blockEl = document.querySelector(`[data-block-id="${block.uuid}"] .content`)
+                if (blockEl) {
+                    this.convertBlock(blockEl, blockId)
+                }
+            }
+        }
     }
 
     getSortedBlocks() {
@@ -258,13 +278,15 @@ class Editor {
             if (parsedInitiator.initiator) {
                 block.type = parsedInitiator.initiator.type
                 block.content = parsedInitiator.content
-                event.currentTarget.setAttribute("data-placeholder", blockTypes[block.type].placeholder)
-                event.currentTarget.classList.add("note-"+block.type)
                 if (blockTypes[block.type].template) {
                     this.convertBlock(event.currentTarget, blockId)
-                }else{
-                    event.currentTarget.innerText = block.content
+                    return // block is now interactive, don't touch its DOM further
                 }
+                if (blockTypes[block.type].placeholder) {
+                    event.currentTarget.setAttribute("data-placeholder", blockTypes[block.type].placeholder)
+                }
+                event.currentTarget.classList.add("note-"+block.type)
+                event.currentTarget.innerText = block.content
                 this.putCursorToEnd(event.currentTarget)
             }else{
                 const cursorPosition = this.saveCursorPosition(event.currentTarget);
@@ -294,7 +316,21 @@ class Editor {
             target.onblur = ""
             target.onfocus = ""
             target.contenteditable = "false"
-            target.innerHTML = blockTypes[block.type].template()
+
+            // Persist the block type change synchronously so server-side
+            // resources (e.g. note_database) are created before we try to load them
+            xhr("/saveBlock?channel="+global.state.activeChan.id+"&block="+encodeURIComponent(JSON.stringify(block))+"&op=edit", ()=>{}, "GET", false)
+
+            target.innerHTML = blockTypes[block.type].template(block)
+
+            // Mount database components
+            if (block.type === "database") {
+                const channelId = global.state.activeChan.id
+                const containerEl = target.querySelector('.note-database')
+                if (containerEl) {
+                    mountDatabase(block.uuid, channelId, containerEl)
+                }
+            }
         }
     }
 
@@ -427,7 +463,8 @@ const blockTypes = {
     "heading3": {placeholder: "Heading 3", initiator: "###"},
     "small": {placeholder: "small text", initiator: "-#"},
     "showcase": {placeholder: "insert metric", initiator: "/showcase"},
-    "synapse": {template: ()=>{return getTemplate("synapse-root")}, initiator: "/synapse"},
+    "synapse": {template: (block)=>{return getTemplate("synapse-root")}, initiator: "/synapse"},
+    "database": {template: (block)=>{return fillWith("database-root", [block])}, initiator: "/database", placeholder: "database"},
 }
 
 const initiators = [
@@ -437,6 +474,7 @@ const initiators = [
     {"type":"small", "initiator":"-#"},
     {"type":"showcase", "initiator":"/showcase"},
     {"type":"synapse", "initiator":"/synapse"},
+    {"type":"database", "initiator":"/database"},
 ]
 
 
@@ -564,9 +602,7 @@ function MDToRender(text){
     const rendered = engine.render(tokens, render_equiv)
 
     //evaluating functions
-    const parsed = parseFunctions(rendered)
-    const evaluated = evaluateFunctions(parsed)
-    return evaluated
+    return evaluateText(rendered)
 }
 window.MDToRender = MDToRender
 
@@ -594,173 +630,6 @@ function func_progress(data, goal, type="linear"){
     return "Unknown progress type '"+type+"'"
 }
 
-
-const functions = {
-    'DASHBOARD': func_dashboard,
-    'PROGRESS': func_progress,
-}
-
-function parseFunctions(text) {
-    // functions are in the format {{FUNCTION_NAME(arg1, arg2)}}
-    // We scan character by character to correctly handle nested {{ }} and balanced parens
-    const result = []
-    let i = 0
-
-    while (i < text.length) {
-        // Look for opening {{
-        const start = text.indexOf('{{', i)
-        if (start === -1) {
-            result.push({ type: 'text', content: text.substring(i) })
-            break
-        }
-
-        // Text before this function
-        if (start > i) {
-            result.push({ type: 'text', content: text.substring(i, start) })
-        }
-
-        // Find the matching }} by tracking brace depth
-        let depth = 0
-        let end = -1
-        for (let j = start; j < text.length - 1; j++) {
-            if (text[j] === '{' && text[j + 1] === '{') {
-                depth++
-                j++ // skip second {
-            } else if (text[j] === '}' && text[j + 1] === '}') {
-                depth--
-                if (depth === 0) {
-                    end = j + 2 // position after }}
-                    break
-                }
-                j++ // skip second }
-            }
-        }
-
-        if (end === -1) {
-            // No matching }}, treat rest as text
-            result.push({ type: 'text', content: text.substring(start) })
-            break
-        }
-
-        const inner = text.substring(start + 2, end - 2) // content between {{ and }}
-
-        // Match FUNCTION_NAME(...)
-        const funcMatch = inner.match(/^([A-Z_]+)\(([\s\S]*)\)$/)
-        if (funcMatch) {
-            const functionName = funcMatch[1]
-            const argsString = funcMatch[2].trim()
-            const args = parseArguments(argsString)
-            result.push({ type: 'function', name: functionName, args: args })
-        } else {
-            // Not a valid function syntax, treat as text
-            result.push({ type: 'text', content: text.substring(start, end) })
-        }
-
-        i = end
-    }
-
-    return result
-}
-
-function parseArguments(argsString) {
-    const args = []
-    if (!argsString) return args
-
-    let currentArg = ''
-    let inString = false
-    let stringChar = null
-    let parenDepth = 0
-    let braceDepth = 0
-
-    for (let i = 0; i < argsString.length; i++) {
-        const char = argsString[i]
-
-        if (inString) {
-            if (char === '\\' && i + 1 < argsString.length) {
-                currentArg += char + argsString[++i]
-            } else if (char === stringChar) {
-                inString = false
-                stringChar = null
-                currentArg += char
-            } else {
-                currentArg += char
-            }
-        } else {
-            if (char === '"' || char === "'") {
-                inString = true
-                stringChar = char
-                currentArg += char
-            } else if (char === '(') {
-                parenDepth++
-                currentArg += char
-            } else if (char === ')') {
-                parenDepth--
-                currentArg += char
-            } else if (char === '{' && argsString[i + 1] === '{') {
-                braceDepth++
-                currentArg += char
-            } else if (char === '}' && argsString[i + 1] === '}') {
-                braceDepth--
-                currentArg += char
-            } else if (char === ',' && parenDepth === 0 && braceDepth === 0) {
-                const trimmed = currentArg.trim()
-                if (trimmed) args.push(parseArgument(trimmed))
-                currentArg = ''
-            } else {
-                currentArg += char
-            }
-        }
-    }
-
-    const trimmed = currentArg.trim()
-    if (trimmed) args.push(parseArgument(trimmed))
-
-    return args
-}
-
-function parseArgument(arg) {
-    arg = arg.trim()
-
-    // Quoted string
-    if ((arg.startsWith('"') && arg.endsWith('"')) || (arg.startsWith("'") && arg.endsWith("'"))) {
-        return arg.slice(1, -1)
-    }
-
-    // Boolean
-    if (arg === 'true') return true
-    if (arg === 'false') return false
-
-    // Number
-    if (!isNaN(arg) && arg !== '') return parseFloat(arg)
-
-    // Nested function call: FUNCNAME(...) — evaluate it immediately
-    const nestedMatch = arg.match(/^([A-Z_]+)\(([\s\S]*)\)$/)
-    if (nestedMatch) {
-        const funcName = nestedMatch[1]
-        const func = functions[funcName]
-        if (func) {
-            const innerArgs = parseArguments(nestedMatch[2].trim())
-            return func(...innerArgs)
-        }
-    }
-
-    // Default: plain string
-    return arg
-}
-
-function evaluateFunctions(contentArray) {
-    let content = ""
-    contentArray.forEach(part => {
-        if (part.type === "text") {
-            content += part.content
-        } else if (part.type === "function") {
-            const func = functions[part.name]
-            if (func) {
-                content += func(...part.args)
-            } else {
-                console.warn("Unknown function:", part.name)
-            }
-        }
-    })
-    return content
-}
+// Register app-specific functions into the shared formula engine
+registerFunction('DASHBOARD', func_dashboard)
+registerFunction('PROGRESS', func_progress)

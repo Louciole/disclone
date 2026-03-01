@@ -288,7 +288,7 @@ section{
     width: 80vw;
     height: fit-content;
     max-width: 400px;
-    background: var(--text);
+    background: var(--bg2);
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -298,6 +298,7 @@ section{
     z-index: 20;
     overflow-x: clip;
     overflow-y: visible;
+    color: var(--text);
 }
 
 .steps{
@@ -318,7 +319,7 @@ section{
 }
 
 .menu p{
-    color: var(--text3);
+    color: var(--text2);
     font-weight: 300;
 }
 
@@ -344,11 +345,11 @@ section{
 }
 
 .menu .close:hover{
-    color: black;
+    color: white;
 }
 
 .category{
-    border: solid 1px #bababa;
+    border: solid 1px var(--text3);
     display: flex;
     align-items: center;
     width: calc(100% - 2rem);
@@ -360,7 +361,7 @@ section{
 }
 
 .category:hover{
-    background: #e1e1e1;
+    background: var(--bg3);
 }
 
 .category h4{
@@ -1076,6 +1077,7 @@ section{
     justify-content: center;
     align-items: center;
     cursor: pointer;
+    position: relative;
 }
 
 .message-group{
@@ -1671,7 +1673,6 @@ section{
     width: 80vw;
     height: fit-content;
     max-width: 400px;
-    background: var(--text);
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -1795,7 +1796,8 @@ input[type="text"]{
 }
 
 .menu input{
-    background: #dadbdd;
+    background: var(--bg3);
+    color: var(--text);
     border: none;
     border-radius: 5px;
     height: 1.2rem;
@@ -2263,7 +2265,7 @@ h4 {
 
 .menu-wrapper .menu .option {
     cursor: pointer;
-    background: #cfcfcf;
+    background: var(--bg3);
     display: flex;
     padding: 0.8rem 1rem;
     text-align: start;
@@ -4864,11 +4866,17 @@ input:checked + .slider:before {
     cursor: text;
 }
 
-.editor{
+.editor {
     background: var(--bg4);
-    padding: 2rem 15rem;
+    padding: 2rem 2rem;
     min-height: 100%;
+    width: fit-content;
+    min-width: 40%;
+    margin: 0 auto;
+    display: flex;
     color: var(--text);
+    flex-direction: column;
+    align-items: flex-start;
 }
 
 .editor .editable-block{
@@ -4955,6 +4963,458 @@ input:checked + .slider:before {
     border-radius: 0.6rem;
     font-size: 1.8rem;
     width: fit-content !important;
+}
+
+/* ─── Notion-like Database Block ───────────────────────────────────── */
+
+.note-database{
+    width: 100% !important;
+    overflow-x: auto;
+}
+
+.note-database .db-error{
+    color: #ef4444;
+    padding: 1rem;
+}
+
+.note-database .db-loading{
+    color: var(--text2bis);
+    padding: 1rem;
+}
+
+.note-database .db-header{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.4rem 0.5rem;
+    gap: 0.5rem;
+}
+
+.note-database .db-title{
+    background: none;
+    border: none;
+    color: var(--text);
+    font-size: 1.2rem;
+    font-weight: 600;
+    outline: none;
+    flex: 1;
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+}
+
+.note-database .db-title:hover,
+.note-database .db-title:focus{
+    background: var(--bg4);
+}
+
+.note-database .db-view-toggle{
+    display: flex;
+    gap: 2px;
+    background: var(--bg4);
+    border-radius: 4px;
+    padding: 2px;
+}
+
+.note-database .db-view-toggle button{
+    background: none;
+    border: none;
+    color: var(--text2bis);
+    padding: 0.25rem 0.6rem;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 0.8rem;
+}
+
+.note-database .db-view-toggle button.active{
+    background: var(--bg3);
+    color: var(--text);
+}
+
+.note-database .db-view-toggle button:hover{
+    color: var(--text);
+}
+
+/* Table view */
+
+.note-database .db-table-wrapper{
+    overflow-x: auto;
+}
+
+.note-database .db-table{
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.note-database .db-table thead th{
+    background: var(--bg4);
+    color: var(--text2bis);
+    font-weight: 500;
+    text-align: left;
+    padding: 0.4rem 0.6rem;
+    border-bottom: 1px solid var(--text2bis);
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.note-database .db-table .col-header{
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.note-database .db-table .col-type-icon{
+    font-size: 0.75rem;
+    opacity: 0.6;
+    min-width: 1.2rem;
+    text-align: center;
+}
+
+.note-database .db-table .col-name{
+    background: none;
+    border: none;
+    color: var(--text2bis);
+    font-size: 0.85rem;
+    outline: none;
+    padding: 0;
+    min-width: 3rem;
+    max-width: 10rem;
+}
+
+.note-database .db-table .col-name:hover,
+.note-database .db-table .col-name:focus{
+    color: var(--text);
+}
+
+.note-database .db-table .col-letter{
+    font-size: 0.65rem;
+    opacity: 0.4;
+    margin-left: auto;
+}
+
+.note-database .db-table .col-sort,
+.note-database .db-table .col-menu-btn{
+    background: none;
+    border: none;
+    color: var(--text2bis);
+    cursor: pointer;
+    padding: 0 0.15rem;
+    font-size: 0.75rem;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+.note-database .db-table thead th:hover .col-sort,
+.note-database .db-table thead th:hover .col-menu-btn{
+    opacity: 1;
+}
+
+.note-database .db-table thead th.add-col{
+    width: 2rem;
+    text-align: center;
+}
+
+.note-database .db-table thead th.add-col button{
+    background: none;
+    border: none;
+    color: var(--text2bis);
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: bold;
+    padding: 0;
+}
+
+.note-database .db-table thead th.add-col button:hover{
+    color: var(--text);
+}
+
+.note-database .db-table tbody td {
+    padding: 0.2rem 0.4rem;
+    border-bottom: 1px solid var(--text2bis);
+    border-right: solid 1px var(--text2bis);
+    min-width: 6rem;
+}
+
+.note-database .db-table tbody td:last-child {
+    border-right: none;
+}
+
+.note-database .db-table tbody td input[type="text"],
+.note-database .db-table tbody td input[type="number"],
+.note-database .db-table tbody td input[type="date"]{
+    background: none;
+    border: none;
+    color: var(--text);
+    width: 100%;
+    outline: none;
+    padding: 0.2rem 0;
+    font-size: 0.9rem;
+}
+
+.note-database .db-table tbody td input[type="text"]:focus,
+.note-database .db-table tbody td input[type="number"]:focus,
+.note-database .db-table tbody td input[type="date"]:focus{
+    background: var(--bg4);
+    border-radius: 3px;
+    padding: 0.2rem 0.3rem;
+}
+
+.note-database .db-table tbody td input[type="checkbox"]{
+    accent-color: var(--accent);
+    cursor: pointer;
+}
+
+.note-database .db-table tbody td select{
+    background: var(--bg4);
+    border: none;
+    color: var(--text);
+    border-radius: 3px;
+    padding: 0.15rem 0.3rem;
+    font-size: 0.85rem;
+    outline: none;
+    cursor: pointer;
+}
+
+/* Cell types */
+
+.note-database .cell-relation{
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.note-database .relation-chip{
+    background: var(--bg4);
+    padding: 0.1rem 0.5rem;
+    border-radius: 3px;
+    font-size: 0.85rem;
+    cursor: default;
+}
+
+.note-database .relation-clear,
+.note-database .relation-pick{
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    font-size: 0.8rem;
+    opacity: 0.5;
+}
+
+.note-database .relation-clear:hover,
+.note-database .relation-pick:hover{
+    opacity: 1;
+}
+
+.note-database .cell-formula{
+    color: var(--text2bis);
+    font-style: italic;
+    font-size: 0.9rem;
+}
+
+/* Add row button */
+
+.note-database .db-add-row{
+    background: none;
+    border: none;
+    color: var(--text2bis);
+    cursor: pointer;
+    padding: 0.4rem 0.6rem;
+    font-size: 0.85rem;
+    width: 100%;
+    text-align: left;
+    border-top: 1px solid var(--bg4);
+}
+
+.note-database .db-add-row:hover{
+    background: var(--bg4);
+    color: var(--text);
+}
+
+/* Column menu */
+
+.col-menu{
+    background: var(--bg3);
+    border: 1px solid var(--text2bis);
+    border-radius: 6px;
+    padding: 0.3rem;
+    min-width: 12rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    z-index: 100;
+}
+
+.col-menu .col-menu-section{
+    color: var(--text2bis);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    padding: 0.4rem 0.5rem 0.2rem;
+    letter-spacing: 0.05em;
+}
+
+.col-menu .col-menu-item{
+    padding: 0.35rem 0.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: var(--text);
+}
+
+.col-menu .col-menu-item:hover{
+    background: var(--bg4);
+}
+
+.col-menu .col-menu-item.active{
+    background: var(--accent);
+    color: white;
+}
+
+.col-menu .col-menu-item.col-menu-danger{
+    color: #ef4444;
+}
+
+.col-menu .col-menu-item.col-menu-danger:hover{
+    background: rgba(239,68,68,0.15);
+}
+
+.col-menu .col-menu-divider{
+    height: 1px;
+    background: var(--text2bis);
+    margin: 0.3rem 0;
+    opacity: 0.3;
+}
+
+.col-menu .col-menu-input{
+    background: var(--bg4);
+    border: 1px solid var(--text2bis);
+    color: var(--text);
+    border-radius: 4px;
+    padding: 0.3rem 0.5rem;
+    font-size: 0.85rem;
+    width: calc(100% - 1rem);
+    margin: 0.2rem 0.5rem;
+    outline: none;
+}
+
+.col-menu .col-menu-input:focus{
+    border-color: var(--accent);
+}
+
+/* Relation picker */
+
+.relation-picker-overlay{
+    background: var(--bg3);
+    border: 1px solid var(--text2bis);
+    border-radius: 6px;
+    padding: 0.3rem;
+    min-width: 14rem;
+    max-height: 15rem;
+    overflow-y: auto;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    z-index: 100;
+}
+
+.relation-picker-overlay .relation-picker-item{
+    padding: 0.35rem 0.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: var(--text);
+}
+
+.relation-picker-overlay .relation-picker-item:hover{
+    background: var(--bg4);
+}
+
+.relation-picker-overlay .relation-picker-loading,
+.relation-picker-overlay .relation-picker-empty{
+    color: var(--text2bis);
+    padding: 0.5rem;
+    font-size: 0.85rem;
+    text-align: center;
+}
+
+/* Gallery view */
+
+.note-database .db-gallery{
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+    gap: 0.6rem;
+    padding: 0.5rem;
+}
+
+.note-database .gallery-card{
+    background: var(--bg4);
+    border-radius: 6px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: box-shadow 0.15s;
+}
+
+.note-database .gallery-card:hover{
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.note-database .gallery-card.gallery-add{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text2bis);
+    min-height: 6rem;
+    font-size: 0.9rem;
+    border: 1px dashed var(--text2bis);
+    background: none;
+}
+
+.note-database .gallery-card.gallery-add:hover{
+    color: var(--text);
+    border-color: var(--text);
+}
+
+.note-database .gallery-cover{
+    width: 100%;
+    height: 7rem;
+    overflow: hidden;
+}
+
+.note-database .gallery-cover img{
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.note-database .gallery-card-body{
+    padding: 0.5rem;
+}
+
+.note-database .gallery-card-title{
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text);
+    margin-bottom: 0.3rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.note-database .gallery-card-field{
+    display: flex;
+    gap: 0.4rem;
+    font-size: 0.75rem;
+    margin-bottom: 0.15rem;
+}
+
+.note-database .gallery-card-field .field-label{
+    color: var(--text2bis);
+    min-width: 3rem;
+}
+
+.note-database .gallery-card-field .field-value{
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .global-state-callManager-callState{
@@ -5219,4 +5679,318 @@ span.progress-bar {
     flex-direction: row;
     align-items: center;
     overflow: clip;
+}
+
+#content .scrollable:has(#note-editor) {
+    background: var(--bg4);
+    max-height: 100svh;
+}
+
+.poll-message {
+    display: flex;
+    background: var(--bg2);
+    border-radius: 8px;
+    border: solid 1px var(--text3);
+    padding: 1rem;
+    margin: 0.4rem 0;
+    max-width: 500px !important;
+    flex-direction: column;
+}
+
+.poll-message h3 {
+    margin: 0 0 0.2rem 0;
+    font-size: 1rem;
+    color: var(--text);
+}
+
+.poll-hint {
+    color: var(--text2);
+    font-size: 0.8rem;
+    margin: 0 0 0.6rem 0;
+}
+
+.poll-option-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    margin-bottom: 0.6rem;
+}
+
+.poll-option {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.45rem 0.7rem;
+    border-radius: 6px;
+    border: 1px solid var(--text3);
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+    font-size: 0.9rem;
+    color: var(--text);
+}
+
+.poll-option:hover {
+    background: var(--bg2);
+}
+
+.poll-option.selected {
+    border-color: var(--accent);
+    background: rgba(88, 101, 242, 0.12);
+}
+
+.poll-option input[type="checkbox"] {
+    display: inline-block;
+    accent-color: var(--accent);
+    width: 1rem;
+    height: 1rem;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.poll-option span {
+    flex: 1;
+    word-break: break-word;
+}
+
+.poll-add-option {
+    margin-bottom: 0.6rem;
+}
+
+.poll-add-option-input {
+    width: 100%;
+    box-sizing: border-box;
+    background: var(--bg4);
+    border: 1px dashed var(--text3);
+    border-radius: 6px;
+    color: var(--text);
+    padding: 0.4rem 0.7rem;
+    font-size: 0.85rem;
+}
+
+.poll-add-option-input:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.poll-vote-count {
+    color: var(--text2);
+    font-size: 0.8rem;
+    cursor: pointer;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+}
+
+.poll-vote-count:hover {
+    color: var(--text);
+}
+
+.btn.small {
+    font-size: 0.8rem;
+    padding: 0.25rem 0.7rem;
+}
+
+/* Poll results bar chart */
+.poll-results {
+    margin-top: 0.5rem;
+}
+
+.poll-results h4 {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.9rem;
+    color: var(--text);
+}
+
+.poll-result-row {
+    margin-bottom: 0.5rem;
+}
+
+.poll-result-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    color: var(--text);
+    margin-bottom: 0.15rem;
+}
+
+.poll-result-bar-bg {
+    width: 100%;
+    height: 6px;
+    background: var(--text3);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.poll-result-bar {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 3px;
+    transition: width 0.3s;
+    min-width: 0;
+}
+
+.poll-results > .btn {
+    margin-top: 0.6rem;
+}
+
+/* Poll creation menu */
+.poll-creation-option {
+    margin-bottom: 0.3rem;
+}
+
+.poll-creation-option input {
+    width: 100%;
+    box-sizing: border-box;
+    background: var(--bg4);
+    border: 1px solid var(--text3);
+    border-radius: 6px;
+    color: var(--text);
+    padding: 0.4rem 0.7rem;
+    font-size: 0.9rem;
+}
+
+.poll-creation-option input:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.poll-creation-checks {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin: 0.8rem 0;
+}
+
+.poll-checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--text);
+    cursor: pointer;
+}
+
+.poll-checkbox-row input[type="checkbox"] {
+    display: inline-block;
+    accent-color: var(--accent);
+    width: 1rem;
+    height: 1rem;
+    cursor: pointer;
+}
+
+/* Poll voters modal */
+.poll-voters-count {
+    color: var(--text2);
+    font-size: 0.85rem;
+    margin-bottom: 0.6rem;
+}
+
+.poll-voters-content {
+    display: flex;
+    gap: 0.8rem;
+    min-height: 10rem;
+    align-items: flex-start;
+}
+
+.poll-voters-tabs {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    min-width: 8rem;
+    max-width: 12rem;
+}
+
+.poll-voter-tab {
+    padding: 0.4rem 0.7rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    color: var(--text2);
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.poll-voter-tab:hover {
+    background: var(--bg2);
+    color: var(--text);
+}
+
+.poll-voter-tab.selected {
+    background: var(--accent);
+    color: var(--text);
+}
+
+.poll-voters-list {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    max-height: 20rem;
+}
+
+.poll-voter-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.3rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    color: var(--text);
+}
+
+.poll-voter-item:hover {
+    background: var(--bg2);
+}
+
+.poll-no-votes {
+    color: var(--text2);
+    font-size: 0.85rem;
+    font-style: italic;
+}
+
+/* Chat + menu flying menu positioning */
+.chat-input .flying-menu {
+    bottom: 2.5rem;
+    left: 0;
+    min-width: 12rem;
+    background: var(--bg4);
+    border-radius: 6px;
+    padding: 0.3rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    z-index: 10;
+}
+
+.chat-input .flying-menu .item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.5rem 0.7rem;
+    border-radius: 4px;
+    cursor: pointer;
+    color: var(--text);
+    font-size: 0.9rem;
+}
+
+.chat-input .flying-menu .item:hover {
+    background: var(--accent);
+}
+
+.chat-input .flying-menu .item p {
+    margin: 0;
+    white-space: nowrap;
+}
+
+.chat-input .flying-menu .item .icon {
+    width: 1.2rem;
+    height: 1.2rem;
+    filter: brightness(0) invert(1);
+}
+
+.chat-input #chat-plus-menu {
+    left: auto;
+    bottom: 5rem;
+}
+
+.poll-message .btn.small:not(.blue):hover {
+    text-decoration: underline;
 }

@@ -41,7 +41,7 @@
         ${Subscribe('global.user.pronouns',()=>{return(global.user.pronouns)},"pronouns")}
         <hr>
         <p>${Subscribe('global.user.description',()=>{return(global.user.description ? "<h3>".concat(_t("ABOUT ME"),"</h3>",MDToHTML(global.user.description)) : "")},"mdBlock")}</p>
-        <h3>${_t("DISCLONE MEMBER SINCE")}</h3>
+        <h3>${_t("MYCELIUM MEMBER SINCE")}</h3>
         ${Subscribe('global.user.inscription',()=>{return(getTimeStr(global.user.inscription,{ locale: "fr-FR",hour: undefined, minute: undefined}))})}
         <hr>
         <div class="action">

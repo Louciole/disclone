@@ -13,6 +13,13 @@
     <meta content="Mycelium" property="og:site_name">
     <link href="/static/home/auth.css" rel="stylesheet">
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <!-- Capacitor runtime (native app only, no-op in browser) -->
+    <script src="/capacitor.js"></script>
+    <script type="module" src="/static/capacitor-bridge.mjs"></script>
+    <script type="module">
+        import { hideSplash } from '/static/capacitor-bridge.mjs';
+        hideSplash();
+    </script>
     <script src="/static/home/auth.js"></script>
 </head>
 <body onload="attachFormSubmitEvent('signupForm',signupSubmit)">

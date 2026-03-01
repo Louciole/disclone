@@ -1,0 +1,37 @@
+{
+  "name": "mycelium-capacitor-app",
+  "version": "1.0.0",
+  "description": "Capacitor integration for Mycelium",
+  "main": "index.js",
+  "type": "commonjs",
+  "scripts": {
+    "cap:sync": "cap sync",
+    "cap:add:ios": "cap add ios",
+    "cap:add:android": "cap add android",
+    "cap:open:ios": "cap open ios",
+    "cap:open:android": "cap open android",
+    "dev:android": "cap run android --live-reload --external",
+    "dev:ios": "cap run ios --live-reload --external",
+    "build:android": "cap sync android",
+    "build:ios": "cap sync ios"
+  },
+  "keywords": [],
+  "author": "Carbonlab",
+  "license": "LGPL-3.0-or-later",
+  "dependencies": {
+    "@capacitor/android": "^6.2.1",
+    "@capacitor/app": "^6.0.3",
+    "@capacitor/core": "^6.2.1",
+    "@capacitor/haptics": "^6.0.3",
+    "@capacitor/ios": "^6.2.1",
+    "@capacitor/local-notifications": "^6.1.3",
+    "@capacitor/network": "^6.0.4",
+    "@capacitor/push-notifications": "^6.0.5",
+    "@capacitor/splash-screen": "^6.0.4",
+    "@capacitor/status-bar": "^6.0.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.1.0",
+    "typescript": "^5.9.3"
+  }
+}

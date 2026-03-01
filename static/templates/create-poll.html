@@ -1,0 +1,35 @@
+<section class="menu-wrapper" id="create-poll" style="display:none" onclick="closeMenu('#create-poll','createPollSteps')">
+    <div class="menu" onclick="event.stopPropagation()">
+        <div class="close" onclick="closeMenu('#create-poll','createPollSteps')">+</div>
+        <div class="steps" id="createPollSteps">
+            <div class="step">
+                <h2>${_t("Create a poll")}</h2>
+
+                <label>
+                    <input type="text" id="poll-question" class="dark" placeholder="${_t('Ask a question')}"/>
+                </label>
+
+                <div id="poll-options-list"></div>
+
+                <label>
+                    <input type="text" class="dark poll-add-option-trigger" placeholder="${_t('Add an option')}"
+                           oninput="addPollCreationOption(event)"/>
+                </label>
+
+                <div class="poll-creation-checks">
+                    <label class="inline poll-checkbox-row">
+                        <input type="checkbox" id="poll-multiple-choice"/>
+                        <span>${_t("Allow multiple answers")}</span>
+                    </label>
+                    <label class="inline poll-checkbox-row">
+                        <input type="checkbox" id="poll-allow-user-options"/>
+                        <span>${_t("Allow others to add options")}</span>
+                    </label>
+                </div>
+
+                <div class="btn blue" onclick="createPoll()">${_t("Create poll")}</div>
+            </div>
+        </div>
+    </div>
+</section>
+

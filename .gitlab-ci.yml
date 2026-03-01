@@ -1,3 +1,19 @@
+# ─── Stages ───────────────────────────────────────────────────────────────────
+stages:
+  - test
+  - build
+
+# ─── Shared change trigger ────────────────────────────────────────────────────
+# The APK only needs to be rebuilt when something that ends up INSIDE the app
+# actually changes.  Backend-only commits (server.py, crons, db, mailing…)
+# are intentionally excluded — the app loads the live URL at runtime anyway.
+.app_changes: &app_changes
+  changes:
+    - static/**/*               # web frontend (JS, CSS, HTML, assets)
+    - capacitor-app/**/*        # native project, config, build scripts
+    - package.json              # root-level deps (unlikely but safe)
+
+# ─── Test stage (unchanged) ───────────────────────────────────────────────────
 test:
   stage: test
   image: python:3.11-slim-bookworm
@@ -9,3 +25,43 @@ test:
     - source venv/bin/activate
     - pip install -r requirements.txt
     - vesta test
+
+# ─── Android APK build ────────────────────────────────────────────────────────
+build-apk:
+  stage: build
+  image: mingc/android-build-box:latest
+
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+
+  variables:
+    GRADLE_USER_HOME: "$CI_PROJECT_DIR/.gradle"
+    GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dkotlin.incremental=false"
+
+  cache:
+    key: "project-cache-$CI_COMMIT_REF_SLUG"
+    paths:
+      - .gradle/wrapper
+      - .gradle/caches
+      - capacitor-app/node_modules/
+
+  before_script:
+    - cd capacitor-app && npm install --prefer-offline
+    - echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/app/mycelium.keystore
+
+  script:
+    - npm run build:android
+    - cd android
+
+    - |
+      ./gradlew assembleRelease \
+        -Pandroid.injected.signing.store.file="mycelium.keystore" \
+        -Pandroid.injected.signing.store.password="$ANDROID_KEYSTORE_PASSWORD" \
+        -Pandroid.injected.signing.key.alias="$ANDROID_KEY_ALIAS" \
+        -Pandroid.injected.signing.key.password="$ANDROID_KEY_PASSWORD"
+
+  artifacts:
+    name: "mycelium-release"
+    paths:
+      - capacitor-app/android/app/build/outputs/apk/release/*.apk
+    expire_in: 2 week

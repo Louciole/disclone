@@ -1,0 +1,48 @@
+{
+  "appId": "dev.carbonlab.mycelium.app",
+  "appName": "Mycelium",
+  "webDir": "../static",
+  "server": {
+    "url": "https://mycelium.carbonlab.dev/channels",
+    "cleartext": false
+  },
+  "ios": {
+    "contentInset": "always",
+    "backgroundColor": "#1a1a2e",
+    "scheme": "mycelium",
+    "preferredContentMode": "mobile"
+  },
+  "android": {
+    "backgroundColor": "#1a1a2e",
+    "allowMixedContent": false,
+    "webContentsDebuggingEnabled": false
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 2000,
+      "launchAutoHide": false,
+      "backgroundColor": "#1a1a2e",
+      "androidSplashResourceName": "splash",
+      "androidScaleType": "CENTER_CROP",
+      "showSpinner": false,
+      "iosSpinnerStyle": "small",
+      "spinnerColor": "#6c63ff",
+      "splashFullScreen": true,
+      "splashImmersive": true
+    },
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#1a1a2e",
+      "overlaysWebView": false
+    },
+    "PushNotifications": {
+      "presentationOptions": ["badge", "sound", "alert"]
+    },
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_icon_config_sample",
+      "iconColor": "#6c63ff",
+      "sound": "notification.wav"
+    }
+  }
+}
+

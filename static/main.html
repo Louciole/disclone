@@ -10,8 +10,14 @@
     <meta content="A minimalist discord frontend clone." property="og:title">
     <meta content="./images/logo.png" property="og:image">
 
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#1a1a2e">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Mycelium</title>
+    <!-- Capacitor runtime (only active inside native shell, no-op in browser) -->
+    <script src="/capacitor.js"></script>
+    <script type="module" src="/static/capacitor-bridge.mjs"></script>
     <link rel="icon" type="image/x-icon" href="/static/images/favicon.ico">
     <script type="module" src="/static/main.mjs"></script>
     <script type="module" src="/static/navigation.mjs"></script>
@@ -27,7 +33,7 @@
     </div>
     <section id="main-selector">
         <div class="container">
-            <div id="logo" class="item selected" onclick="global.state.isServer = false;global.state.activeConv=undefined; goTo('sec-selector','privateMessage',{'category':'currentTab' ,'event': event},true,goTo('content','friends',undefined,true,()=>{goTo('friends-block','main-friend')}))">
+            <div id="logo" class="item selected" data-haptic="selection" onclick="global.state.isServer = false;global.state.activeConv=undefined; goTo('sec-selector','privateMessage',{'category':'currentTab' ,'event': event},true,goTo('content','friends',undefined,true,()=>{goTo('friends-block','main-friend')}))">
                 <div class="text circle"></div>
                 <div style="display: none" class="outlined notifIndicator">1</div>
             </div>
@@ -40,7 +46,7 @@
         <div id="servers" class="global-servers" data-default-class="global-servers" data-content="()=&gt;fillWith('server-icon', global.servers)">
         </div>
         <div class="container">
-            <div id="new-server" class="item action" onclick="openMenu('create-server')">+</div>
+            <div id="new-server" class="item action" data-haptic="medium" onclick="openMenu('create-server')">+</div>
             <span class="tooltip left">Ajouter un serveur</span>
         </div>
         <div class="container">
@@ -82,7 +88,7 @@
                     <h2>Personalise ton serveur</h2>
                     <p>Donne une personnalité à ton nouveau serveur en choisissant un nom et une icône. Tu pourras toujours les modifier plus tard.</p>
                     <div class="inline space-between">
-                        <div class="btn grey" onclick="gotoStep(0,'createServerSteps')">Retour</div>
+                        <div class="btn grey2" onclick="gotoStep(0,'createServerSteps')">Retour</div>
                         <div class="btn blue" onclick="newServer()">Créer</div>
                     </div>
                 </div>

@@ -1,0 +1,11 @@
+<div class="db-header">
+    <input class="db-title" value="${element.name}"
+           onchange="global.state.databaseViews['${element.blockUuid}'].onTitleChange(event)" />
+    <div class="db-view-toggle">
+        <button class="${element.isTable ? 'active' : ''}"
+                onclick="global.state.databaseViews['${element.blockUuid}'].switchView('table')">Table</button>
+        <button class="${element.isGallery ? 'active' : ''}"
+                onclick="global.state.databaseViews['${element.blockUuid}'].switchView('gallery')">Gallery</button>
+    </div>
+</div>
+

@@ -3,6 +3,7 @@ import {xhr} from "../framework/templating.mjs";
 import {displayNotif, postWS} from "../main.mjs";
 import {setElement, pushElement, deleteElement, addElement} from "../framework/vesta.mjs";
 import {handleMessageGroup} from "../crud.mjs";
+import { notifyMessage, setBadge, callStarted, callEnded, isNative } from "../capacitor-bridge.mjs";
 
 export async function onMessage(event) {
     console.log("Received message from Python server:", event.data);
@@ -26,16 +27,32 @@ export async function onMessage(event) {
                     message.content.content["timestamp"] = timestamp
                     if(message.content.content.place === global.state.activeConv){
                         handleMessageGroup(message.content.content)
-
                         addElement('global.convs['.concat(message.content.content.place,'].messages'), message.content.content)
                     }else{
                         displayNotif(message.content)
+                        // Native notification when app is in background
+                        if (isNative && document.visibilityState === 'hidden') {
+                            const sender = global.users?.[message.content.content.sender];
+                            const convName = global.convs?.[message.content.content.place]?.name || 'Mycelium';
+                            notifyMessage({
+                                title: sender?.display ? `${sender.display} — ${convName}` : convName,
+                                body: message.content.content.body || '📎 Attachment',
+                                extra: { convId: message.content.content.place },
+                            });
+                            // Increment badge
+                            const currentBadge = (window.__badgeCount || 0) + 1;
+                            window.__badgeCount = currentBadge;
+                            setBadge(currentBadge);
+                        }
                     }
                     break;
                 case "friend_request":
                     loadUsers([message.content.content["kopinprincipal"]])
                     pushElement('global.user.invitations', message.content.content)
                     displayNotif(message.content)
+                    if (isNative && document.visibilityState === 'hidden') {
+                        notifyMessage({ title: 'Mycelium', body: 'New friend request', extra: {} });
+                    }
                     break;
                 case "accepted_request":
                     loadUsers([message.content.content["kopinsecondaire"]])
@@ -82,6 +99,54 @@ export async function onMessage(event) {
                     if (conv && conv.messages && conv.messages[messageId]) {
                         setElement(`global.convs[${conversationId}].messages[${messageId}].body`, newContent);
                         setElement(`global.convs[${conversationId}].messages[${messageId}].edited`, true);
+                        // If message has a poll, also update the poll question in the DOM directly
+                        if (conv.messages[messageId].poll) {
+                            conv.messages[messageId].poll.question = newContent;
+                            const pollTitle = document.querySelector(`#message-${messageId} .poll-message h3`);
+                            if (pollTitle) pollTitle.textContent = newContent;
+                        }
+                    }
+                    break;
+
+                case "poll_voted":
+                    const pollVoteData = message.content.content;
+                    const pvConv = global.convs[pollVoteData.place];
+                    if (pvConv && pvConv.messages) {
+                        const pvMsg = pvConv.messages[pollVoteData.messageId];
+                        if (pvMsg && pvMsg.poll) {
+                            pvMsg.poll.votes = pollVoteData.votes;
+                            // Update vote count in DOM directly
+                            const pvContainer = document.querySelector(`#message-${pollVoteData.messageId} .poll-vote-count`);
+                            if (pvContainer) {
+                                const allVoters = new Set();
+                                for (const optId in pollVoteData.votes) {
+                                    for (const v of pollVoteData.votes[optId]) allVoters.add(v);
+                                }
+                                pvContainer.textContent = `${allVoters.size} ${_t('votes')}`;
+                            }
+                        }
+                    }
+                    break;
+
+                case "poll_option_added":
+                    const pollOptData = message.content.content;
+                    const poConv = global.convs[pollOptData.place];
+                    if (poConv && poConv.messages) {
+                        const poMsg = poConv.messages[pollOptData.messageId];
+                        if (poMsg && poMsg.poll) {
+                            poMsg.poll.options.push(pollOptData.option);
+                            // Inject new option into DOM directly
+                            const poList = document.querySelector(`#message-${pollOptData.messageId} .poll-option-list`);
+                            if (poList) {
+                                const isMultiple = poMsg.poll.multiple_choice;
+                                const div = document.createElement('div');
+                                div.className = 'inline poll-option';
+                                div.setAttribute('onclick',
+                                    `const cb=this.querySelector('input');cb.checked=!cb.checked;${isMultiple ? '' : `uncheckOtherPollOptions(cb,${pollOptData.messageId});`}this.classList.toggle('selected',cb.checked)`);
+                                div.innerHTML = `<input type="checkbox" data-option-id="${pollOptData.option.id}" onclick="event.stopPropagation()"/><span>${pollOptData.option.text}</span>`;
+                                poList.appendChild(div);
+                            }
+                        }
                     }
                     break;
 
@@ -96,6 +161,15 @@ export async function onMessage(event) {
                     // Show notification if we're not the initiator
                     if (callData.participants[0] !== global.user.id) {
                         showIncomingCallNotification(callData);
+                        // Native full-screen incoming call notification
+                        if (isNative) {
+                            const caller = global.users?.[callData.participants[0]];
+                            callStarted({
+                                callId: callData.id,
+                                callerName: caller?.display || 'Someone',
+                                callType: callData.call_type || 'audio',
+                            });
+                        }
                     }
                     break;
 
@@ -148,6 +222,8 @@ export async function onMessage(event) {
                     if (callMgr) {
                         callMgr.cleanup();
                     }
+                    // Dismiss native call notification
+                    if (isNative) callEnded();
                     break;
 
                 case "call_mode_switch":

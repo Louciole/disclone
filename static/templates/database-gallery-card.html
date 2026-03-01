@@ -1,0 +1,8 @@
+<div class="gallery-card" onclick="global.state.databaseViews['${element.blockUuid}'].switchView('table')">
+    ${element.coverUrl ? '<div class="gallery-cover"><img src="'+element.coverUrl+'" alt="cover" /></div>' : ''}
+    <div class="gallery-card-body">
+        <div class="gallery-card-title">${element.title}</div>
+        ${element.fields.map(f => '<div class="gallery-card-field"><span class="field-label">'+f.label+'</span><span class="field-value">'+f.value+'</span></div>').join('')}
+    </div>
+</div>
+

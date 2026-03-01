@@ -1,0 +1,28 @@
+<div class="poll-message" data-poll-id="${element.poll.id}">
+    <h3>${element.poll.question}</h3>
+    <p class="poll-hint">${element.poll.multiple_choice ? _t('Select one or more answers') : _t('Select an answer')}</p>
+    <div class="poll-option-list">
+        ${element.poll.options.map(opt => `
+            <div class="inline poll-option ${hasUserVotedOption(element.poll, opt.id) ? 'selected' : ''}"
+                 onclick="const cb=this.querySelector('input');cb.checked=!cb.checked;${element.poll.multiple_choice ? '' : 'uncheckOtherPollOptions(cb,' + element.id + ');'}this.classList.toggle('selected',cb.checked)">
+                <input type="checkbox" data-option-id="${opt.id}"
+                    ${hasUserVotedOption(element.poll, opt.id) ? 'checked' : ''}
+                    onclick="event.stopPropagation()"/>
+                <span>${opt.text}</span>
+            </div>
+        `).join('')}
+    </div>
+    ${element.poll.allow_user_options ? `
+        <div class="poll-add-option">
+            <input type="text" class="poll-add-option-input dark" placeholder="${_t('Add an option')}" onkeydown="addUserPollOption(${element.poll.id}, ${element.id}, event)"/>
+        </div>
+    ` : ''}
+    <div class="poll-footer inline space-between">
+        <div class="poll-vote-count" onclick="openPollVoters(${element.poll.id})">${getPollTotalVoters(element.poll)} ${_t('votes')}</div>
+        <div class="inline" style="gap:0.6rem">
+            <div class="btn small" onclick="showPollResults(${element.poll.id}, ${element.id})">${_t('Display results')}</div>
+            <div class="btn small blue" onclick="votePoll(${element.poll.id}, ${element.id})">${_t('Vote')}</div>
+        </div>
+    </div>
+</div>
+

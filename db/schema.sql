@@ -200,6 +200,46 @@ create table if not exists note_block (
     uuid varchar(36) NOT NULL UNIQUE
 );
 
+create table if not exists note_database (
+    id bigserial NOT NULL PRIMARY KEY,
+    block_uuid varchar(36) NOT NULL REFERENCES note_block(uuid) ON DELETE CASCADE,
+    channel integer NOT NULL,
+    name varchar(255) NOT NULL DEFAULT 'Untitled Database',
+    view_type varchar(10) NOT NULL DEFAULT 'table',
+    gallery_cover_column integer,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+create table if not exists note_database_column (
+    id bigserial NOT NULL PRIMARY KEY,
+    database_id integer NOT NULL REFERENCES note_database(id) ON DELETE CASCADE,
+    name varchar(255) NOT NULL DEFAULT 'Column',
+    type varchar(20) NOT NULL DEFAULT 'text',
+    position float NOT NULL DEFAULT 0.1,
+    options jsonb DEFAULT '{}'
+);
+
+create table if not exists note_database_row (
+    id bigserial NOT NULL PRIMARY KEY,
+    database_id integer NOT NULL REFERENCES note_database(id) ON DELETE CASCADE,
+    position float NOT NULL DEFAULT 0.1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+create table if not exists note_database_cell (
+    id bigserial NOT NULL PRIMARY KEY,
+    row_id integer NOT NULL REFERENCES note_database_row(id) ON DELETE CASCADE,
+    column_id integer NOT NULL REFERENCES note_database_column(id) ON DELETE CASCADE,
+    value text DEFAULT '',
+    UNIQUE(row_id, column_id)
+);
+
+create index if not exists idx_note_database_block on note_database(block_uuid);
+create index if not exists idx_note_database_column_db on note_database_column(database_id);
+create index if not exists idx_note_database_row_db on note_database_row(database_id);
+create index if not exists idx_note_database_cell_row on note_database_cell(row_id);
+create index if not exists idx_note_database_cell_col on note_database_cell(column_id);
+
 create table if not exists API_key (
     id bigserial NOT NULL PRIMARY KEY,
     key varchar(64) UNIQUE NOT NULL,
@@ -260,4 +300,46 @@ create table if not exists channel_permission (
 
 create index if not exists idx_channel_permission_channel on channel_permission(channel, channel_type);
 create index if not exists idx_channel_permission_role on channel_permission(role);
+
+create table if not exists device_token (
+    id bigserial NOT NULL PRIMARY KEY,
+    account integer NOT NULL references mycelium_account(id) ON DELETE CASCADE,
+    token text NOT NULL,
+    platform varchar(10) NOT NULL DEFAULT 'fcm', -- 'ios', 'android', 'fcm'
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (account, token)
+);
+
+create index if not exists idx_device_token_account on device_token(account);
+
+create table if not exists poll (
+    id bigserial NOT NULL PRIMARY KEY,
+    message integer NOT NULL REFERENCES message(id) ON DELETE CASCADE,
+    question text NOT NULL,
+    multiple_choice boolean DEFAULT false,
+    allow_user_options boolean DEFAULT false
+);
+
+create index if not exists idx_poll_message on poll(message);
+
+create table if not exists poll_option (
+    id bigserial NOT NULL PRIMARY KEY,
+    poll integer NOT NULL REFERENCES poll(id) ON DELETE CASCADE,
+    text text NOT NULL,
+    creator integer NOT NULL
+);
+
+create index if not exists idx_poll_option_poll on poll_option(poll);
+
+create table if not exists poll_vote (
+    id bigserial NOT NULL PRIMARY KEY,
+    poll integer NOT NULL REFERENCES poll(id) ON DELETE CASCADE,
+    option integer NOT NULL REFERENCES poll_option(id) ON DELETE CASCADE,
+    voter integer NOT NULL,
+    UNIQUE(poll, option, voter)
+);
+
+create index if not exists idx_poll_vote_poll on poll_vote(poll);
+create index if not exists idx_poll_vote_option on poll_vote(option);
 
