@@ -1,19 +1,7 @@
-# ─── Stages ───────────────────────────────────────────────────────────────────
 stages:
   - test
   - build
 
-# ─── Shared change trigger ────────────────────────────────────────────────────
-# The APK only needs to be rebuilt when something that ends up INSIDE the app
-# actually changes.  Backend-only commits (server.py, crons, db, mailing…)
-# are intentionally excluded — the app loads the live URL at runtime anyway.
-.app_changes: &app_changes
-  changes:
-    - static/**/*               # web frontend (JS, CSS, HTML, assets)
-    - capacitor-app/**/*        # native project, config, build scripts
-    - package.json              # root-level deps (unlikely but safe)
-
-# ─── Test stage (unchanged) ───────────────────────────────────────────────────
 test:
   stage: test
   image: python:3.11-slim-bookworm
@@ -26,13 +14,13 @@ test:
     - pip install -r requirements.txt
     - vesta test
 
-# ─── Android APK build ────────────────────────────────────────────────────────
+
 build-apk:
   stage: build
   image: mingc/android-build-box:latest
 
   rules:
-    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_COMMIT_BRANCH == "maine"'
 
   variables:
     GRADLE_USER_HOME: "$CI_PROJECT_DIR/.gradle"
