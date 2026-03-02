@@ -42,7 +42,7 @@ build-apk:
     - chmod +x gradlew
     - |
       ./gradlew assembleRelease \
-        -Pandroid.injected.signing.store.file="mycelium.keystore" \
+        -Pandroid.injected.signing.store.file="$CI_PROJECT_DIR/capacitor-app/android/app/mycelium.keystore" \
         -Pandroid.injected.signing.store.password="$ANDROID_KEYSTORE_PASSWORD" \
         -Pandroid.injected.signing.key.alias="$ANDROID_KEY_ALIAS" \
         -Pandroid.injected.signing.key.password="$ANDROID_KEY_PASSWORD"
