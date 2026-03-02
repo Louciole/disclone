@@ -34,11 +34,11 @@ build-apk:
       - capacitor-app/node_modules/
 
   before_script:
-    - cd capacitor-app && npm install --prefer-offline
+    - cd capacitor-app && npm ci --prefer-offline
     - echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/app/mycelium.keystore
 
   script:
-    - npm run build:android
+    - npx cap sync android
     - cd android
 
     - |
