@@ -35,11 +35,11 @@ build-apk:
   script:
     - cd capacitor-app
     - npm install
-    - ls -F
     - mkdir -p android/app
     - echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/app/mycelium.keystore
     - npx cap sync android
     - cd android
+    - chmod +x gradlew
     - |
       ./gradlew assembleRelease \
         -Pandroid.injected.signing.store.file="mycelium.keystore" \
