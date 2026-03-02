@@ -17,7 +17,7 @@ test:
 
 build-apk:
   stage: build
-  image: mingc/android-build-box:latest
+  image: mobiledevops/android-sdk-image:33-jdk17
 
   rules:
     - if: '$CI_COMMIT_BRANCH == "maine"'
@@ -33,20 +33,19 @@ build-apk:
       - .gradle/caches
       - capacitor-app/node_modules/
 
-  before_script:
-    - cd capacitor-app && npm ci --prefer-offline
-    - echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/app/mycelium.keystore
-
   script:
-    - npx cap sync android
-    - cd android
-
-    - |
+    - cd capacitor-app
+      - npm ci --prefer-offline
+      - mkdir -p android/app
+      - echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/app/mycelium.keystore
+      - ./node_modules/.bin/cap sync android
+      - cd android
+      - |
       ./gradlew assembleRelease \
-        -Pandroid.injected.signing.store.file="mycelium.keystore" \
-        -Pandroid.injected.signing.store.password="$ANDROID_KEYSTORE_PASSWORD" \
-        -Pandroid.injected.signing.key.alias="$ANDROID_KEY_ALIAS" \
-        -Pandroid.injected.signing.key.password="$ANDROID_KEY_PASSWORD"
+      -Pandroid.injected.signing.store.file="mycelium.keystore" \
+      -Pandroid.injected.signing.store.password="$ANDROID_KEYSTORE_PASSWORD" \
+      -Pandroid.injected.signing.key.alias="$ANDROID_KEY_ALIAS" \
+      -Pandroid.injected.signing.key.password="$ANDROID_KEY_PASSWORD"
 
   artifacts:
     name: "mycelium-release"
