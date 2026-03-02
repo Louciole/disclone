@@ -188,6 +188,48 @@ async function scheduleLocalNotification({ title, body, extra = {} }) {
 async function registerNotificationActions() {
   const { LocalNotifications } = getPlugins();
 
+  // Android 8+ requires channels to exist before any notification is scheduled.
+  // Create them here so they're always ready, regardless of whether the user
+  // has granted permission yet.
+  try {
+    await LocalNotifications.createChannel({
+      id: 'messages',
+      name: 'Messages',
+      description: 'New message notifications',
+      importance: 3, // IMPORTANCE_DEFAULT
+      sound: 'notification.wav',
+      vibration: true,
+      visibility: 1,
+    });
+    await LocalNotifications.createChannel({
+      id: 'calls',
+      name: 'Calls',
+      description: 'Incoming call notifications',
+      importance: 5, // IMPORTANCE_HIGH — needed for heads-up
+      sound: 'ringtone.wav',
+      vibration: true,
+      visibility: 1,
+    });
+  } catch (e) {
+    // createChannel is Android-only; iOS silently rejects, that's fine.
+    console.warn('[cap-bridge] createChannel skipped (likely iOS):', e);
+  }
+
+  // Android 13+ (TIRAMISU) requires POST_NOTIFICATIONS permission at runtime.
+  // Check and request it before calling registerActionTypes so the OS doesn't throw.
+  try {
+    let permStatus = await LocalNotifications.checkPermissions();
+    if (permStatus.display === 'prompt') {
+      permStatus = await LocalNotifications.requestPermissions();
+    }
+    if (permStatus.display !== 'granted') {
+      console.warn('[cap-bridge] Local notifications permission not granted.');
+      return;
+    }
+  } catch (e) {
+    console.warn('[cap-bridge] Local notifications permission check failed:', e);
+  }
+
   await LocalNotifications.registerActionTypes({
     types: [
       {

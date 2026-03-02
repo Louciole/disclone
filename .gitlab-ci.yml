@@ -46,9 +46,10 @@ build-apk:
         -Pandroid.injected.signing.store.password="$ANDROID_KEYSTORE_PASSWORD" \
         -Pandroid.injected.signing.key.alias="$ANDROID_KEY_ALIAS" \
         -Pandroid.injected.signing.key.password="$ANDROID_KEY_PASSWORD"
+    - cp app/build/outputs/apk/release/*.apk "$CI_PROJECT_DIR/mycelium-release.apk"
 
   artifacts:
     name: "mycelium-release"
     paths:
-      - capacitor-app/android/app/build/outputs/apk/release/*.apk
+      - mycelium-release.apk
     expire_in: 2 week
