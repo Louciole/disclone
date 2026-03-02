@@ -13,7 +13,8 @@
     "dev:android": "cap run android --live-reload --external",
     "dev:ios": "cap run ios --live-reload --external",
     "build:android": "cap sync android",
-    "build:ios": "cap sync ios"
+    "build:ios": "cap sync ios",
+    "generate:assets": "capacitor-assets generate --android --splashBackgroundColor \"#1a1a2e\" --assetPath \"resources\" --androidProject \"android\""
   },
   "keywords": [],
   "author": "Carbonlab",
