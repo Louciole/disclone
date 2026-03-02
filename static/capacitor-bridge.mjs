@@ -333,28 +333,79 @@ async function setupDeepLinks() {
 }
 
 // ─── Status Bar + Safe Area ───────────────────────────────────────────────────
+const SYSTEM_BAR_COLOR = '#1a1a2e';
+
 async function setupStatusBar() {
   const { StatusBar } = getPlugins();
   if (!StatusBar) return;
   const platform = window.Capacitor.getPlatform();
 
   try {
+    // Edge-to-edge: WebView draws behind the status bar and gesture nav bar.
+    // The safe-area-inset-* env() values then become non-zero and our CSS/bars use them.
+    await StatusBar.setOverlaysWebView({ overlay: true });
+
     if (platform === 'ios') {
-      // 'Dark' style = light icons on dark background
       await StatusBar.setStyle({ style: 'Dark' });
     } else {
-      await StatusBar.setBackgroundColor({ color: '#1a1a2e' });
+      await StatusBar.setBackgroundColor({ color: SYSTEM_BAR_COLOR });
       await StatusBar.setStyle({ style: 'Dark' });
     }
   } catch (e) {
     console.warn('[cap-bridge] StatusBar setup failed:', e);
   }
 
-  // Inject CSS custom properties for safe area so existing CSS can use them
   injectSafeAreaCSS();
+  injectSystemBars();
+}
+
+/**
+ * Inject two thin fixed overlay bars:
+ *   - Top bar  → covers the notch / status bar area
+ *   - Bottom bar → covers the Android gesture navigation bar area
+ * They sit at z-index 9999 so they're always on top, and are sized via
+ * the safe-area-inset env() values so they exactly match the system UI.
+ */
+function injectSystemBars() {
+  if (document.getElementById('cap-system-bars')) return;
+
+  const style = document.createElement('style');
+  style.id = 'cap-system-bars';
+  style.textContent = `
+    /* Top bar – covers notch / status bar */
+    #cap-top-bar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: env(safe-area-inset-top, 0px);
+      background: ${SYSTEM_BAR_COLOR};
+      z-index: 9999;
+      pointer-events: none;
+    }
+    /* Bottom bar – covers Android gesture nav bar */
+    #cap-bottom-bar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      height: env(safe-area-inset-bottom, 0px);
+      background: ${SYSTEM_BAR_COLOR};
+      z-index: 9999;
+      pointer-events: none;
+    }
+  `;
+  document.head.appendChild(style);
+
+  const top = document.createElement('div');
+  top.id = 'cap-top-bar';
+
+  const bottom = document.createElement('div');
+  bottom.id = 'cap-bottom-bar';
+
+  // Insert as first children of body so they render on every page
+  document.body.prepend(bottom);
+  document.body.prepend(top);
 }
 
 function injectSafeAreaCSS() {
+  if (document.getElementById('capacitor-safe-area')) return;
   const style = document.createElement('style');
   style.id = 'capacitor-safe-area';
   style.textContent = `

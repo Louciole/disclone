@@ -32,6 +32,7 @@
     "@capacitor/status-bar": "^8.0.1"
   },
   "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
     "typescript": "^5.9.3"
   }
 }

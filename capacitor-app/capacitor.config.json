@@ -33,7 +33,7 @@
     "StatusBar": {
       "style": "DARK",
       "backgroundColor": "#1a1a2e",
-      "overlaysWebView": false
+      "overlaysWebView": true
     },
     "PushNotifications": {
       "presentationOptions": ["badge", "sound", "alert"]
