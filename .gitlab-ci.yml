@@ -17,7 +17,7 @@ test:
 
 build-apk:
   stage: build
-  image: mobiledevops/android-sdk-image:33-jdk17
+  image: mingc/android-build-box:latest
 
   rules:
     - if: '$CI_COMMIT_BRANCH == "maine"'
