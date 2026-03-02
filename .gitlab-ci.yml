@@ -31,12 +31,11 @@ build-apk:
     paths:
       - .gradle/wrapper
       - .gradle/caches
-      - capacitor-app/node_modules/
 
   script:
     - cd capacitor-app
+    - npm install
     - ls -F
-    - npm ci --prefer-offline
     - mkdir -p android/app
     - echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/app/mycelium.keystore
     - npx cap sync android
