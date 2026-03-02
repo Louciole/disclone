@@ -35,10 +35,11 @@ build-apk:
 
   script:
     - cd capacitor-app
+    - ls -F
     - npm ci --prefer-offline
     - mkdir -p android/app
     - echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/app/mycelium.keystore
-    - ./node_modules/.bin/cap sync android
+    - npx cap sync android
     - cd android
     - |
       ./gradlew assembleRelease \
