@@ -153,7 +153,7 @@ export async function getUserInfo(page) {
  */
 export async function waitForAppReady(page, timeout = 10000) {
     await page.waitForFunction(() => {
-        return window.global?.state?.socket?.readyState === WebSocket.OPEN
+        return window.global?.state?.websocket?.readyState === WebSocket.OPEN
             && window.global?.state?.callManager !== undefined
             && window.global?.state?.clientID !== undefined;
     }, { timeout });

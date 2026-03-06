@@ -50,7 +50,7 @@ function loadDriveFiles(drive_id, parent_folder = null) {
         if (!global.driveFiles) global.driveFiles = {}
         setElement(`global.driveFiles[${drive_id}]`, files)
     }
-    const url = parent_folder ? `getDriveFiles?drive_id=${drive_id}&parent_folder=${parent_folder}` : `getDriveFiles?drive_id=${drive_id}`
+    const url = parent_folder ? `get_drive_files?drive_id=${drive_id}&parent_folder=${parent_folder}` : `get_drive_files?drive_id=${drive_id}`
     xhr(url, onload, "GET", false)
 }
 window.loadDriveFiles = loadDriveFiles
@@ -61,7 +61,7 @@ function loadDriveFolders(drive_id, parent_folder = null) {
         if (!global.driveFolders) global.driveFolders = {}
         setElement(`global.driveFolders[${drive_id}]`, folders)
     }
-    const url = parent_folder ? `getDriveFolders?drive_id=${drive_id}&parent_folder=${parent_folder}` : `getDriveFolders?drive_id=${drive_id}`
+    const url = parent_folder ? `get_drive_folders?drive_id=${drive_id}&parent_folder=${parent_folder}` : `get_drive_folders?drive_id=${drive_id}`
     xhr(url, onload, "GET", false)
 }
 window.loadDriveFolders = loadDriveFolders
@@ -80,8 +80,8 @@ function createNewDriveFolder() {
     }
 
     const url = parent_folder
-        ? `createDriveFolder?drive_id=${drive_id}&foldername=${encodeURIComponent(foldername)}&parent_folder=${parent_folder}`
-        : `createDriveFolder?drive_id=${drive_id}&foldername=${encodeURIComponent(foldername)}`
+        ? `create_drive_folder?drive_id=${drive_id}&foldername=${encodeURIComponent(foldername)}&parent_folder=${parent_folder}`
+        : `create_drive_folder?drive_id=${drive_id}&foldername=${encodeURIComponent(foldername)}`
 
     xhr(url, onload, "POST", false)
 }
@@ -133,7 +133,7 @@ function deleteDriveFolder(folder_id) {
         loadDriveContent(drive_id, parent_folder)
     }
 
-    xhr(`deleteDriveFolder?folder_id=${folder_id}`, onload, "POST", false)
+    xhr(`delete_drive_folder?folder_id=${folder_id}`, onload, "POST", false)
 }
 window.deleteDriveFolder = deleteDriveFolder
 
@@ -169,8 +169,8 @@ function handleDriveFileSelect(event) {
 
         // Build URL with just metadata (not the file content)
         const url = parent_folder
-            ? `uploadDriveFile?drive_id=${drive_id}&filename=${encodeURIComponent(file.name)}&parent_folder=${parent_folder}`
-            : `uploadDriveFile?drive_id=${drive_id}&filename=${encodeURIComponent(file.name)}`
+            ? `upload_drive_file?drive_id=${drive_id}&filename=${encodeURIComponent(file.name)}&parent_folder=${parent_folder}`
+            : `upload_drive_file?drive_id=${drive_id}&filename=${encodeURIComponent(file.name)}`
 
         // Send file content in the body, not in the URL
         xhr(url, onload, "POST", true, {"file": base64})
@@ -182,7 +182,7 @@ window.handleDriveFileSelect = handleDriveFileSelect
 function downloadDriveFile(file_id, filename) {
     // Create a temporary link to download the file
     const link = document.createElement('a')
-    link.href = `/downloadDriveFile?file_id=${file_id}`
+    link.href = `/download_drive_file?file_id=${file_id}`
     link.download = filename
     document.body.appendChild(link)
     link.click()
@@ -202,7 +202,7 @@ function deleteDriveFile(file_id) {
         loadDriveContent(drive_id, parent_folder)
     }
 
-    xhr(`deleteDriveFile?file_id=${file_id}`, onload, "POST", false)
+    xhr(`delete_drive_file?file_id=${file_id}`, onload, "POST", false)
 }
 window.deleteDriveFile = deleteDriveFile
 

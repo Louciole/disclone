@@ -104,7 +104,7 @@ function createPoll() {
         document.getElementById('poll-options-list').innerHTML = ''
     }
 
-    xhr("sendMessage?conv=" + encodeURI(JSON.stringify({id: global.state.activeConv})) + "&content=",
+    xhr("send_message?conv=" + encodeURI(JSON.stringify({id: global.state.activeConv})) + "&content=",
         onload, "POST", true, {poll: pollData})
 }
 window.createPoll = createPoll
@@ -148,7 +148,7 @@ function votePoll(pollId, messageId) {
         }
     }
 
-    xhr("votePoll?pollId=" + pollId + "&optionIds=" + encodeURIComponent(JSON.stringify(selectedIds)), onload)
+    xhr("vote_poll?poll_id=" + pollId + "&option_ids=" + encodeURIComponent(JSON.stringify(selectedIds)), onload)
 }
 window.votePoll = votePoll
 
@@ -192,7 +192,7 @@ function addUserPollOption(pollId, messageId, event) {
         input.value = ''
     }
 
-    xhr("addPollOption?pollId=" + pollId + "&text=" + encodeURIComponent(text), onload)
+    xhr("add_poll_option?poll_id=" + pollId + "&text=" + encodeURIComponent(text), onload)
 }
 window.addUserPollOption = addUserPollOption
 
@@ -242,7 +242,7 @@ function showPollResults(pollId, messageId) {
         container.insertAdjacentHTML('beforeend', html)
     }
 
-    xhr("getPollResults?pollId=" + pollId, onload)
+    xhr("get_poll_results?poll_id=" + pollId, onload)
 }
 window.showPollResults = showPollResults
 
@@ -257,7 +257,7 @@ function openPollVoters(pollId) {
         // Render after menu is open
         setTimeout(() => renderPollVotersContent(), 100)
     }
-    xhr("getPollResults?pollId=" + pollId, onload)
+    xhr("get_poll_results?poll_id=" + pollId, onload)
 }
 window.openPollVoters = openPollVoters
 

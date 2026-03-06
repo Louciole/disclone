@@ -225,7 +225,7 @@ window.removeTagFromSearch = removeTagFromSearch;
 function loadDiscoverServers() {
     const search = global.discover?.search || { text: '', languages: [], tags: [] };
 
-    let url = 'getDiscoverableServers';
+    let url = 'get_discoverable_servers';
     const params = [];
 
     if (search.text) params.push(`search=${encodeURIComponent(search.text)}`);
@@ -271,7 +271,7 @@ function toggleServerFeatured(serverId, featured) {
         alert('Erreur: Vous devez être administrateur pour mettre en avant des serveurs.');
     };
 
-    xhr(`setServerFeatured?server_id=${serverId}&featured=${featured}`, onload, "POST", false, onerror);
+    xhr(`set_server_featured?server_id=${serverId}&featured=${featured}`, onload, "POST", false, onerror);
 }
 window.toggleServerFeatured = toggleServerFeatured;
 
@@ -297,7 +297,7 @@ function joinDiscoverServer(serverId) {
         alert('Impossible de rejoindre ce serveur. Veuillez réessayer.');
     };
 
-    xhr(`joinCommunityServer?server_id=${serverId}`, onload, "POST", false, onerror);
+    xhr(`join_community_server?server_id=${serverId}`, onload, "POST", false, onerror);
 }
 window.joinDiscoverServer = joinDiscoverServer;
 

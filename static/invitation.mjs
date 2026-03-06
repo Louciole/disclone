@@ -14,7 +14,7 @@ if (document.getElementById("main-selector valid")){
         global.state.serverName = this.responseText
         goTo('main-selector valid',"invitation-snippet",undefined, true)
     }
-    xhr(`/serverDisplay?invite=${global.state.link}`,onload)
+    xhr(`/server_display?invite=${global.state.link}`,onload)
 
 }else{
     goTo('main-selector',"expired-invitation-snippet",undefined, true)

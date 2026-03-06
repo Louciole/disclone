@@ -76,7 +76,7 @@ function toggleChannelPrivacy() {
         if (roleSelector) roleSelector.style.display = isPrivate ? '' : 'none'
     }
 
-    xhr(`editChannelPermissions?channelId=${channelId}&channelType=${channelType}&action=togglePrivacy`, onload)
+    xhr(`edit_channel_permissions?channelId=${channelId}&channelType=${channelType}&action=togglePrivacy`, onload)
 }
 window.toggleChannelPrivacy = toggleChannelPrivacy
 
@@ -126,7 +126,7 @@ function addChannelRole(channelId, channelType, roleId) {
         // Refresh the permissions UI
         refreshChannelPermissionsUI(channelId, channelType)
     }
-    xhr(`editChannelPermissions?channelId=${channelId}&channelType=${channelType}&action=addRole&roleId=${roleId}`, onload)
+    xhr(`edit_channel_permissions?channelId=${channelId}&channelType=${channelType}&action=addRole&roleId=${roleId}`, onload)
 }
 window.addChannelRole = addChannelRole
 
@@ -139,7 +139,7 @@ function removeChannelRole(channelId, channelType, roleId) {
         }
         refreshChannelPermissionsUI(channelId, channelType)
     }
-    xhr(`editChannelPermissions?channelId=${channelId}&channelType=${channelType}&action=removeRole&roleId=${roleId}`, onload)
+    xhr(`edit_channel_permissions?channelId=${channelId}&channelType=${channelType}&action=removeRole&roleId=${roleId}`, onload)
 }
 window.removeChannelRole = removeChannelRole
 
@@ -163,7 +163,7 @@ function editChannelRolePerm(event, channelId, channelType, roleId, permission) 
             }
         }
     }
-    xhr(`editChannelPermissions?channelId=${channelId}&channelType=${channelType}&action=editPermission&roleId=${roleId}&permission=${permission}&value=${checked}`, onload)
+    xhr(`edit_channel_permissions?channelId=${channelId}&channelType=${channelType}&action=editPermission&roleId=${roleId}&permission=${permission}&value=${checked}`, onload)
 }
 window.editChannelRolePerm = editChannelRolePerm
 
@@ -279,6 +279,6 @@ function editRolePerm(event, right){
         delete global.state.currentRole.permissions[right];
     }
     const newValue = JSON.stringify(global.state.currentRole.permissions);
-    xhr(`/editServer?property=role&id=${global.state.currentServer.id}&value=${newValue}&targetId=${global.state.currentRole.id}&field=permissions`,onload)
+    xhr(`/edit_server_role?server_id=${global.state.currentServer.id}&value=${newValue}&targetId=${global.state.currentRole.id}&field=permissions`,onload)
 }
 window.editRolePerm = editRolePerm

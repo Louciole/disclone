@@ -110,7 +110,7 @@ function delMsg(msg_id){
         const onload = function() { // request successful
             //TODO delete message
         };
-        xhr("deleteMessage?message="+msg_id, onload)
+        xhr("delete_message?message_id="+msg_id, onload)
     }
 }
 window.delMsg = delMsg
@@ -146,8 +146,7 @@ function saveEdition(id){
         cancelEdition(id)
     }
 
-    // Send the edit request to server
-    xhr("editMessage?message=".concat(id,"&content=",encodeURIComponent(trimmedContent)), onEdited)
+    xhr("edit_message?message_id=".concat(id,"&content=",encodeURIComponent(trimmedContent)), onEdited)
 }
 window.saveEdition = saveEdition
 

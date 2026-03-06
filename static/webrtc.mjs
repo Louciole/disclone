@@ -178,7 +178,7 @@ export class CallManager {
             await this.getLocalStream(video);
 
             // Create call on server
-            const response = await this._httpRequest('POST', `/startCall?conversation_id=${conversationId}&call_type=${this.callType}`);
+            const response = await this._httpRequest('POST', `/start_call?conversation_id=${conversationId}&call_type=${this.callType}`);
 
             // Update state reactively
             this.currentCall = response;
@@ -231,7 +231,7 @@ export class CallManager {
             if (isNative) nativeCallEnded();
 
             // Join call on server
-            const response = await this._httpRequest('POST', `/joinCall?call_id=${callId}`);
+            const response = await this._httpRequest('POST', `/join_call?call_id=${callId}`);
 
             // Update state reactively
             this.currentCall = response.call;
@@ -288,7 +288,7 @@ export class CallManager {
             const callId = this.currentCall.id;
 
             // Notify server via HTTP
-            await this._httpRequest('POST', `/leaveCall?call_id=${callId}`);
+            await this._httpRequest('POST', `/leave_call?call_id=${callId}`);
 
             // Notify server via WebSocket
             this._sendWebSocketMessage({
@@ -994,7 +994,7 @@ window.isInCall = function(callId) {
  */
 window.loadCallState = async function(conversationId) {
     try {
-        const response = await fetch(`/getCallState?conversation_id=${conversationId}`);
+        const response = await fetch(`/get_call_state?conversation_id=${conversationId}`);
         const callState = await response.json();
 
         console.log('📞 loadCallState result:', callState);

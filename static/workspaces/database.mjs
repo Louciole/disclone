@@ -42,7 +42,7 @@ export class DatabaseView {
 
     load() {
         const request = xhr(
-            "getDatabaseContent?channel=" + this.channelId + "&block_uuid=" + this.blockUuid,
+            "get_database_content?channel=" + this.channelId + "&block_uuid=" + this.blockUuid,
             () => {}, "GET", false
         )
 
@@ -96,7 +96,7 @@ export class DatabaseView {
         if (this._relationDisplayCache[key] !== undefined) return this._relationDisplayCache[key]
 
         const request = xhr(
-            "getRelationDisplay?database_id=" + targetDbId + "&row_id=" + rowId,
+            "get_relation_display?database_id=" + targetDbId + "&row_id=" + rowId,
             () => {}, "GET", false
         )
         const display = request.status === 200
@@ -149,7 +149,7 @@ export class DatabaseView {
             if (blocks[uuid].type !== 'database') continue
             if (global.state.databaseViews[uuid]) continue // already checked
 
-            const req = xhr("getDatabaseContent?channel=" + this.channelId + "&block_uuid=" + uuid, () => {}, "GET", false)
+            const req = xhr("get_database_content?channel=" + this.channelId + "&block_uuid=" + uuid, () => {}, "GET", false)
             if (req.status !== 200) continue
 
             const data = JSON.parse(req.responseText)
@@ -420,7 +420,7 @@ export class DatabaseView {
             // Try loading each unloaded database block
             for (const uuid in blocks) {
                 if (blocks[uuid].type !== 'database' || global.state.databaseViews[uuid]) continue
-                const req = xhr("getDatabaseContent?channel=" + this.channelId + "&block_uuid=" + uuid, () => {}, "GET", false)
+                const req = xhr("get_database_content?channel=" + this.channelId + "&block_uuid=" + uuid, () => {}, "GET", false)
                 if (req.status !== 200) continue
                 const d = JSON.parse(req.responseText)
                 if (String(d.id) === String(targetDbId)) {
@@ -489,7 +489,7 @@ export class DatabaseView {
         const position = lastCol ? lastCol.position + 0.1 : 0.1
 
         const request = xhr(
-            "/saveDatabaseColumn?channel=" + this.channelId
+            "/save_database_column?channel=" + this.channelId
             + "&database_id=" + this.database.id
             + "&column=" + encodeURIComponent(JSON.stringify({name: "Column", type: "text", position}))
             + "&op=create",
@@ -499,7 +499,7 @@ export class DatabaseView {
     }
 
     deleteColumn(colId) {
-        xhr("/saveDatabaseColumn?channel=" + this.channelId
+        xhr("/save_database_column?channel=" + this.channelId
             + "&database_id=" + this.database.id
             + "&column=" + encodeURIComponent(JSON.stringify({id: colId}))
             + "&op=delete", () => {})
@@ -541,7 +541,7 @@ export class DatabaseView {
         const position = lastRow ? lastRow.position + 0.1 : 0.1
 
         const request = xhr(
-            "/saveDatabaseRow?channel=" + this.channelId
+            "/save_database_row?channel=" + this.channelId
             + "&database_id=" + this.database.id
             + "&row=" + encodeURIComponent(JSON.stringify({position}))
             + "&op=create",
@@ -551,7 +551,7 @@ export class DatabaseView {
     }
 
     deleteRow(rowId) {
-        xhr("/saveDatabaseRow?channel=" + this.channelId
+        xhr("/save_database_row?channel=" + this.channelId
             + "&database_id=" + this.database.id
             + "&row=" + encodeURIComponent(JSON.stringify({id: rowId}))
             + "&op=delete", () => {})
@@ -564,7 +564,7 @@ export class DatabaseView {
         if (!this.cells[String(rowId)]) this.cells[String(rowId)] = {}
         this.cells[String(rowId)][String(colId)] = value
 
-        xhr("/saveDatabaseCell?channel=" + this.channelId
+        xhr("/save_database_cell?channel=" + this.channelId
             + "&database_id=" + this.database.id
             + "&cell=" + encodeURIComponent(JSON.stringify({row_id: rowId, column_id: colId, value})),
             () => {})
@@ -611,13 +611,13 @@ export class DatabaseView {
     }
 
     _saveDb(data) {
-        xhr("/saveDatabase?channel=" + this.channelId
+        xhr("/save_database?channel=" + this.channelId
             + "&database=" + encodeURIComponent(JSON.stringify(data))
             + "&op=edit", () => {})
     }
 
     _saveCol(colId, data) {
-        xhr("/saveDatabaseColumn?channel=" + this.channelId
+        xhr("/save_database_column?channel=" + this.channelId
             + "&database_id=" + this.database.id
             + "&column=" + encodeURIComponent(JSON.stringify({id: colId, ...data}))
             + "&op=edit", () => {})

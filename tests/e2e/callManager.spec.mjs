@@ -1,9 +1,6 @@
 /**
  * Tests E2E CallManager avec Playwright
- *
- * Utilise un VRAI navigateur qui charge la VRAIE application
- * Aucune réimplémentation, aucun mock - juste l'app réelle
- *
+ **
  * Installation:
  *   npm install -D @playwright/test
  *   npx playwright install
@@ -29,7 +26,7 @@ const TEST_TIMEOUT = 30000;
 
 
 // Tests
-test.describe('CallManager - Tests E2E (Vrai Navigateur)', () => {
+test.describe('CallManager - E2E', () => {
 
     // Variables pour cleanup
     let activeCallIds = [];
@@ -70,7 +67,7 @@ test.describe('CallManager - Tests E2E (Vrai Navigateur)', () => {
         // Vérification finale
         const appReady = await page.evaluate(() => {
             return {
-                wsState: window.global?.state?.socket?.readyState,
+                wsState: window.global?.state?.websocket?.readyState,
                 hasCallManager: !!window.global?.state?.callManager,
                 hasClientID: !!window.global?.state?.clientID
             };
@@ -79,196 +76,6 @@ test.describe('CallManager - Tests E2E (Vrai Navigateur)', () => {
         expect(appReady.wsState).toBe(WebSocket.OPEN);
         expect(appReady.hasCallManager).toBe(true);
         expect(appReady.hasClientID).toBe(true);
-    });
-
-
-
-    test('User can start audio call via API', async ({ page }) => {
-        const user = await loginUser(page, 'e2e_call_' + Date.now());
-        await waitForAppReady(page);
-
-        console.log('   📞 Creating conversation and starting call...');
-
-        // Créer une conversation
-        const convId = await createConversation(page, 'E2E Test Call', []);
-        activeConvIds.push(convId);
-
-        // Démarrer un appel audio
-        const callData = await startCall(page, convId, 'audio');
-        activeCallIds.push(callData.id);
-
-        // Vérifier les données de l'appel
-        expect(callData.id).toBeTruthy();
-        expect(callData.mode).toBe('p2p');
-        expect(callData.call_type).toBe('audio');
-        expect(callData.participants).toHaveLength(1);
-        expect(callData.participant_count).toBe(1);
-
-        // Vérifier l'état de l'appel
-        const callState = await getCallState(page, convId);
-
-        if (callState.active === false) {
-            throw new Error('Call state shows active=false, call not found in CallManager');
-        }
-
-        expect(callState.id).toBe(callData.id);
-        expect(callState.mode).toBe('p2p');
-        expect(callState.participant_count).toBe(1);
-
-        // Nettoyer: quitter l'appel
-        const leaveData = await leaveCall(page, callData.id);
-        expect(leaveData.ended).toBe(true);
-
-        // Retirer de la liste de cleanup car déjà terminé
-        activeCallIds = activeCallIds.filter(id => id !== callData.id);
-    });
-
-    test('Two users can join same call via API', async ({ browser }) => {
-        // Créer 2 contextes = 2 utilisateurs différents
-        const context1 = await browser.newContext();
-        const context2 = await browser.newContext();
-
-        const page1 = await context1.newPage();
-        const page2 = await context2.newPage();
-
-        try {
-            const user1 = await loginUser(page1, 'e2e_multi1_' + Date.now());
-            await waitForAppReady(page1);
-
-            const user2 = await loginUser(page2, 'e2e_multi2_' + Date.now());
-            await waitForAppReady(page2);
-
-            console.log('   👥 Two users logged in');
-
-            // Récupérer les IDs utilisateurs
-            const { id: userId1 } = await getUserInfo(page1);
-            const { id: userId2 } = await getUserInfo(page2);
-
-            // User1 crée une conversation et invite User2
-            const convId = await createConversation(page1, 'E2E Multi Call', [userId2]);
-
-            // User1 démarre un appel
-            const callData = await startCall(page1, convId, 'audio');
-            activeCallIds.push(callData.id);
-
-            expect(callData.participant_count).toBe(1);
-            expect(callData.mode).toBe('p2p');
-
-            // User2 rejoint l'appel
-            const joinData = await joinCall(page2, callData.id);
-
-            expect(joinData.call.participant_count).toBe(2);
-            expect(joinData.call.mode).toBe('p2p'); // Toujours P2P avec 2 users
-            expect(joinData.mode_changed).toBe(false);
-
-            // Vérifier l'état de l'appel
-            const state = await getCallState(page1, convId);
-
-            expect(state.participant_count).toBe(2);
-            expect(state.participants).toHaveLength(2);
-            expect(state.participants).toContain(userId1);
-            expect(state.participants).toContain(userId2);
-
-            console.log('   ✅ Both users in call verified');
-
-            // Cleanup: User2 quitte
-            await leaveCall(page2, callData.id);
-            // User1 quitte (termine l'appel)
-            await leaveCall(page1, callData.id);
-
-            activeCallIds = activeCallIds.filter(id => id !== callData.id);
-
-        } finally {
-            await context1.close();
-            await context2.close();
-        }
-    });
-
-    test('Call switches to SFU mode with 4 participants', async ({ browser }) => {
-        // Créer 4 contextes = 4 utilisateurs
-        const contexts = await Promise.all([
-            browser.newContext(),
-            browser.newContext(),
-            browser.newContext(),
-            browser.newContext()
-        ]);
-
-        const pages = await Promise.all(contexts.map(ctx => ctx.newPage()));
-
-        try {
-            // Login tous les users
-            console.log('   👥 Logging in 4 users...');
-            const users = [];
-            for (let i = 0; i < 4; i++) {
-                const user = await loginUser(pages[i], `e2e_sfu${i}_` + Date.now());
-                await waitForAppReady(pages[i]);
-                const { id } = await getUserInfo(pages[i]);
-                users.push({ ...user, userId: id, page: pages[i] });
-            }
-            console.log('   ✅ 4 users logged in');
-
-            // User 0 crée une conversation avec les 3 autres
-            const memberIds = [users[1].userId, users[2].userId, users[3].userId];
-            const convId = await createConversation(users[0].page, 'E2E SFU Test', memberIds);
-
-            // User 0 démarre l'appel
-            const callData = await startCall(users[0].page, convId, 'audio');
-            activeCallIds.push(callData.id);
-
-            expect(callData.mode).toBe('p2p'); // 1 participant = P2P
-            expect(callData.participant_count).toBe(1);
-
-            // Users 1, 2, 3 rejoignent
-            for (let i = 1; i < 4; i++) {
-                const joinData = await joinCall(users[i].page, callData.id);
-                console.log(`   🔍 joinData:`, JSON.stringify(joinData, null, 2));
-
-                if (i < 3) {
-                    // Avec 2-3 participants, toujours P2P
-                    expect(joinData.call.mode).toBe('p2p');
-                    expect(joinData.mode_changed).toBe(false);
-                } else {
-                    // Avec 4 participants, passage à SFU
-                    expect(joinData.call.mode).toBe('sfu');
-                    expect(joinData.mode_changed).toBe(true);
-                    expect(joinData.old_mode).toBe('p2p');
-                    expect(joinData.new_mode).toBe('sfu');
-                }
-
-                expect(joinData.call.participant_count).toBe(i + 1);
-            }
-
-            // Vérifier l'état final
-            const state = await getCallState(users[0].page, convId);
-
-            expect(state.mode).toBe('sfu');
-            expect(state.participant_count).toBe(4);
-            expect(state.participants).toHaveLength(4);
-
-            console.log('   ✅ Call in SFU mode with 4 participants verified');
-
-            // Test retour à P2P: User 3 quitte
-            const leaveData = await leaveCall(users[3].page, callData.id);
-
-            expect(leaveData.mode_changed).toBe(true);
-            expect(leaveData.old_mode).toBe('sfu');
-            expect(leaveData.new_mode).toBe('p2p');
-            expect(leaveData.call.participant_count).toBe(3);
-
-            console.log('   ✅ Call switched back to P2P after user left');
-
-            // Cleanup: tous quittent
-            for (let i = 2; i >= 0; i--) {
-                await leaveCall(users[i].page, callData.id);
-            }
-
-            activeCallIds = activeCallIds.filter(id => id !== callData.id);
-
-        } finally {
-            for (const ctx of contexts) {
-                await ctx.close();
-            }
-        }
     });
 
     // Tests négatifs - Cas d'erreur

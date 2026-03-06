@@ -1,5 +1,6 @@
 stages:
   - test
+  - test-e2e
   - build
 
 test:
@@ -13,6 +14,26 @@ test:
     - source venv/bin/activate
     - pip install -r requirements.txt
     - vesta test
+
+test-e2e:
+  stage: test-e2e
+  image: mcr.microsoft.com/playwright:v1.51.1-noble
+  services:
+    - postgres:16
+  before_script:
+    - apt-get update && apt-get install -y python3 python3-venv python3-pip gcc libpq-dev git postgresql-client
+    - python3 -m venv venv
+    - source venv/bin/activate
+    - pip install -r requirements.txt
+    - vesta install
+
+    - npm ci
+    - npx playwright install --with-deps chromium
+  script:
+    - source venv/bin/activate
+    - python server.py &
+    - sleep 3
+    - npx playwright test --config tests/playwright.config.mjs
 
 
 build-apk:

@@ -37,7 +37,7 @@ function checkAndMarkConvAsRead() {
                 }
             }
 
-            xhr(`consultNotifs?notifId=${notif.id}`, onload, "POST")
+            xhr(`consult_notifs?notif_id=${notif.id}`, onload, "POST")
         }
     }
 }
@@ -274,7 +274,7 @@ window.updatePreview = updatePreview
 
 function makePersonalServer(){
     if(confirm("Are you sure you want to convert this server into your personal server ? \n This action cannot be undone.")){
-        const request = xhr("/createPersonalServer?server="+global.state.currentServer.id , undefined, "POST", false);
+        const request = xhr("/create_personal_server?server_id="+global.state.currentServer.id , undefined, "POST", false);
         if (request.status === 200) {
         } else {
             alert("Failed to create personal server: " + request.statusText);

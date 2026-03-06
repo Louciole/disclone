@@ -35,7 +35,7 @@ export async function loginUser(page, username) {
         console.log(`   📧 New account - verification needed for ${email}`);
 
         // 3.1.1 - Récupérer l'OTP via getDebugOTP endpoint
-        const otpResponse = await page.request.post(`${SERVER_URL}/getDebugOTP?email=${encodeURIComponent(email)}`);
+        const otpResponse = await page.request.post(`${SERVER_URL}/get_debug_otp?email=${encodeURIComponent(email)}`);
         if (!otpResponse.ok()) {
             throw new Error(`Failed to get OTP: ${otpResponse.status()}`);
         }

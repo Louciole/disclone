@@ -29,15 +29,15 @@ function changeUsername(){
         setElement('global.user.username', input.value)
         closeMenu('#change-username')
     };
-    xhr("/change?element=username&value=".concat(input.value),onload,"POST")
+    xhr("/change_username?value=".concat(input.value),onload,"POST")
 }
 window.changeUsername = changeUsername
 
 function newServer(){
     let request = new XMLHttpRequest();
-    request.open('POST', "createServer", true);
+    request.open('POST', "create_server", true);
     request.onload = function() {
-        const serv = {name:"New Server",id:JSON.parse(request.responseText)}
+        const serv = {name:"New Server",id:JSON.parse(request.responseText).id}
         setElement(`global.servers[${serv.id}]`, serv)
     };
 
@@ -55,7 +55,7 @@ export function loadServers(){
         global.servers = response
         setElement(`global.servers`, response)
     };
-    xhr("getUserServers",onload)
+    xhr("get_user_servers",onload)
 }
 
 export function loadConvs(){
@@ -73,7 +73,7 @@ export function loadConvs(){
         goTo('sec-column',"column-perso",undefined, true,()=>{goTo('sec-selector',"privateMessage")})
 
     };
-    xhr("getUserConvs",onload)
+    xhr("get_user_convs",onload)
 }
 
 export function loadUsers(keys){
@@ -89,7 +89,7 @@ export function loadUsers(keys){
             global.users[key.id] = key
         }
     };
-    xhr("getUsersInfo?users="+JSON.stringify(diff), onload, "GET",false)
+    xhr("get_users_info?users="+JSON.stringify(diff), onload, "GET",false)
 }
 window.loadUsers = loadUsers
 
@@ -97,7 +97,7 @@ export function loadConv(key){
     const onload = function() {
     };
 
-    const request = xhr("getConvContent?convId="+JSON.stringify(key), onload, "GET",false)
+    const request = xhr("get_conv_content?conv_id="+JSON.stringify(key), onload, "GET",false)
     const elements = JSON.parse(request.responseText)
     elements.attachments = elements.attachments ? JSON.parse(elements.attachments) : []
     for(let element in elements){
@@ -136,7 +136,7 @@ export function loadChan(key){
     const onload = function() {
     };
 
-    const request = xhr("getChanContent?convId="+JSON.stringify(key), onload, "GET",false)
+    const request = xhr("get_chan_content?channel_id="+JSON.stringify(key), onload, "GET",false)
     const elements = JSON.parse(request.responseText)
     elements.attachments = elements.attachments ? JSON.parse(elements.attachments) : []
 
@@ -181,7 +181,7 @@ export function loadNote(key){
         })
     };
 
-    const request = xhr("getNoteContent?id="+JSON.stringify(key), onload, "GET",false)
+    const request = xhr("get_note_content?channel_id="+JSON.stringify(key), onload, "GET",false)
     const elements = JSON.parse(request.responseText)
 
     global.notes[key] = {}
@@ -201,7 +201,7 @@ export function loadNote(key){
 
 export function loadUser(){
     let request = new XMLHttpRequest();
-    request.open('POST', "/getUserInfo", true);
+    request.open('POST', "/get_user_info", true);
     request.onload = function() { // request successful
 
         const response = JSON.parse(request.responseText)
@@ -250,9 +250,9 @@ function friend(action, element, event = undefined){
 
     if(action === "add"){
         const domElt= document.getElementById(element)
-        xhr("friends?action=".concat(action,"&arg=",encodeURIComponent(domElt.value)),effect)
+        xhr("add_friend?username=".concat(encodeURIComponent(domElt.value)),effect)
     }else if(action === "accept"){
-        xhr("friends?action=".concat(action,"&arg=",element),effect)
+        xhr("accept_friend?invitation_id=".concat(element),effect)
 
         // doing some magic here to update the local state
         const invitationNumber = Array.prototype.indexOf.call(event.currentTarget.parentElement.children, event.currentTarget) - 1
@@ -265,7 +265,7 @@ function friend(action, element, event = undefined){
             const remEffect = function(){
                 deleteElement("global.user.friends",element)
             }
-            xhr("friends?action=".concat(action,"&arg=",element.id),remEffect)
+            xhr("remove_friend?friendship_id=".concat(element.id),remEffect)
             closeFM()
         }
     }else if(action === "removeYES"){
@@ -280,13 +280,16 @@ function friend(action, element, event = undefined){
                 const remEffect = function () {
                     deleteElement("global.user.friends", element.id)
                 }
-                xhr("friends?action=".concat(action, "&arg=", element.id), remEffect)
+                xhr("remove_friend?friendship_id=".concat(element.id), remEffect)
                 break
             }
         }
     }
     else{
-        xhr("friends?action=".concat(action,"&arg=",element),effect)
+        // Map old action names to new endpoints
+        const endpointMap = {"get": "get_friends", "getBlocked": "get_blocked", "invitations": "get_friend_invitations"};
+        const endpoint = endpointMap[action] || action;
+        xhr(endpoint,effect)
     }
 }
 window.friend = friend
@@ -383,7 +386,7 @@ function changeStatus(mode){
         setElement('global.user.status', status)
         closeMenu('#custom-status')
     };
-    xhr("/change?element=status&value=".concat(JSON.stringify(status)),onload,"POST")
+    xhr("/change_status?value=".concat(JSON.stringify(status)),onload,"POST")
 }
 window.changeStatus = changeStatus
 
@@ -421,7 +424,7 @@ function setCustomStatus(){
         setElement('global.user.status', status)
         closeMenu('#custom-status')
     };
-    xhr("/change?element=status&value=".concat(JSON.stringify(status)),onload,"POST")
+    xhr("/change_status?value=".concat(JSON.stringify(status)),onload,"POST")
 }
 window.setCustomStatus = setCustomStatus
 
@@ -440,7 +443,7 @@ function blockUser(id){
         }
     };
 
-    xhr("block?user=".concat(id),effect)
+    xhr("block_user?user_id=".concat(id),effect)
 }
 window.blockUser = blockUser
 
@@ -497,7 +500,7 @@ function createConv(event){
         addElement("global.convs", conv)
         closeMenu("#add-users")
     };
-    xhr("createConv?name=".concat(conv.name,"&members=",JSON.stringify(conv.members)),onload)
+    xhr("create_conv?name=".concat(conv.name,"&members=",JSON.stringify(conv.members)),onload)
 }
 window.createConv = createConv
 
@@ -511,7 +514,7 @@ function renameConv(event,id){
     const onload = function() { // request successful
         setElement('global.convs['+id+'].name', name)
     };
-    xhr("/editConv?element=name&value=".concat(name,"&id=",id),onload,"POST")
+    xhr("/edit_conv?element=name&value=".concat(name,"&conv_id=",id),onload,"POST")
 }
 window.renameConv = renameConv
 
@@ -818,11 +821,11 @@ function uploadProfileImage(field="pfp"){
         }
 
         if (global.state.uploadImage === "serverAvatar"){
-            xhr("editServer?property=pfp&id=".concat(global.state.currentServer.id), onload,"POST",true,{"value":result})
+            xhr("edit_server_property?property=pfp&server_id=".concat(global.state.currentServer.id), onload,"POST",true,{"value":result})
         } else if (isBanner) {
-            xhr("change?element=banner", onload,"POST",true,{"value":result})
+            xhr("change_banner", onload,"POST",true,{"value":result})
         } else {
-            xhr("change?element=".concat(field), onload,"POST",true,{"value":result})
+            xhr("change_pfp", onload,"POST",true,{"value":result})
         }
         closeMenu('#resize-image')
         closeMenu('#loadImage')
@@ -888,7 +891,7 @@ export function loadServer(id){
             setElement('global.state.currentServer', serv);
         }
     };
-    xhr("getServContent?servID=".concat(id.toString()),onload,"GET",false)
+    xhr("get_serv_content?server_id=".concat(id.toString()),onload,"GET",false)
 }
 
 function firstGreater(arr, target) {
@@ -932,7 +935,7 @@ export function orderServDirs(serv){
 }
 
 function createInvitation(){
-    xhr("createInvitation?server="+global.state.currentServer.id,function(){
+    xhr("create_invitation?server_id="+global.state.currentServer.id,function(){
         global.state.currentInvitationId = this.responseText
         openMenu('server-invitation')
     })
@@ -972,7 +975,7 @@ function createChan(type = 'textual'){
         }
     };
 
-    xhr("editServer?id="+global.state.currentServer.id+"&property=channel&action=create&channelType="+channelType, onChannelCreated);
+    xhr("edit_server_channel?server_id="+global.state.currentServer.id+"&action=create&channel_type="+channelType, onChannelCreated);
 
     const menu = document.getElementById('create-channel');
     if(menu) menu.style.display = 'none';
@@ -989,7 +992,7 @@ function createCat(){
             console.error("Error creating category:", e)
         }
     }
-    xhr("editServer?id="+global.state.currentServer.id+"&property=cat&action=create", onload)
+    xhr("edit_server_category?server_id="+global.state.currentServer.id+"&action=create", onload)
 }
 window.createCat = createCat
 
@@ -1016,7 +1019,7 @@ function saveCatSettings(){
     const newName = input.value.trim()
     if (!newName) return
 
-    xhr("editServer?id="+global.state.currentServer.id+"&property=cat&targetId="+catId+"&field=name&value="+encodeURIComponent(newName))
+    xhr("edit_server_category?server_id="+global.state.currentServer.id+"&targetId="+catId+"&field=name&value="+encodeURIComponent(newName))
     const cat = lookFor(parseInt(catId), global.state.currentServer.dirs.cat)
     if (cat) cat.name = newName
     orderServDirs(global.state.currentServer)
@@ -1043,7 +1046,7 @@ function deleteCat(catId){
         }
         orderServDirs(global.state.currentServer)
     }
-    xhr("editServer?id="+global.state.currentServer.id+"&property=cat&targetId="+catId+"&action=delete", onload)
+    xhr("edit_server_category?server_id="+global.state.currentServer.id+"&targetId="+catId+"&action=delete", onload)
 }
 window.deleteCat = deleteCat
 
@@ -1054,7 +1057,7 @@ function createRole(){
         goTo( 'setting-server-content', 'server-role-settings')
     }
 
-    xhr("editServer?id="+global.state.currentServer.id+"&property=role&action=create",onload)
+    xhr("edit_server_role?server_id="+global.state.currentServer.id+"&action=create",onload)
 }
 window.createRole = createRole
 
@@ -1064,7 +1067,7 @@ function setRoleColor(event){
     const onload = function() {
         setElement("global.state.currentRole.color",color)
     }
-    xhr("editServer?id="+global.state.currentServer.id+"&property=role&field=color&value="+encodeURIComponent(color)+"&targetId="+global.state.currentRole.id, onload)
+    xhr("edit_server_role?server_id="+global.state.currentServer.id+"&field=color&value="+encodeURIComponent(color)+"&targetId="+global.state.currentRole.id, onload)
 }
 window.setRoleColor = setRoleColor
 
@@ -1079,7 +1082,7 @@ function attributeRole(roleId){
         elt.style.display = "none"
     }
 
-    xhr("editServer?id="+global.state.currentServer.id+"&property=role&action=attribute&value="+global.state.profileInfo.id+"&targetId="+roleId, onload)
+    xhr("edit_server_role?server_id="+global.state.currentServer.id+"&action=attribute&value="+global.state.profileInfo.id+"&targetId="+roleId, onload)
 }
 window.attributeRole = attributeRole
 
@@ -1118,7 +1121,7 @@ function createApiKey(){
         }
     }
 
-    xhr('createApiKey', onload, 'POST', true, payload)
+    xhr('create_api_key', onload, 'POST', true, payload)
 }
 window.createApiKey = createApiKey
 
@@ -1136,7 +1139,7 @@ function revokeKey(id){
             }
         }
     }
-    xhr('revokeApiKey?id='+encodeURIComponent(id), onload)
+    xhr('revoke_api_key?key_id='+encodeURIComponent(id), onload)
 }
 window.revokeKey = revokeKey
 
@@ -1171,7 +1174,7 @@ function regenerateKey(id){
             console.log('regenerateKey: invalid response', this.responseText)
         }
     }
-    xhr('regenerateApiKey?id='+encodeURIComponent(id), onload)
+    xhr('regenerate_api_key?key_id='+encodeURIComponent(id), onload)
 }
 window.regenerateKey = regenerateKey
 
@@ -1216,7 +1219,7 @@ function loadUserApiKeys(){
             console.log('loadUserApiKeys: invalid response', this.responseText)
         }
     }
-    xhr('getUserApiKeys', onload)
+    xhr('get_user_api_keys', onload)
 }
 window.loadUserApiKeys = loadUserApiKeys
 
@@ -1247,7 +1250,7 @@ function addEmail(){
             input.value = ''
         }
     };
-    xhr("/addEmail?email=".concat(encodeURIComponent(emailValue)), onload, "POST")
+    xhr("/add_email?email=".concat(encodeURIComponent(emailValue)), onload, "POST")
 }
 window.addEmail = addEmail
 
@@ -1270,7 +1273,7 @@ function removeEmail(emailId){
             }
         }
     };
-    xhr("/removeEmail?id=".concat(emailId), onload, "POST")
+    xhr("/remove_email?email_id=".concat(emailId), onload, "POST")
 }
 window.removeEmail = removeEmail
 
@@ -1286,7 +1289,7 @@ function toggleCommunityServer() {
     }
 
     // Save to server
-    xhr(`editServer?id=${global.state.currentServer.id}&property=is_community&value=${isCommunity}`,
+    xhr(`edit_server_property?server_id=${global.state.currentServer.id}&property=is_community&value=${isCommunity}`,
         () => {
             global.state.currentServer.is_community = isCommunity;
             if (isCommunity) {
@@ -1317,7 +1320,7 @@ function addLanguage() {
 
     languagesList.push(language);
 
-    xhr(`editServer?id=${global.state.currentServer.id}&property=languages&value=${encodeURIComponent(JSON.stringify(languagesList))}`,
+    xhr(`edit_server_property?server_id=${global.state.currentServer.id}&property=languages&value=${encodeURIComponent(JSON.stringify(languagesList))}`,
         () => {
             // Utiliser setElement pour déclencher la réactivité Vesta
             setElement('global.state.currentServer.languages', languagesList);
@@ -1336,7 +1339,7 @@ function removeLanguage(language) {
         languagesList.splice(index, 1);
     }
 
-    xhr(`editServer?id=${global.state.currentServer.id}&property=languages&value=${encodeURIComponent(JSON.stringify(languagesList))}`,
+    xhr(`edit_server_property?server_id=${global.state.currentServer.id}&property=languages&value=${encodeURIComponent(JSON.stringify(languagesList))}`,
         () => {
             // Utiliser setElement pour déclencher la réactivité Vesta
             setElement('global.state.currentServer.languages', languagesList);
@@ -1371,7 +1374,7 @@ function addServerTag() {
 
     tagsList.push(tag);
 
-    xhr(`editServer?id=${global.state.currentServer.id}&property=tags&value=${encodeURIComponent(JSON.stringify(tagsList))}`,
+    xhr(`edit_server_property?server_id=${global.state.currentServer.id}&property=tags&value=${encodeURIComponent(JSON.stringify(tagsList))}`,
         () => {
             // Utiliser setElement pour déclencher la réactivité Vesta
             setElement('global.state.currentServer.tags', tagsList);
@@ -1387,7 +1390,7 @@ function removeServerTag(index) {
 
     tagsList.splice(index, 1);
 
-    xhr(`editServer?id=${global.state.currentServer.id}&property=tags&value=${encodeURIComponent(JSON.stringify(tagsList))}`,
+    xhr(`edit_server_property?server_id=${global.state.currentServer.id}&property=tags&value=${encodeURIComponent(JSON.stringify(tagsList))}`,
         () => {
             // Utiliser setElement pour déclencher la réactivité Vesta
             setElement('global.state.currentServer.tags', tagsList);

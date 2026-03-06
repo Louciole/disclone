@@ -167,10 +167,10 @@ function dropCategory(catId, serverId) {
     if (cat) cat.place = newPlace
 
     const normalized = normalizeIfNeeded(global.state.currentServer.dirs.cat, 'place', (item, val) => {
-        xhr(`editServer?id=${serverId}&property=cat&targetId=${item.id}&field=place&value=${val}`)
+        xhr(`edit_server_category?server_id=${serverId}&targetId=${item.id}&field=place&value=${val}`)
     })
     if (!normalized) {
-        xhr(`editServer?id=${serverId}&property=cat&targetId=${catId}&field=place&value=${newPlace}`)
+        xhr(`edit_server_category?server_id=${serverId}&targetId=${catId}&field=place&value=${newPlace}`)
     }
     orderServDirs(global.state.currentServer)
 }
@@ -198,7 +198,7 @@ function dropChannel(chanId, serverId) {
     const chan = findChannelInDirs(chanId)
     const oldCat = chan?.category
     if ((oldCat || null) !== (newCatId || null)) {
-        xhr(`editServer?id=${serverId}&property=channel&targetId=${chanId}&channelType=${channelType}&field=category&value=${newCatId || ''}`)
+        xhr(`edit_server_channel?server_id=${serverId}&targetId=${chanId}&channel_type=${channelType}&field=category&value=${newCatId || ''}`)
     }
 
     if (chan) {
@@ -210,10 +210,10 @@ function dropChannel(chanId, serverId) {
     const channelArr = getChannelArray(channelType)
     const siblingsInCat = channelArr?.filter(c => (c.category || null) === (newCatId || null))
     const normalized = normalizeIfNeeded(siblingsInCat, 'place', (item, val) => {
-        xhr(`editServer?id=${serverId}&property=channel&targetId=${item.id}&channelType=${channelType}&field=place&value=${val}`)
+        xhr(`edit_server_channel?server_id=${serverId}&targetId=${item.id}&channel_type=${channelType}&field=place&value=${val}`)
     })
     if (!normalized) {
-        xhr(`editServer?id=${serverId}&property=channel&targetId=${chanId}&channelType=${channelType}&field=place&value=${newPlace}`)
+        xhr(`edit_server_channel?server_id=${serverId}&targetId=${chanId}&channel_type=${channelType}&field=place&value=${newPlace}`)
     }
 
     orderServDirs(global.state.currentServer)

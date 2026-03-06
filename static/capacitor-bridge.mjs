@@ -108,7 +108,7 @@ async function registerPush() {
 
     // Send token to backend
     try {
-      await fetch('/registerDevice', {
+      await fetch('/register_device', {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -541,7 +541,7 @@ export async function hideSplash() {
 export async function nativeLogout() {
   if (!isNative || !_pushToken) return;
   try {
-    await fetch('/unregisterDevice', {
+    await fetch('/unregister_device', {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },

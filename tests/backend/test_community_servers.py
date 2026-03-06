@@ -21,16 +21,16 @@ from tests.backend.backend import (
 def test_create_and_make_community_server(session):
     """Test creating a server and making it a community server"""
     # Create a regular server
-    response = session.post(f'{TEST_SERVER_URL}/createServer')
+    response = session.post(f'{TEST_SERVER_URL}/create_server')
     assert response.status_code == 200, f"Failed to create server: {response.text}"
-    server_id = int(response.text.strip('"'))
+    server_id = response.json()['id']
 
     # Make it a community server
     response = session.post(
-        f'{TEST_SERVER_URL}/editServer',
+        f'{TEST_SERVER_URL}/edit_server_property',
         params={
             'property': 'is_community',
-            'id': server_id,
+            'server_id': server_id,
             'value': 'true'
         }
     )
@@ -43,20 +43,20 @@ def test_create_and_make_community_server(session):
 def test_edit_community_server_settings(session):
     """Test editing community server settings (description, tags, languages)"""
     # Create and make community server
-    response = session.post(f'{TEST_SERVER_URL}/createServer')
-    server_id = int(response.text.strip('"'))
+    response = session.post(f'{TEST_SERVER_URL}/create_server')
+    server_id = response.json()['id']
 
     session.post(
-        f'{TEST_SERVER_URL}/editServer',
-        params={'property': 'is_community', 'id': server_id, 'value': 'true'}
+        f'{TEST_SERVER_URL}/edit_server_property',
+        params={'property': 'is_community', 'server_id': server_id, 'value': 'true'}
     )
 
     # Set description
     response = session.post(
-        f'{TEST_SERVER_URL}/editServer',
+        f'{TEST_SERVER_URL}/edit_server_property',
         params={
             'property': 'description',
-            'id': server_id,
+            'server_id': server_id,
             'value': 'A test community server for gaming'
         }
     )
@@ -65,10 +65,10 @@ def test_edit_community_server_settings(session):
     # Set languages (multiple)
     languages = json.dumps(['en', 'fr'])
     response = session.post(
-        f'{TEST_SERVER_URL}/editServer',
+        f'{TEST_SERVER_URL}/edit_server_property',
         params={
             'property': 'languages',
-            'id': server_id,
+            'server_id': server_id,
             'value': languages
         }
     )
@@ -77,10 +77,10 @@ def test_edit_community_server_settings(session):
     # Set tags
     tags = json.dumps(['gaming', 'friendly', 'english'])
     response = session.post(
-        f'{TEST_SERVER_URL}/editServer',
+        f'{TEST_SERVER_URL}/edit_server_property',
         params={
             'property': 'tags',
-            'id': server_id,
+            'server_id': server_id,
             'value': tags
         }
     )
@@ -92,7 +92,7 @@ def test_edit_community_server_settings(session):
 @with_test_user("discover_no_filter")
 def test_discover_servers_no_filters(session):
     """Test discovering servers without filters"""
-    response = session.get(f'{TEST_SERVER_URL}/getDiscoverableServers')
+    response = session.get(f'{TEST_SERVER_URL}/get_discoverable_servers')
     assert response.status_code == 200, "Failed to get discoverable servers"
 
     data = json.loads(response.text)
@@ -108,22 +108,22 @@ def test_discover_servers_no_filters(session):
 def test_discover_servers_with_search(session):
     """Test discovering servers with search filter"""
     # First create a community server to search for
-    response = session.post(f'{TEST_SERVER_URL}/createServer')
-    server_id = int(response.text.strip('"'))
+    response = session.post(f'{TEST_SERVER_URL}/create_server')
+    server_id = response.json()['id']
 
     session.post(
-        f'{TEST_SERVER_URL}/editServer',
-        params={'property': 'is_community', 'id': server_id, 'value': 'true'}
+        f'{TEST_SERVER_URL}/edit_server_property',
+        params={'property': 'is_community', 'server_id': server_id, 'value': 'true'}
     )
 
     session.post(
-        f'{TEST_SERVER_URL}/editServer',
-        params={'property': 'description', 'id': server_id, 'value': 'gaming community'}
+        f'{TEST_SERVER_URL}/edit_server_property',
+        params={'property': 'description', 'server_id': server_id, 'value': 'gaming community'}
     )
 
     # Now search for it
     response = session.get(
-        f'{TEST_SERVER_URL}/getDiscoverableServers',
+        f'{TEST_SERVER_URL}/get_discoverable_servers',
         params={'search': 'gaming'}
     )
     assert response.status_code == 200, "Search request failed"
@@ -144,23 +144,23 @@ def test_discover_servers_with_search(session):
 def test_discover_servers_with_language_filter(session):
     """Test discovering servers filtered by language"""
     # Create a server with specific language
-    response = session.post(f'{TEST_SERVER_URL}/createServer')
-    server_id = int(response.text.strip('"'))
+    response = session.post(f'{TEST_SERVER_URL}/create_server')
+    server_id = response.json()['id']
 
     session.post(
-        f'{TEST_SERVER_URL}/editServer',
-        params={'property': 'is_community', 'id': server_id, 'value': 'true'}
+        f'{TEST_SERVER_URL}/edit_server_property',
+        params={'property': 'is_community', 'server_id': server_id, 'value': 'true'}
     )
 
     languages = json.dumps(['fr'])
     session.post(
-        f'{TEST_SERVER_URL}/editServer',
-        params={'property': 'languages', 'id': server_id, 'value': languages}
+        f'{TEST_SERVER_URL}/edit_server_property',
+        params={'property': 'languages', 'server_id': server_id, 'value': languages}
     )
 
     # Filter by French language
     response = session.get(
-        f'{TEST_SERVER_URL}/getDiscoverableServers',
+        f'{TEST_SERVER_URL}/get_discoverable_servers',
         params={'languages': json.dumps(['fr'])}
     )
     assert response.status_code == 200, "Language filter request failed"
@@ -182,23 +182,23 @@ def test_discover_servers_with_language_filter(session):
 def test_discover_servers_with_tags_filter(session):
     """Test discovering servers filtered by tags"""
     # Create a server with specific tags
-    response = session.post(f'{TEST_SERVER_URL}/createServer')
-    server_id = int(response.text.strip('"'))
+    response = session.post(f'{TEST_SERVER_URL}/create_server')
+    server_id = response.json()['id']
 
     session.post(
-        f'{TEST_SERVER_URL}/editServer',
-        params={'property': 'is_community', 'id': server_id, 'value': 'true'}
+        f'{TEST_SERVER_URL}/edit_server_property',
+        params={'property': 'is_community', 'server_id': server_id, 'value': 'true'}
     )
 
     tags = json.dumps(['gaming', 'friendly'])
     session.post(
-        f'{TEST_SERVER_URL}/editServer',
-        params={'property': 'tags', 'id': server_id, 'value': tags}
+        f'{TEST_SERVER_URL}/edit_server_property',
+        params={'property': 'tags', 'server_id': server_id, 'value': tags}
     )
 
     # Filter by gaming tag
     response = session.get(
-        f'{TEST_SERVER_URL}/getDiscoverableServers',
+        f'{TEST_SERVER_URL}/get_discoverable_servers',
         params={'tags': json.dumps(['gaming'])}
     )
     assert response.status_code == 200, "Tags filter request failed"
@@ -218,7 +218,7 @@ def test_discover_servers_with_tags_filter(session):
 @with_test_user("available_tags")
 def test_get_available_tags(session):
     """Test getting all available tags"""
-    response = session.get(f'{TEST_SERVER_URL}/getAvailableTags')
+    response = session.get(f'{TEST_SERVER_URL}/get_available_tags')
     assert response.status_code == 200, "Failed to get available tags"
 
     tags = json.loads(response.text)
@@ -235,17 +235,17 @@ def test_join_community_server(sessions):
     session1, session2 = sessions
 
     # User 1 creates a community server
-    response = session1.post(f'{TEST_SERVER_URL}/createServer')
-    server_id = int(response.text.strip('"'))
+    response = session1.post(f'{TEST_SERVER_URL}/create_server')
+    server_id = response.json()['id']
 
     session1.post(
-        f'{TEST_SERVER_URL}/editServer',
-        params={'property': 'is_community', 'id': server_id, 'value': 'true'}
+        f'{TEST_SERVER_URL}/edit_server_property',
+        params={'property': 'is_community', 'server_id': server_id, 'value': 'true'}
     )
 
     # User 2 joins the server
     response = session2.post(
-        f'{TEST_SERVER_URL}/joinCommunityServer',
+        f'{TEST_SERVER_URL}/join_community_server',
         params={'server_id': server_id}
     )
     assert response.status_code == 200, f"Failed to join server: {response.text}"
@@ -259,16 +259,16 @@ def test_join_community_server(sessions):
 
 @with_test_users(2)
 def test_cannot_join_non_community_server(sessions):
-    """Test that non-community servers cannot be joined via joinCommunityServer"""
+    """Test that non-community servers cannot be joined via join_community_server"""
     session1, session2 = sessions
 
     # User 1 creates a private server (not community)
-    response = session1.post(f'{TEST_SERVER_URL}/createServer')
-    server_id = int(response.text.strip('"'))
+    response = session1.post(f'{TEST_SERVER_URL}/create_server')
+    server_id = response.json()['id']
 
     # User 2 tries to join (should fail)
     response = session2.post(
-        f'{TEST_SERVER_URL}/joinCommunityServer',
+        f'{TEST_SERVER_URL}/join_community_server',
         params={'server_id': server_id}
     )
     assert response.status_code == 403, "Should not be able to join non-community server"
@@ -282,23 +282,23 @@ def test_cannot_join_same_server_twice(sessions):
     session1, session2 = sessions
 
     # User 1 creates a community server
-    response = session1.post(f'{TEST_SERVER_URL}/createServer')
-    server_id = int(response.text.strip('"'))
+    response = session1.post(f'{TEST_SERVER_URL}/create_server')
+    server_id = response.json()['id']
 
     session1.post(
-        f'{TEST_SERVER_URL}/editServer',
-        params={'property': 'is_community', 'id': server_id, 'value': 'true'}
+        f'{TEST_SERVER_URL}/edit_server_property',
+        params={'property': 'is_community', 'server_id': server_id, 'value': 'true'}
     )
 
     # User 2 joins the server
     session2.post(
-        f'{TEST_SERVER_URL}/joinCommunityServer',
+        f'{TEST_SERVER_URL}/join_community_server',
         params={'server_id': server_id}
     )
 
     # User 2 tries to join again
     response = session2.post(
-        f'{TEST_SERVER_URL}/joinCommunityServer',
+        f'{TEST_SERVER_URL}/join_community_server',
         params={'server_id': server_id}
     )
     assert response.status_code == 400, "Should not be able to join same server twice"

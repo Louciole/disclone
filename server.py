@@ -297,7 +297,7 @@ class Mycelium(Server):
     # -----------------------------------API-------------------------------------
 
     @Server.expose
-    def registerDevice(self):
+    def register_device(self):
         """
         Register a mobile device push token.
         Called by the Capacitor app when it receives a FCM / APNs token.
@@ -331,7 +331,7 @@ class Mycelium(Server):
         return json.dumps({"status": "ok"})
 
     @Server.expose
-    def unregisterDevice(self):
+    def unregister_device(self):
         """
         Remove a device token when the user logs out.
         POST body (JSON): { "token": "..." }
@@ -347,39 +347,39 @@ class Mycelium(Server):
         return json.dumps({"status": "ok"})
 
     @Server.expose
-    def createServer(self):
+    def create_server(self):
         account_id = self.getUser()
         server_id = self.db.insertDict('server', {'name': "New Server", "owner": account_id}, getId=True)
         self.db.insertDict('accessserver', {'account': account_id, 'server': server_id})
         textCatID = self.db.insertDict('server_cat', {'name': "salons textuels", 'server': server_id},getId=True)
         self.db.insertDict('server_cat', {'name': "salons vocaux", 'server': server_id})
         self.db.insertDict('textual_channel', {'name': "général", 'server': server_id, "category": textCatID})
-        return str(server_id)
+        return json.dumps({"id": server_id})
 
     @Server.expose
-    def deleteServer(self, id):
+    def delete_server(self, server_id):
         uid = self.getUser()
-        if not self.checkAccessRights(uid, id, "server-admin"):
+        if not self.checkAccessRights(uid, server_id, "server-admin"):
             raise HTTPError(self.response, 403, "forbidden")
 
         # If this is a personal server, deduct its usage from the owner's quota
-        personal = self.db.getFilters("personal_server", ["server", "=", id])
+        personal = self.db.getFilters("personal_server", ["server", "=", server_id])
         if personal:
-            server = self.db.getSomething("server", id)
+            server = self.db.getSomething("server", server_id)
             if server and server.get("storage_usage", 0) > 0:
                 self._adjustUserStorage(personal[0]["owner"], -server["storage_usage"])
 
-        self.db.deleteSomething("server", id)
+        self.db.deleteSomething("server", server_id)
         raise HTTPRedirect(self.response, "/channels")
 
     @Server.expose
-    def getUserServers(self):
+    def get_user_servers(self):
         uid = self.getUser()
         servers = self.db.getSomethingProxied("server", "accessserver", "account", uid)
         return json.dumps(servers)
 
     @Server.expose
-    def getDiscoverableServers(self, search=None, tags=None, languages=None):
+    def get_discoverable_servers(self, search=None, tags=None, languages=None):
         """
         Get list of community servers for discovery page.
 
@@ -493,7 +493,7 @@ class Mycelium(Server):
         }, default=str)
 
     @Server.expose
-    def joinCommunityServer(self, server_id):
+    def join_community_server(self, server_id):
         """
         Join a community server.
 
@@ -529,7 +529,7 @@ class Mycelium(Server):
         return json.dumps({"success": True, "server_id": server_id})
 
     @Server.expose
-    def getAvailableTags(self):
+    def get_available_tags(self):
         """
         Get list of all available tags from community servers.
 
@@ -550,26 +550,27 @@ class Mycelium(Server):
         return json.dumps(sorted(list(all_tags)))
 
     @Server.expose
-    def createConv(self, name, members, private=False):
+    def create_conv(self, name, members, private=False):
         members = json.loads(members)
-        return str(self.newConv(name, members, private))
+        conv_id = self.newConv(name, members, private)
+        return json.dumps({"id": conv_id})
 
     @Server.expose
-    def editConv(self, element, value, id):
+    def edit_conv(self, element, value, conv_id):
         uid = self.getUser()
-        members = self.db.getAll("accessconversation", id, "conversation")
+        members = self.db.getAll("accessconversation", conv_id, "conversation")
         for j in range(0, len(members)):
             if members[j]["account"] == uid:
-                self.db.edit("conversation", id, element, value)
+                self.db.edit("conversation", conv_id, element, value)
 
                 for user in members:
-                    self.sendNotification(user["account"], {"type": "edit_conv", "item":element,"id":id ,"content": value})
+                    self.sendNotification(user["account"], {"type": "edit_conv", "item":element,"id":conv_id ,"content": value})
 
-                return "ok"
+                return json.dumps({"status": "ok"})
         raise HTTPError(self.response, 403, "forbidden")
 
     @Server.expose
-    def getUserConvs(self):
+    def get_user_convs(self):
         uid = self.getUser()
         convs = self.db.getSomethingProxied("conversation", "accessconversation", "account", uid)
         for j in range(0, len(convs)):
@@ -580,7 +581,7 @@ class Mycelium(Server):
         return json.dumps(convs)
 
     @Server.expose
-    def getUsersInfo(self, users):
+    def get_users_info(self, users):
         uid = self.getUser()
         users = self.db.getFilters("mycelium_account", ["id", "in", json.loads(users)])
         self.getUsersStatus(users)
@@ -588,34 +589,34 @@ class Mycelium(Server):
 
 
     @Server.expose
-    def subscribe(self,client, cat, items):
+    def subscribe(self, client_id, cat, items):
         uid = self.getUser()
-        client_infos = self.db.getSomething("active_client",client)
+        client_infos = self.db.getSomething("active_client",client_id)
         if not client_infos or client_infos.get("userid") != uid:
             raise HTTPError(self.response,403, "forbidden")
 
         if cat=="user":
             users = self.db.getFilters("mycelium_account", ["id", "in", json.loads(items)])
             for user in users:
-                self.db.insertDict("subscription", {"client":client,"account": user["id"]})
+                self.db.insertDict("subscription", {"client":client_id,"account": user["id"]})
 
     @Server.expose
     def test(self):
         return self.file(PATH + "/.idea/test.html")
 
     @Server.expose
-    def getConvContent(self, convId):
+    def get_conv_content(self, conv_id):
         uid = self.getUser()
-        conv = self.db.getFilters("accessconversation", ["conversation", "=", convId, "and", "account", "=", uid])
+        conv = self.db.getFilters("accessconversation", ["conversation", "=", conv_id, "and", "account", "=", uid])
         if conv:
             content = {}
-            content["messages"] = self.db.getFilters("message", ["place", "=", convId, "order by timestamp"])
+            content["messages"] = self.db.getFilters("message", ["place", "=", conv_id, "order by timestamp"])
             self._enrichMessagesWithPolls(content["messages"], uid)
             return json.dumps(content, default=str)
 
 
     @Server.expose
-    def startCall(self, conversation_id, call_type="audio"):
+    def start_call(self, conversation_id, call_type="audio"):
         uid = self.getUser()
 
         access = self.db.getFilters("accessconversation", ["conversation", "=", conversation_id, "and", "account", "=", uid])
@@ -631,7 +632,7 @@ class Mycelium(Server):
         return json.dumps(call.to_dict(), default=str)
 
     @Server.expose
-    def joinCall(self, call_id):
+    def join_call(self, call_id):
         uid = self.getUser()
 
         call = self.callManager.active_calls.get(int(call_id))
@@ -661,7 +662,7 @@ class Mycelium(Server):
         raise HTTPError(self.response, 500, "Failed to join call")
 
     @Server.expose
-    def leaveCall(self, call_id):
+    def leave_call(self, call_id):
         uid = self.getUser()
 
         result = self.callManager.leave_call(int(call_id), uid)
@@ -685,7 +686,7 @@ class Mycelium(Server):
         raise HTTPError(self.response, 404, "Call not found")
 
     @Server.expose
-    def getCallState(self, conversation_id):
+    def get_call_state(self, conversation_id):
         uid = self.getUser()
 
         access = self.db.getFilters("accessconversation", ["conversation", "=", conversation_id, "and", "account", "=", uid])
@@ -701,53 +702,53 @@ class Mycelium(Server):
         return json.dumps({"active": False}, default=str)
 
     @Server.expose
-    def getChanContent(self, convId):
+    def get_chan_content(self, channel_id):
         uid = self.getUser()
-        chan = self.db.getSomething("textual_channel", convId)
+        chan = self.db.getSomething("textual_channel", channel_id)
         if not chan:
             raise HTTPError(self.response, 404, "Not Found")
 
-        if not self.checkChannelAccess(uid, convId, "textual", "view"):
+        if not self.checkChannelAccess(uid, channel_id, "textual", "view"):
             raise HTTPError(self.response, 403, "forbidden")
 
-        content = {"name": chan["name"], "id": convId}
-        content["messages"] = self.db.getFilters("message", ["place", "=", convId, "order by timestamp"])
+        content = {"name": chan["name"], "id": channel_id}
+        content["messages"] = self.db.getFilters("message", ["place", "=", channel_id, "order by timestamp"])
         self._enrichMessagesWithPolls(content["messages"], uid)
         return json.dumps(content, default=str)
 
     @Server.expose
-    def getNoteContent(self, id):
+    def get_note_content(self, channel_id):
         uid = self.getUser()
-        chan = self.db.getSomething("notes_channel", id)
+        chan = self.db.getSomething("notes_channel", channel_id)
         if not chan:
             raise HTTPError(self.response, 404, "Not Found")
 
-        if not self.checkChannelAccess(uid, id, "note", "view"):
+        if not self.checkChannelAccess(uid, channel_id, "note", "view"):
             raise HTTPError(self.response, 403, "forbidden")
 
-        content = {"name": chan["name"], "id": id}
-        content["blocks"] = self.db.getFilters("note_block", ["channel", "=", id])
+        content = {"name": chan["name"], "id": channel_id}
+        content["blocks"] = self.db.getFilters("note_block", ["channel", "=", channel_id])
         return json.dumps(content, default=str)
 
     @Server.expose
-    def getServContent(self, servID, channelID=None):
+    def get_serv_content(self, server_id, channel_id=None):
         uid = self.getUser()
-        serv = self.db.getFilters("accessserver", ["account", "=", uid, "and", "server", "=", servID])
+        serv = self.db.getFilters("accessserver", ["account", "=", uid, "and", "server", "=", server_id])
         if serv:
             content = {}
-            if not channelID:
-                content["channels"] = self.db.getAll("textual_channel", servID,"server")
-                content["vocals"] = self.db.getAll("vocal_channel", servID,"server")
-                content["drives"] = self.db.getAll("drive_channel", servID,"server")
-                content["notes"] = self.db.getAll("notes_channel", servID,"server")
-                # content["whiteboard"] = self.db.getAll("drive_channel", servID,"server")
-                op = self.db.getSomething("op_servs", servID, "server")
+            if not channel_id:
+                content["channels"] = self.db.getAll("textual_channel", server_id,"server")
+                content["vocals"] = self.db.getAll("vocal_channel", server_id,"server")
+                content["drives"] = self.db.getAll("drive_channel", server_id,"server")
+                content["notes"] = self.db.getAll("notes_channel", server_id,"server")
+                # content["whiteboard"] = self.db.getAll("drive_channel", server_id,"server")
+                op = self.db.getSomething("op_servs", server_id, "server")
                 if op:
                     content["op"] = True
-                content["cat"] = self.db.getAll("server_cat", servID,"server")
-                content["roles"] = self.db.getAll("role", servID,"server")
+                content["cat"] = self.db.getAll("server_cat", server_id,"server")
+                content["roles"] = self.db.getAll("role", server_id,"server")
 
-                personal = self.db.getFilters("personal_server", ["server", "=", servID])
+                personal = self.db.getFilters("personal_server", ["server", "=", server_id])
                 if personal:
                     content["type"] = "personal"
                     owner = self.db.getSomething("mycelium_account", personal[0]["owner"])
@@ -755,13 +756,13 @@ class Mycelium(Server):
                     content["storage_quota"] = USER_STORAGE_QUOTA
                 else:
                     content["type"] = "standard"
-                    server_data = self.db.getSomething("server", servID)
+                    server_data = self.db.getSomething("server", server_id)
                     content["storage_usage"] = server_data.get("storage_usage", 0) if server_data else 0
                     content["storage_quota"] = SERVER_STORAGE_QUOTA
 
-                content["members"] = self.db.getFilters("accessserver", ["server", "=", servID])
+                content["members"] = self.db.getFilters("accessserver", ["server", "=", server_id])
                 for i in range(0, len(content["members"])):
-                    userRoles = self.db.getFilters("role_attribution", ["server", "=", servID, "and", "account", "=", content["members"][i]["account"]])
+                    userRoles = self.db.getFilters("role_attribution", ["server", "=", server_id, "and", "account", "=", content["members"][i]["account"]])
                     for j in range (0,len(userRoles)):
                         userRoles[j] = userRoles[j]["role"]
                     content["members"][i] = {"id": content["members"][i]["account"], "roles": userRoles}
@@ -773,13 +774,13 @@ class Mycelium(Server):
                 content["notes"] = [ch for ch in content["notes"] if not ch.get("is_private") or self.checkChannelAccess(uid, ch["id"], "note", "view")]
 
                 # Include channel_permissions for this server
-                content["channel_permissions"] = self.db.getAll("channel_permission", servID, "server") or []
+                content["channel_permissions"] = self.db.getAll("channel_permission", server_id, "server") or []
             else:
-                content["messages"] = self.db.getFilters("message", ["place", "=", channelID, "order by timestamp"])
+                content["messages"] = self.db.getFilters("message", ["place", "=", channel_id, "order by timestamp"])
             return json.dumps(content, default=str)
 
     @Server.expose
-    def getUserInfo(self):
+    def get_user_info(self):
         uid = self.getUser()
         user = self.db.getSomething("mycelium_account", uid)
         self.getUsersStatus([user],detailed=True)
@@ -790,7 +791,7 @@ class Mycelium(Server):
         return json.dumps(user, default=str)
 
     @Server.expose
-    def getStorageUsage(self, server_id=None):
+    def get_storage_usage(self, server_id=None):
         """Get storage usage for a user or server."""
         uid = self.getUser()
         if server_id:
@@ -810,7 +811,7 @@ class Mycelium(Server):
             return json.dumps({"storage_usage": user.get("storage_usage", 0), "storage_quota": USER_STORAGE_QUOTA, "target_type": "user"})
 
     @Server.expose
-    def getDebugOTP(self, email):
+    def get_debug_otp(self, email):
         """
         Endpoint pour récupérer l'OTP en mode DEBUG uniquement
         Utilisé pour les tests automatisés
@@ -837,7 +838,7 @@ class Mycelium(Server):
         }, default=str)
 
     @Server.expose
-    def uploadImage(self):
+    def upload_image(self):
         uid = self.getUser()
         user = self.db.getSomething("mycelium_account", uid)
         self.getUsersStatus([user],detailed=True)
@@ -875,7 +876,7 @@ class Mycelium(Server):
         self.uploadDrive(uid, first_drive[0]["id"], (filename, file))
 
     @Server.expose
-    def uploadDriveFile(self, drive_id, filename, file, parent_folder=None):
+    def upload_drive_file(self, drive_id, filename, file, parent_folder=None):
         """
         Upload a file to a drive channel (authenticated user endpoint).
 
@@ -918,7 +919,7 @@ class Mycelium(Server):
         return json.dumps({"file_id": file_id, "filename": filename})
 
     @Server.expose
-    def getDriveFiles(self, drive_id, parent_folder=None):
+    def get_drive_files(self, drive_id, parent_folder=None):
         """
         Get all files in a drive channel (or within a parent folder).
 
@@ -961,7 +962,7 @@ class Mycelium(Server):
         return json.dumps(files, default=str)
 
     @Server.expose
-    def downloadDriveFile(self, file_id):
+    def download_drive_file(self, file_id):
         """
         Download a file from a drive channel.
 
@@ -1012,7 +1013,7 @@ class Mycelium(Server):
         return file_content
 
     @Server.expose
-    def deleteDriveFile(self, file_id):
+    def delete_drive_file(self, file_id):
         """
         Delete a file from a drive channel.
 
@@ -1063,7 +1064,7 @@ class Mycelium(Server):
         return json.dumps({"status": "ok", "message": "File deleted successfully"})
 
     @Server.expose
-    def createDriveFolder(self, drive_id, foldername, parent_folder=None):
+    def create_drive_folder(self, drive_id, foldername, parent_folder=None):
         """
         Create a folder in a drive channel.
 
@@ -1107,7 +1108,7 @@ class Mycelium(Server):
         return json.dumps({"folder_id": folder_id, "foldername": foldername})
 
     @Server.expose
-    def getDriveFolders(self, drive_id, parent_folder=None):
+    def get_drive_folders(self, drive_id, parent_folder=None):
         """
         Get all folders in a drive channel (or within a parent folder).
 
@@ -1147,7 +1148,7 @@ class Mycelium(Server):
         return json.dumps(folders, default=str)
 
     @Server.expose
-    def deleteDriveFolder(self, folder_id):
+    def delete_drive_folder(self, folder_id):
         """
         Delete a folder from a drive channel (and all its contents).
 
@@ -1426,7 +1427,7 @@ class Mycelium(Server):
         return not msg_refs
 
     @Server.expose
-    def setServerFeatured(self, server_id, featured):
+    def set_server_featured(self, server_id, featured):
         """
         Set a server as featured (admin only).
 
@@ -1460,7 +1461,7 @@ class Mycelium(Server):
         self.sendStatusUpdates(uid)
 
     @Server.expose
-    def sendMessage(self, conv, content, reply=False, attachments = [], poll=None):
+    def send_message(self, conv, content, reply=False, attachments = [], poll=None):
         uid = self.getUser()
 
         total_attachment_size = sum(
@@ -1639,18 +1640,18 @@ class Mycelium(Server):
 
 
     @Server.expose
-    def consultNotifs(self, notifId):
+    def consult_notifs(self, notif_id):
         uid = self.getUser()
-        if not self.db.getFilters("offline_notifs", ["account", "=", uid, "and", "id", "=", notifId]):
+        if not self.db.getFilters("offline_notifs", ["account", "=", uid, "and", "id", "=", notif_id]):
             raise HTTPError(self.response, 403, "forbidden")
-        self.db.deleteSomething("offline_notifs", notifId)
+        self.db.deleteSomething("offline_notifs", notif_id)
 
     @Server.expose
-    def editMessage(self, message, content):
-        print("editing message", message, content)
+    def edit_message(self, message_id, content):
+        print("editing message", message_id, content)
         uid = self.getUser()
 
-        message = self.db.getSomething("message", message)
+        message = self.db.getSomething("message", message_id)
 
         if not message or message["sender"] != uid:
             raise HTTPError(self.response, 403, "forbidden")
@@ -1684,12 +1685,11 @@ class Mycelium(Server):
                     self.sendNotification(member["account"], notif)
 
     @Server.expose
-    def deleteMessage(self, message):
-        print("deleting message", message)
+    def delete_message(self, message_id):
         uid = self.getUser()
 
-        messageId = message
-        message = self.db.getSomething("message", message)
+        messageId = message_id
+        message = self.db.getSomething("message", message_id)
 
         if not message or message["sender"] != uid:
             raise HTTPError(self.response, 403, "forbidden")
@@ -1793,10 +1793,10 @@ class Mycelium(Server):
         return poll, message
 
     @Server.expose
-    def votePoll(self, pollId, optionIds):
+    def vote_poll(self, poll_id, option_ids):
         uid = self.getUser()
-        poll, message = self._getPollConvAccess(uid, pollId)
-        option_ids = json.loads(optionIds) if isinstance(optionIds, str) else optionIds
+        poll, message = self._getPollConvAccess(uid, poll_id)
+        option_ids = json.loads(option_ids) if isinstance(option_ids, str) else option_ids
 
         if not isinstance(option_ids, list) or len(option_ids) == 0:
             raise HTTPError(self.response, 400, "Must select at least one option")
@@ -1852,9 +1852,9 @@ class Mycelium(Server):
         return json.dumps({"success": True, "votes": votes_dict})
 
     @Server.expose
-    def addPollOption(self, pollId, text):
+    def add_poll_option(self, poll_id, text):
         uid = self.getUser()
-        poll, message = self._getPollConvAccess(uid, pollId)
+        poll, message = self._getPollConvAccess(uid, poll_id)
 
         if not poll["allow_user_options"]:
             raise HTTPError(self.response, 403, "This poll does not allow user-added options")
@@ -1893,9 +1893,9 @@ class Mycelium(Server):
         return json.dumps(new_option)
 
     @Server.expose
-    def getPollResults(self, pollId):
+    def get_poll_results(self, poll_id):
         uid = self.getUser()
-        poll, message = self._getPollConvAccess(uid, pollId)
+        poll, message = self._getPollConvAccess(uid, poll_id)
 
         options = self.db.getAll("poll_option", poll["id"], "poll")
         votes = self.db.getAll("poll_vote", poll["id"], "poll")
@@ -1922,117 +1922,142 @@ class Mycelium(Server):
         })
 
     @Server.expose
-    def registerActivity(self, SDP):
+    def register_activity(self, SDP):
         uid = self.getUser()
         self.db.insertDict("active_client", {"userid": uid, "SDP": SDP})
 
 
     @Server.expose
-    def block(self, user):
+    def block_user(self, user_id):
         uid = self.getUser()
-        if self.db.getFilters("blockship", ["blocker", "=", uid, "and", "blocked", "=", user]):
-            return "already blocked"
-        id = self.db.insertDict("blockship", {"blocker": uid, "blocked": user}, getId=True)
-        return "ok "+str(id)
+        if self.db.getFilters("blockship", ["blocker", "=", uid, "and", "blocked", "=", user_id]):
+            return json.dumps({"status": "already_blocked"})
+        block_id = self.db.insertDict("blockship", {"blocker": uid, "blocked": user_id}, getId=True)
+        return json.dumps({"status": "ok", "id": block_id})
 
 
     @Server.expose
-    def friends(self, action, arg=""):
+    def add_friend(self, username):
         uid = self.getUser()
-        if action == "add":
-            friend = self.db.getSomething("mycelium_account", arg, "username")
-            if not friend:
-                return "user not found"
-            if friend['id'] == uid:
-                return "You can't add yourself as a friend"
+        friend = self.db.getSomething("mycelium_account", username, "username")
+        if not friend:
+            return json.dumps({"error": "user not found"})
+        if friend['id'] == uid:
+            return json.dumps({"error": "You can't add yourself as a friend"})
 
-            friendship = self.db.getFilters("boatakopin",
-                                            ["kopinprincipal", "=", uid, "and", "kopinsecondaire", "=", friend['id'],
-                                             ") or (", "kopinprincipal", "=", friend['id'], "and", "kopinsecondaire",
-                                             "=", uid, ')'], "(")
-            if friendship:
-                return "You're already friends/invitation already sent"
+        friendship = self.db.getFilters("boatakopin",
+                                        ["kopinprincipal", "=", uid, "and", "kopinsecondaire", "=", friend['id'],
+                                         ") or (", "kopinprincipal", "=", friend['id'], "and", "kopinsecondaire",
+                                         "=", uid, ')'], "(")
+        if friendship:
+            return json.dumps({"error": "already friends or invitation already sent"})
 
-            request = {"kopinprincipal": uid, "kopinsecondaire": friend['id'], "accepted": False}
-            request["id"] = self.db.insertDict("boatakopin", request, True)
-            self.sendNotification(friend['id'], {"type": "friend_request", "content": request})
-            return "ok"
+        request = {"kopinprincipal": uid, "kopinsecondaire": friend['id'], "accepted": False}
+        request["id"] = self.db.insertDict("boatakopin", request, True)
+        self.sendNotification(friend['id'], {"type": "friend_request", "content": request})
+        return json.dumps({"status": "ok"})
 
-        elif action == "accept":
-            friendship = self.db.getFilters("boatakopin", ["id", "=", arg, "and", "kopinsecondaire", "=", uid])
-            if friendship:
-                self.db.edit("boatakopin", arg, "accepted", True)
-                conv_id = self.db.insertDict('conversation', {'name': ""}, getId=True)
-                self.db.insertDict('accessconversation', {'account': uid, 'conversation': conv_id})
-                self.db.insertDict('accessconversation',
-                                   {'account': friendship[0]["kopinprincipal"], 'conversation': conv_id})
-                self.db.edit("boatakopin", arg, "conv", conv_id)
+    @Server.expose
+    def accept_friend(self, invitation_id):
+        uid = self.getUser()
+        friendship = self.db.getFilters("boatakopin", ["id", "=", invitation_id, "and", "kopinsecondaire", "=", uid])
+        if friendship:
+            self.db.edit("boatakopin", invitation_id, "accepted", True)
+            conv_id = self.db.insertDict('conversation', {'name': ""}, getId=True)
+            self.db.insertDict('accessconversation', {'account': uid, 'conversation': conv_id})
+            self.db.insertDict('accessconversation',
+                               {'account': friendship[0]["kopinprincipal"], 'conversation': conv_id})
+            self.db.edit("boatakopin", invitation_id, "conv", conv_id)
 
-                friendship[0]["conv"] = conv_id
-                self.sendNotification(friendship[0]["kopinprincipal"], {"type": "accepted_request", "content": friendship[0]})
+            friendship[0]["conv"] = conv_id
+            self.sendNotification(friendship[0]["kopinprincipal"], {"type": "accepted_request", "content": friendship[0]})
 
-                conv = {"id": conv_id, "name": "", "members": [uid, friendship[0]["kopinprincipal"]]}
-                self.sendNotification(uid, {"type": "added_conv", "content": conv})
-                self.sendNotification(friendship[0]["kopinprincipal"], {"type": "added_conv", "content": conv})
+            conv = {"id": conv_id, "name": "", "members": [uid, friendship[0]["kopinprincipal"]]}
+            self.sendNotification(uid, {"type": "added_conv", "content": conv})
+            self.sendNotification(friendship[0]["kopinprincipal"], {"type": "added_conv", "content": conv})
+            return json.dumps({"status": "ok"})
+        raise HTTPError(self.response, 403, "forbidden")
 
-        elif action == "get":
-            friends = self.db.getFilters("boatakopin",
-                                         ["accepted", "=", True, "and (", "kopinprincipal", "=", uid, "or",
+    @Server.expose
+    def get_friends(self):
+        uid = self.getUser()
+        friends = self.db.getFilters("boatakopin",
+                                     ["accepted", "=", True, "and (", "kopinprincipal", "=", uid, "or",
+                                      "kopinsecondaire", "=", uid, ")"])
+        return json.dumps(friends)
+
+    @Server.expose
+    def get_blocked(self):
+        uid = self.getUser()
+        enemies = self.db.getAll("blockship", uid, "blocker")
+        return json.dumps(enemies)
+
+    @Server.expose
+    def get_friend_invitations(self):
+        uid = self.getUser()
+        invitations = self.db.getFilters("boatakopin",
+                                         ["accepted", "=", False, "and (", "kopinprincipal", "=", uid, "or",
                                           "kopinsecondaire", "=", uid, ")"])
-            return json.dumps(friends)
-
-        elif action == "getBlocked":
-            enemies = self.db.getAll("blockship", uid, "blocker")
-            return json.dumps(enemies)
-
-        elif action == "invitations":
-            invitations = self.db.getFilters("boatakopin",
-                                             ["accepted", "=", False, "and (", "kopinprincipal", "=", uid, "or",
-                                              "kopinsecondaire", "=", uid, ")"])
-            return json.dumps(invitations)
-
-        elif action == "remove":
-            friendship = self.db.getSomething("boatakopin",arg)
-            if friendship and friendship["accepted"] and (friendship["kopinprincipal"] == uid or friendship["kopinsecondaire"] == uid):
-                self.db.deleteSomething("boatakopin", arg)
-            raise HTTPError(self.response, 403, "forbidden")
+        return json.dumps(invitations)
 
     @Server.expose
-    def change(self, element, value):
+    def remove_friend(self, friendship_id):
+        uid = self.getUser()
+        friendship = self.db.getSomething("boatakopin", friendship_id)
+        if friendship and friendship["accepted"] and (friendship["kopinprincipal"] == uid or friendship["kopinsecondaire"] == uid):
+            self.db.deleteSomething("boatakopin", friendship_id)
+            return json.dumps({"status": "ok"})
+        raise HTTPError(self.response, 403, "forbidden")
+
+    @Server.expose
+    def change_username(self, value):
+        uid = self.getUser()
+        if re.fullmatch(REGEX_USERNAME, value):
+            if not self.db.getSomething("mycelium_account", value, "username"):
+                self.db.edit("mycelium_account", uid, "username", value)
+                return json.dumps({"status": "ok"})
+            else:
+                return json.dumps({"error": "this username already exists"})
+        return json.dumps({"error": "invalid username"})
+
+    @Server.expose
+    def change_status(self, value):
+        uid = self.getUser()
+        status = json.loads(value)
+        self.db.edit("status", uid, "mode", status["mode"])
+        self.db.edit("status", uid, "text", status["text"])
+        self.db.edit("status", uid, "emoji", status["emoji"])
+        if status["expiration"]:
+            self.db.edit("status", uid, "expiration", status["expiration"])
+        else:
+            self.db.edit("status", uid, "expiration", None)
+        self.sendStatusUpdates(uid)
+        return json.dumps({"status": "ok"})
+
+    @Server.expose
+    def change_pfp(self, value):
+        uid = self.getUser()
+        filename = self.saveFile(value)
+        self.db.edit("mycelium_account", uid, "pfp", filename)
+        return json.dumps({"pfp": filename}, default=str)
+
+    @Server.expose
+    def change_banner(self, value):
+        uid = self.getUser()
+        filename = self.saveFile(value)
+        self.db.edit("mycelium_account", uid, "banner", filename)
+        return json.dumps({"banner": filename}, default=str)
+
+    @Server.expose
+    def change_profile(self, element, value):
         uid = self.getUser()
         if element == "id":
-            return "forbidden"
-        elif element == "username":
-            if re.fullmatch(REGEX_USERNAME, value):
-                if not self.db.getSomething("mycelium_account", value, element):
-                    self.db.edit("mycelium_account", uid, element, value)
-                    return "ok"
-                else:
-                    return "this " + element + " already exists"
-            return "invalid username "
-        elif element == "status":
-            status = json.loads(value)
-            self.db.edit("status", uid, "mode", status["mode"])
-            self.db.edit("status", uid, "text", status["text"])
-            self.db.edit("status", uid, "emoji", status["emoji"])
-            if status["expiration"]:
-                self.db.edit("status", uid, "expiration", status["expiration"])
-            else:
-                self.db.edit("status", uid, "expiration", None)
-            self.sendStatusUpdates(uid)
-        elif element == "pfp":
-            filename = self.saveFile(value)
-            self.db.edit("mycelium_account", uid, element, filename)
-            return json.dumps({"pfp": filename}, default=str)
-        elif element == "banner":
-            filename = self.saveFile(value)
-            self.db.edit("mycelium_account", uid, element, filename)
-            return json.dumps({"banner": filename}, default=str)
-        else:
-            self.db.edit("mycelium_account", uid, element, value)
+            return json.dumps({"error": "forbidden"})
+        self.db.edit("mycelium_account", uid, element, value)
+        return json.dumps({"status": "ok"})
 
     @Server.expose
-    def addEmail(self, email):
+    def add_email(self, email):
         uid = self.getUser()
 
         # Basic email validation
@@ -2059,16 +2084,16 @@ class Mycelium(Server):
         return json.dumps({"id": email_id, "email": email, "account": uid})
 
     @Server.expose
-    def removeEmail(self, id):
+    def remove_email(self, email_id):
         uid = self.getUser()
 
         # Check if the email belongs to the current user
-        email_entry = self.uniauth.getSomething("additional_mail", id)
+        email_entry = self.uniauth.getSomething("additional_mail", email_id)
         if not email_entry or email_entry["account"] != uid:
             return json.dumps({"error": "Email not found or access denied"})
 
         # Delete the email
-        self.uniauth.deleteSomething("additional_mail", id)
+        self.uniauth.deleteSomething("additional_mail", email_id)
 
         return json.dumps({"success": True})
 
@@ -2172,7 +2197,7 @@ class Mycelium(Server):
         return None, None
 
     @Server.expose
-    def editChannelPermissions(self, channelId, channelType, action, roleId=None, permission=None, value=None):
+    def edit_channel_permissions(self, channelId, channelType, action, roleId=None, permission=None, value=None):
         """Manage channel privacy and per-role channel permissions.
         Actions:
             togglePrivacy - toggle is_private on the channel
@@ -2259,7 +2284,7 @@ class Mycelium(Server):
         raise HTTPError(self.response, 400, "invalid action")
 
     @Server.expose
-    def getChannelPermissions(self, channelId, channelType):
+    def get_channel_permissions(self, channelId, channelType):
         """Get all channel_permission rows for a specific channel."""
         uid = self.getUser()
 
@@ -2282,136 +2307,142 @@ class Mycelium(Server):
         return json.dumps(perms or [], default=str)
 
     @Server.expose
-    def editServer(self, property, id, value=None, field=None, action=None, targetId=None, channelType=None):
+    def edit_server_property(self, server_id, property, value=None):
         uid = self.getUser()
         forbidden_fields = ["id", "owner", "is_featured", "member_count"]
-        if field in forbidden_fields or not self.checkAccessRights(uid, id, "edit"):
+        if property in forbidden_fields or not self.checkAccessRights(uid, server_id, "edit"):
             raise HTTPError(self.response, 403)
 
-        if property == "channel":
-            if action == "create":
-                channel_type = channelType if channelType else "textual"
-                table = self._getChannelTable(channel_type) or "textual_channel"
-
-                defaults = {"server": id}
-                if channel_type == "vocal":
-                    defaults["name"] = "Salon vocal"
-                elif channel_type == "drive":
-                    defaults["name"] = "new storage"
-                elif channel_type == "note":
-                    defaults["name"] = "new note"
-                else:
-                    defaults["name"] = "new channel"
-
-                channel_id = self.db.insertDict(table, defaults, getId=True)
-                channel = self.db.getSomething(table, channel_id)
-                return json.dumps({"channel": channel, "type": channel_type}, default=str)
-
-            table_name = self._getChannelTable(channelType) or "textual_channel"
-
-            chan = self.db.getSomething(table_name, targetId)
-            if chan and chan["server"] == int(id):
-                if action == "delete":
-                    self.db.deleteSomething(table_name, targetId)
-                    return
-                allowed_channel_fields = ("name", "place", "category")
-                if field not in allowed_channel_fields:
-                    raise HTTPError(self.response, 400, "invalid field for channel")
-                # Coerce special field values
-                if field == "category":
-                    value = int(value) if value else None
-                elif field == "place":
-                    value = float(value)
-                self.db.edit(table_name, targetId, field, value)
-                return
-
-            raise HTTPError(self.response, 403, "forbidden")
-
-        elif property == "cat":
-            if action == "create":
-                cat_id = self.db.insertDict("server_cat", {"name": "New Category", "server": id}, getId=True)
-                cat = self.db.getSomething("server_cat", cat_id)
-                return json.dumps(cat, default=str)
-
-            cat = self.db.getSomething("server_cat", targetId)
-            if not cat or cat["server"] != int(id):
-                raise HTTPError(self.response, 403, "forbidden")
-
-            if action == "delete":
-                # Unassign all channels from this category
-                for table in ["textual_channel", "vocal_channel", "drive_channel", "notes_channel"]:
-                    channels = self.db.getFilters(table, ["category", "=", targetId])
-                    for ch in channels:
-                        self.db.edit(table, ch["id"], "category", None)
-                self.db.deleteSomething("server_cat", targetId)
-                return json.dumps({"status": "ok"})
-
-            if field in ("name", "place"):
-                val = float(value) if field == "place" else value
-                self.db.edit("server_cat", targetId, field, val)
-                return json.dumps({"status": "ok"})
-
-            raise HTTPError(self.response, 400, "invalid field for category")
-
-        elif property == "role":
-            if action == "create":
-                id = self.db.insertDict("role", {"name": "new role", "server": id}, getId=True)
-                return str(id)
-
-            role = self.db.getSomething("role", targetId)
-            print("editing role", role, targetId, field, value, id)
-            if not role or role["server"] != int(id) or field == "server":
-                raise HTTPError(self.response, 403)
-
-            if action == "delete":
-                self.db.deleteSomething("role", targetId)
-                return
-
-            if action == "attribute":
-                print("attributing role", targetId, value, id)
-                if self.db.getFilters("role_attribution", ["account", "=", value, "and", "role", "=", targetId, "and", "server", "=", id]):
-                    print("already attributed")
-                    raise HTTPError(self.response, 403, "already attributed")
-
-                self.db.insertDict("role_attribution", {"account": value, "role": targetId, "server":id}, getId=True)
-                # Invalidate admin cache as role attribution might have changed admin rights
-                self.invalidateAdminCache()
-                return str(id)
-
-            if field == "permissions":
-                permissions = json.loads(value)
-                serv_op = self.db.getSomething("op_servs", id, "server")
-                if permissions.get("mycelium-admin") is not None and serv_op == []: # restrict mycelium_admin right to op servers
-                    print("forbidden mycelium admin")
-                    raise HTTPError(self.response, 403)
-
-            self.db.edit("role", targetId, field, value)
-            # Invalidate admin cache as role permissions might have changed
-            self.invalidateAdminCache()
-        elif property == "name":
-            self.db.edit("server", id, property, value)
+        if property == "name":
+            self.db.edit("server", server_id, property, value)
         elif property == "pfp":
             filename = self.saveFile(value)
-            self.db.edit("server", id, "pfp", filename)
+            self.db.edit("server", server_id, "pfp", filename)
             return json.dumps({"pfp": filename}, default=str)
         elif property == "is_community":
-            # Only server owner can change this
-            server = self.db.getSomething("server", id)
+            server = self.db.getSomething("server", server_id)
             if server["owner"] != uid:
                 raise HTTPError(self.response, 403, "Only server owner can change community status")
-            self.db.edit("server", id, "is_community", value == "true")
+            self.db.edit("server", server_id, "is_community", value == "true")
         elif property == "tags":
-            # Parse tags as JSON array
             tags = json.loads(value) if isinstance(value, str) else value
-            self.db.edit("server", id, "tags", json.dumps(tags))
+            self.db.edit("server", server_id, "tags", json.dumps(tags))
         elif property == "languages":
             languages = json.loads(value) if isinstance(value, str) else value
-            self.db.edit("server", id, "languages", json.dumps(languages))
+            self.db.edit("server", server_id, "languages", json.dumps(languages))
         elif property == "description":
-            self.db.edit("server", id, "description", value)
+            self.db.edit("server", server_id, "description", value)
+        return json.dumps({"status": "ok"})
 
     @Server.expose
-    def saveBlock(self, channel, block, op="edit"):
+    def edit_server_channel(self, server_id, action, field=None, value=None, targetId=None, channel_type=None):
+        uid = self.getUser()
+        if not self.checkAccessRights(uid, server_id, "edit"):
+            raise HTTPError(self.response, 403)
+
+        if action == "create":
+            channel_type = channel_type if channel_type else "textual"
+            table = self._getChannelTable(channel_type) or "textual_channel"
+
+            defaults = {"server": server_id}
+            if channel_type == "vocal":
+                defaults["name"] = "Salon vocal"
+            elif channel_type == "drive":
+                defaults["name"] = "new storage"
+            elif channel_type == "note":
+                defaults["name"] = "new note"
+            else:
+                defaults["name"] = "new channel"
+
+            channel_id = self.db.insertDict(table, defaults, getId=True)
+            channel = self.db.getSomething(table, channel_id)
+            return json.dumps({"channel": channel, "type": ct}, default=str)
+
+        table_name = self._getChannelTable(channel_type) or "textual_channel"
+        chan = self.db.getSomething(table_name, targetId)
+        if chan and chan["server"] == int(server_id):
+            if action == "delete":
+                self.db.deleteSomething(table_name, targetId)
+                return json.dumps({"status": "ok"})
+            allowed_channel_fields = ("name", "place", "category")
+            if field not in allowed_channel_fields:
+                raise HTTPError(self.response, 400, "invalid field for channel")
+            if field == "category":
+                value = int(value) if value else None
+            elif field == "place":
+                value = float(value)
+            self.db.edit(table_name, targetId, field, value)
+            return json.dumps({"status": "ok"})
+
+        raise HTTPError(self.response, 403, "forbidden")
+
+    @Server.expose
+    def edit_server_category(self, server_id, action, field=None, value=None, targetId=None):
+        uid = self.getUser()
+        if not self.checkAccessRights(uid, server_id, "edit"):
+            raise HTTPError(self.response, 403)
+
+        if action == "create":
+            cat_id = self.db.insertDict("server_cat", {"name": "New Category", "server": server_id}, getId=True)
+            cat = self.db.getSomething("server_cat", cat_id)
+            return json.dumps(cat, default=str)
+
+        cat = self.db.getSomething("server_cat", targetId)
+        if not cat or cat["server"] != int(server_id):
+            raise HTTPError(self.response, 403, "forbidden")
+
+        if action == "delete":
+            for table in ["textual_channel", "vocal_channel", "drive_channel", "notes_channel"]:
+                channels = self.db.getFilters(table, ["category", "=", targetId])
+                for ch in channels:
+                    self.db.edit(table, ch["id"], "category", None)
+            self.db.deleteSomething("server_cat", targetId)
+            return json.dumps({"status": "ok"})
+
+        if field in ("name", "place"):
+            val = float(value) if field == "place" else value
+            self.db.edit("server_cat", targetId, field, val)
+            return json.dumps({"status": "ok"})
+
+        raise HTTPError(self.response, 400, "invalid field for category")
+
+    @Server.expose
+    def edit_server_role(self, server_id, action, field=None, value=None, targetId=None):
+        uid = self.getUser()
+        if not self.checkAccessRights(uid, server_id, "edit"):
+            raise HTTPError(self.response, 403)
+
+        if action == "create":
+            role_id = self.db.insertDict("role", {"name": "new role", "server": server_id}, getId=True)
+            return json.dumps({"id": role_id})
+
+        role = self.db.getSomething("role", targetId)
+        if not role or role["server"] != int(server_id) or field == "server":
+            raise HTTPError(self.response, 403)
+
+        if action == "delete":
+            self.db.deleteSomething("role", targetId)
+            return json.dumps({"status": "ok"})
+
+        if action == "attribute":
+            if self.db.getFilters("role_attribution", ["account", "=", value, "and", "role", "=", targetId, "and", "server", "=", server_id]):
+                raise HTTPError(self.response, 403, "already attributed")
+            self.db.insertDict("role_attribution", {"account": value, "role": targetId, "server": server_id}, getId=True)
+            self.invalidateAdminCache()
+            return json.dumps({"status": "ok"})
+
+        if field == "permissions":
+            permissions = json.loads(value)
+            serv_op = self.db.getSomething("op_servs", server_id, "server")
+            if permissions.get("mycelium-admin") is not None and serv_op == []:
+                raise HTTPError(self.response, 403)
+
+        self.db.edit("role", targetId, field, value)
+        self.invalidateAdminCache()
+        return json.dumps({"status": "ok"})
+
+    @Server.expose
+    def save_block(self, channel, block, op="edit"):
         uid = self.getUser()
 
         chan_info = self.db.getSomething("notes_channel", channel)
@@ -2498,7 +2529,7 @@ class Mycelium(Server):
         return server_id
 
     @Server.expose
-    def getDatabaseContent(self, channel, block_uuid):
+    def get_database_content(self, channel, block_uuid):
         uid = self.getUser()
         chan_info = self.db.getSomething("notes_channel", channel)
         if not chan_info:
@@ -2533,7 +2564,7 @@ class Mycelium(Server):
         return json.dumps(result, default=str)
 
     @Server.expose
-    def saveDatabase(self, channel, database, op="create"):
+    def save_database(self, channel, database, op="create"):
         uid = self.getUser()
         self._checkDatabaseAccess(uid, channel)
         database = json.loads(database)
@@ -2580,7 +2611,7 @@ class Mycelium(Server):
             self.db.deleteSomething("note_database", database["id"])
 
     @Server.expose
-    def saveDatabaseColumn(self, channel, database_id, column, op="create"):
+    def save_database_column(self, channel, database_id, column, op="create"):
         uid = self.getUser()
         self._checkDatabaseAccess(uid, channel)
         column = json.loads(column)
@@ -2624,7 +2655,7 @@ class Mycelium(Server):
             self.db.deleteSomething("note_database_column", column["id"])
 
     @Server.expose
-    def saveDatabaseRow(self, channel, database_id, row, op="create"):
+    def save_database_row(self, channel, database_id, row, op="create"):
         uid = self.getUser()
         self._checkDatabaseAccess(uid, channel)
         row = json.loads(row)
@@ -2652,7 +2683,7 @@ class Mycelium(Server):
             self.db.deleteSomething("note_database_row", row["id"])
 
     @Server.expose
-    def saveDatabaseCell(self, channel, database_id, cell):
+    def save_database_cell(self, channel, database_id, cell):
         uid = self.getUser()
         self._checkDatabaseAccess(uid, channel)
         cell = json.loads(cell)
@@ -2698,7 +2729,7 @@ class Mycelium(Server):
             })
 
     @Server.expose
-    def getRelationDisplay(self, database_id, row_id):
+    def get_relation_display(self, database_id, row_id):
         """Get the display name (first text column value) for a row in a database."""
         uid = self.getUser()
         db_info = self.db.getSomething("note_database", database_id)
@@ -2728,7 +2759,7 @@ class Mycelium(Server):
         return json.dumps({"display": display or "Untitled"}, default=str)
 
     @Server.expose
-    def serverDisplay(self, invite):
+    def server_display(self, invite):
         server = self.db.getSomething("invitation", invite, "link")
         if server:
             details = self.db.getSomething("server", server["server"])
@@ -2737,13 +2768,13 @@ class Mycelium(Server):
             raise HTTPError(self.response, 404, "Not Found")
 
     @Server.expose
-    def createInvitation(self, server, pref=None):
+    def create_invitation(self, server_id, pref=None):
         uid = self.getUser()
-        res = self.db.getFilters("accessserver", ["account", "=", uid, "and", "server", "=", server])
+        res = self.db.getFilters("accessserver", ["account", "=", uid, "and", "server", "=", server_id])
         if not res or res == []:
-            return HTTPError(self.response, 403, "forbidden")
+            raise HTTPError(self.response, 403, "forbidden")
 
-        res = self.db.getSomething("invitation", server, "server")
+        res = self.db.getSomething("invitation", server_id, "server")
         if res and res != [] and res["expiration"] > datetime.datetime.now():
             return res["link"]
 
@@ -2754,7 +2785,7 @@ class Mycelium(Server):
                 if self.db.getSomething("invitation",id,"link"):
                     id = ''.join(random.sample(B62, 8))
                 else:
-                    self.db.insertDict("invitation",{"link": id,"server":server,"expiration":datetime.datetime.now() + datetime.timedelta(days=7)})
+                    self.db.insertDict("invitation",{"link": id,"server":server_id,"expiration":datetime.datetime.now() + datetime.timedelta(days=7)})
                     return id
         else:
             id=pref
@@ -2762,13 +2793,13 @@ class Mycelium(Server):
                 if self.db.getSomething("invitation",id,"link"):
                     id = pref + ''.join(random.sample(B62, 3))
                 else :
-                    self.db.insertDict("invitation",{"link": id,"server":server,"expiration":datetime.datetime.now() + datetime.timedelta(days=7)})
+                    self.db.insertDict("invitation",{"link": id,"server":server_id,"expiration":datetime.datetime.now() + datetime.timedelta(days=7)})
                     return id
 
     @Server.expose
-    def join(self, source):
+    def join_server(self, invite_code):
         uid = self.getUser()
-        res = self.db.getSomething("invitation", source, "link")
+        res = self.db.getSomething("invitation", invite_code, "link")
         if res and res != []:
             if res["expiration"] < datetime.datetime.now():
                 raise HTTPError(self.response, 403, "forbidden")
@@ -2780,13 +2811,13 @@ class Mycelium(Server):
 
 
     @Server.expose
-    def getDashboard(self, server,service_id):
+    def get_dashboard(self, server_id, service_id):
         uid = self.getUser()
-        op = self.db.getSomething("op_servs", server, "server")
+        op = self.db.getSomething("op_servs", server_id, "server")
         if not op:
             raise HTTPError(self.response, 403, "forbidden")
 
-        if not self.checkAccessRights(uid, server, "dashboard-read"):
+        if not self.checkAccessRights(uid, server_id, "dashboard-read"):
             raise HTTPError(self.response, 403, "forbidden")
 
         #if mycelium get from self
@@ -2814,7 +2845,7 @@ class Mycelium(Server):
             return json.dumps(board, default=str)
 
     @Server.expose
-    def refreshDashboard(self, service):
+    def refresh_dashboard(self, service):
         uid = self.getUser()
 
         services = {"synapse": {"local": "http://locahost:9876/unibridgeRefresh",
@@ -2839,9 +2870,9 @@ class Mycelium(Server):
             return json.dumps({"status": "error", "message": str(e)})
 
     @Server.expose
-    def createPersonalServer(self, server):
+    def create_personal_server(self, server_id):
         uid = self.getUser()
-        server = self.db.getSomething("server", server)
+        server = self.db.getSomething("server", server_id)
         if not server or server["owner"] != uid:
             raise HTTPError(self.response, 403, "forbidden")
 
@@ -2850,23 +2881,20 @@ class Mycelium(Server):
         self.db.insertDict("personal_server", {"owner": uid, "server": server["id"]})
 
     @Server.expose
-    def sendEmail(self, server, to, subject, body):
-        op = self.db.getSomething("op_servs", server, "server")
+    def send_email(self, server_id, to, subject, body):
+        op = self.db.getSomething("op_servs", server_id, "server")
         if not op:
             raise HTTPError(self.response, 403, "forbidden")
 
-        if not self.checkAccessRights(uid, server, "dashboard-read"):
+        if not self.checkAccessRights(uid, server_id, "dashboard-read"):
             raise HTTPError(self.response, 403, "forbidden")
 
 
 
     @Server.expose
-    def createApiKey(self, name="", permissions="[]"):
-        """Create a new API key for the authenticated user.
-        Expects optional name and permissions (JSON list or a list) and returns a JSON object with the new key and metadata.
-        """
+    def create_api_key(self, name="", permissions="[]"):
+        """Create a new API key for the authenticated user."""
         uid = self.getUser()
-        # normalize permissions param
         try:
             if isinstance(permissions, str):
                 permissions_parsed = json.loads(permissions)
@@ -2875,37 +2903,34 @@ class Mycelium(Server):
         except Exception:
             permissions_parsed = []
 
-        # generate a unique key
         new_key = ''.join(random.choices(B62, k=40))
-        # ensure uniqueness
         while self.db.getSomething("api_key", new_key, "key"):
             new_key = ''.join(random.choices(B62, k=40))
 
         key_id = self.db.insertDict("api_key", {"key": new_key, "owner": uid, "name": name}, getId=True)
         created = datetime.datetime.now()
 
-        # Return some metadata (note: name/permissions are now returned; name is persisted in DB)
         resp = {"id": key_id, "name": name, "key": new_key, "created": str(created), "permissions": permissions_parsed}
         return json.dumps(resp)
 
     @Server.expose
-    def revokeApiKey(self, id):
+    def revoke_api_key(self, key_id):
         """Revoke (delete) an API key by its id. Only the owner can revoke their key."""
         uid = self.getUser()
-        keyrow = self.db.getSomething("api_key", id)
+        keyrow = self.db.getSomething("api_key", key_id)
         if not keyrow:
             raise HTTPError(self.response, 404, "Not Found")
         if keyrow.get("owner") != uid:
             raise HTTPError(self.response, 403, "forbidden")
 
-        self.db.deleteSomething("api_key", id)
-        return "ok"
+        self.db.deleteSomething("api_key", key_id)
+        return json.dumps({"status": "ok"})
 
     @Server.expose
-    def regenerateApiKey(self, id):
+    def regenerate_api_key(self, key_id):
         """Generate a new key value for an existing API key entry. Only the owner may regenerate."""
         uid = self.getUser()
-        keyrow = self.db.getSomething("api_key", id)
+        keyrow = self.db.getSomething("api_key", key_id)
         if not keyrow:
             raise HTTPError(self.response, 404, "Not Found")
         if keyrow.get("owner") != uid:
@@ -2915,16 +2940,14 @@ class Mycelium(Server):
         while self.db.getSomething("api_key", new_key, "key"):
             new_key = ''.join(random.choices(B62, k=40))
 
-        self.db.edit("api_key", id, "key", new_key)
-        # return the new key value
+        self.db.edit("api_key", key_id, "key", new_key)
         return json.dumps({"key": new_key})
 
     @Server.expose
-    def getUserApiKeys(self):
-        """Return the API keys for the authenticated user. The raw key value is not exposed here."""
+    def get_user_api_keys(self):
+        """Return the API keys for the authenticated user."""
         uid = self.getUser()
         keys = self.db.getAll("api_key", uid, "owner")
-        # remove the raw key value before returning
         for k in keys:
             if 'key' in k:
                 k.pop('key')

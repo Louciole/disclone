@@ -86,7 +86,7 @@ class Editor {
         const onload = function () {
 
         }
-        xhr("/saveBlock?channel="+global.state.activeChan.id+"&block="+encodeURIComponent(JSON.stringify(this.blocks[newBlockId]))+"&op=create", onload)
+        xhr("/save_block?channel="+global.state.activeChan.id+"&block="+encodeURIComponent(JSON.stringify(this.blocks[newBlockId]))+"&op=create", onload)
     }
 
     moveBlock(blockId, newPosition) {
@@ -133,7 +133,7 @@ class Editor {
         const onload = function () {
 
         }
-        xhr("/saveBlock?channel="+global.state.activeChan.id+"&block="+ JSON.stringify({uuid:blockId})+"&op=delete", onload)
+        xhr("/save_block?channel="+global.state.activeChan.id+"&block="+ JSON.stringify({uuid:blockId})+"&op=delete", onload)
 
     }
 
@@ -319,7 +319,7 @@ class Editor {
 
             // Persist the block type change synchronously so server-side
             // resources (e.g. note_database) are created before we try to load them
-            xhr("/saveBlock?channel="+global.state.activeChan.id+"&block="+encodeURIComponent(JSON.stringify(block))+"&op=edit", ()=>{}, "GET", false)
+            xhr("/save_block?channel="+global.state.activeChan.id+"&block="+encodeURIComponent(JSON.stringify(block))+"&op=edit", ()=>{}, "GET", false)
 
             target.innerHTML = blockTypes[block.type].template(block)
 
@@ -450,7 +450,7 @@ class Editor {
 
         }
 
-        xhr("/saveBlock?channel="+global.state.activeChan.id+"&block="+encodeURIComponent(JSON.stringify(block))+"&op=edit", onSaved)
+        xhr("/save_block?channel="+global.state.activeChan.id+"&block="+encodeURIComponent(JSON.stringify(block))+"&op=edit", onSaved)
     }
 
 }
@@ -610,7 +610,7 @@ function func_dashboard(dashboardName){
     const onload = function(){
     }
 
-    const request = xhr("getDashboard?server="+global.state.currentServer.id+"&service_id="+dashboardName, onload, "GET", false)
+    const request = xhr("get_dashboard?server_id="+global.state.currentServer.id+"&service_id="+dashboardName, onload, "GET", false)
 
     if (request.status !== 200) {
         return "ERROR loading dashboard: "+request.status

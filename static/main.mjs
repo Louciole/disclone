@@ -60,7 +60,7 @@ const onInvitationsLoaded = function(){
 
 export function postWS(){
     const userList = JSON.stringify(Object.keys(global.users).map(cle => parseInt(cle)))
-    xhr("subscribe?client="+global.state.clientID+"&cat=user&items="+userList,undefined)
+    xhr("subscribe?client_id="+global.state.clientID+"&cat=user&items="+userList,undefined)
 
     global.state.callManager = new CallManager();
 
@@ -108,7 +108,7 @@ export function postWS(){
         const savedConv = global.state.activeConv;
         global.state.activeConv = convId;
         const xhr2 = new XMLHttpRequest();
-        xhr2.open('GET', `sendMessage?conv=${encodeURI(JSON.stringify({id: convId}))}&content=${encodeURIComponent(message)}&reply=`, true);
+        xhr2.open('GET', `send_message?conv=${encodeURI(JSON.stringify({id: convId}))}&content=${encodeURIComponent(message)}&reply=`, true);
         xhr2.withCredentials = true;
         xhr2.send();
         global.state.activeConv = savedConv;
@@ -288,14 +288,14 @@ function repaintConv(sub, value){
 }
 window.repaintConv = repaintConv
 
-function Save(endpoint="change"){
+function Save(endpoint="change_profile"){
     console.log("saving",global.state["currentForm"])
     for (let key in global.state["currentForm"]){
         if (key !== "modified" && global.state["currentForm"][key].modified){
             const target = key.split("-")[0]
             console.log("target is ",target)
-            if (endpoint === "editServer") {
-                xhr(endpoint + "?id=".concat(global.state.currentServer.id, "&property=", target, "&value=", encodeURIComponent(global.state["currentForm"][key].value)), undefined, "POST", false)
+            if (endpoint === "edit_server_property") {
+                xhr(endpoint + "?server_id=".concat(global.state.currentServer.id, "&property=", target, "&value=", encodeURIComponent(global.state["currentForm"][key].value)), undefined, "POST", false)
                 setElement("global.state.currentServer.".concat(target), global.state["currentForm"][key].value)
             }else if (endpoint === "editChannel") {
                 const id = global.state.modaltarget.dataset.id
@@ -324,10 +324,10 @@ function Save(endpoint="change"){
                 }
 
                 // Envoyer la requête en arrière-plan (si ça échoue, on pourrait rollback)
-                xhr("editServer?id=".concat(global.state.currentServer.id, "&property=channel&value=", encodeURIComponent(newValue), "&field=name&targetId=", id, "&channelType=", type), undefined, "POST", false)
+                xhr("edit_server_channel?server_id=".concat(global.state.currentServer.id, "&value=", encodeURIComponent(newValue), "&field=name&targetId=", id, "&channel_type=", type), undefined, "POST", false)
             }else if (endpoint === "editRole") {
                 const id = global.state.currentRole.id
-                xhr("editServer?id=".concat(global.state.currentServer.id, "&property=role&value=", encodeURIComponent(global.state["currentForm"][key].value), "&field=name&targetId=", id), undefined, "POST", false)
+                xhr("edit_server_role?server_id=".concat(global.state.currentServer.id, "&value=", encodeURIComponent(global.state["currentForm"][key].value), "&field=name&targetId=", id), undefined, "POST", false)
                 // setElement("global.state.currentServer.".concat(target), global.state["currentForm"][key].value)
             }else{
                 xhr(endpoint+"?element=".concat(target,"&value=",encodeURIComponent(global.state["currentForm"][key].value)), undefined,"POST",false)
@@ -379,7 +379,7 @@ function sendMessage(event){
                 filename: a.name,
                 mimeType: a.type
             }))
-            xhr("sendMessage?conv=".concat(encodeURI(JSON.stringify({'id':global.state.activeConv})), "&content=", encodeURIComponent(target.value),"&reply=",global.convs[global.state.activeConv].reply), onload,"POST",true,{"attachments":attachmentData})
+            xhr("send_message?conv=".concat(encodeURI(JSON.stringify({'id':global.state.activeConv})), "&content=", encodeURIComponent(target.value),"&reply=",global.convs[global.state.activeConv].reply), onload,"POST",true,{"attachments":attachmentData})
         }
         event.preventDefault()
     }else{
@@ -532,7 +532,7 @@ function deleteServer(){
             console.log("server deleted")
             window.location.href = ("/channels")
         };
-        xhr("deleteServer?id=".concat(global.state.currentServer.id), onload, "POST", true)
+        xhr("delete_server?server_id=".concat(global.state.currentServer.id), onload, "POST", true)
 
     } else {
         console.log("ouf 😖")
@@ -548,9 +548,9 @@ loadTemplate("profile-info.html")
 loadTemplate("create-poll.html")
 loadTemplate("poll-voters.html")
 loadUser()
-xhr("friends?action=getBlocked", onBlockedLoaded)
-xhr("friends?action=get", onFriendsLoaded)
-xhr("friends?action=invitations", onInvitationsLoaded)
+xhr("get_blocked", onBlockedLoaded)
+xhr("get_friends", onFriendsLoaded)
+xhr("get_friend_invitations", onInvitationsLoaded)
 
 
 loadServers()

@@ -333,7 +333,7 @@ def create_test_user(username="testuser"):
 def get_user_id(session):
     """Helper to get user ID from session."""
     try:
-        response = session.post(f'{TEST_SERVER_URL}/getUserInfo')
+        response = session.post(f'{TEST_SERVER_URL}/get_user_info')
         if response.status_code == 200:
             return response.json().get('id')
     except requests.RequestException as e:
@@ -347,7 +347,7 @@ def send_test_message(session, conv_id, content='Test message'):
     """Helper to send a test message."""
     try:
         response = session.post(
-            f'{TEST_SERVER_URL}/sendMessage',
+            f'{TEST_SERVER_URL}/send_message',
             params={
                 'conv': json.dumps({'id': conv_id}),
                 'content': content,
@@ -390,14 +390,14 @@ def run_concurrent(funcs: List[callable]) -> List[any]:
 @with_test_user("server_test")
 def test_create_server(session):
     """Test creating a server."""
-    response = session.post(f'{TEST_SERVER_URL}/createServer')
+    response = session.post(f'{TEST_SERVER_URL}/create_server')
     assert response.status_code == 200, f"Expected 200, got {response.status_code}"
 
-    server_id = int(response.text.strip('"'))
+    server_id = response.json()['id']
     assert server_id > 0, f"Server ID should be positive, got {server_id}"
 
     # Verify server exists
-    servers_response = session.post(f'{TEST_SERVER_URL}/getUserServers')
+    servers_response = session.post(f'{TEST_SERVER_URL}/get_user_servers')
     assert servers_response.status_code == 200, f"Failed to get servers: {servers_response.status_code}"
     servers = servers_response.json()
     assert any(s['id'] == server_id for s in servers), \
@@ -411,10 +411,10 @@ def test_create_server(session):
 def test_get_user_servers(session):
     """Test retrieving user's servers."""
     # Create 2 servers
-    server_id1 = int(session.post(f'{TEST_SERVER_URL}/createServer').text.strip('"'))
-    server_id2 = int(session.post(f'{TEST_SERVER_URL}/createServer').text.strip('"'))
+    server_id1 = session.post(f'{TEST_SERVER_URL}/create_server').json()['id']
+    server_id2 = session.post(f'{TEST_SERVER_URL}/create_server').json()['id']
 
-    response = session.post(f'{TEST_SERVER_URL}/getUserServers')
+    response = session.post(f'{TEST_SERVER_URL}/get_user_servers')
     assert response.status_code == 200, f"Failed to get servers: {response.status_code}"
     servers = response.json()
 
@@ -437,16 +437,16 @@ def test_get_user_servers(session):
 def test_create_conversation(session):
     """Test creating a conversation."""
     response = session.post(
-        f'{TEST_SERVER_URL}/createConv',
+        f'{TEST_SERVER_URL}/create_conv',
         params={'name': 'Test Conversation', 'members': json.dumps([]), 'private': 'true'}
     )
 
     assert response.status_code == 200, f"Expected 200, got {response.status_code}"
-    conv_id = int(response.text.strip('"'))
+    conv_id = response.json()['id']
     assert conv_id > 0
 
     # Verify conversation exists
-    convs = session.post(f'{TEST_SERVER_URL}/getUserConvs').json()
+    convs = session.post(f'{TEST_SERVER_URL}/get_user_convs').json()
     assert any(c['id'] == conv_id for c in convs)
 
     return (f"Conversation created with ID {conv_id}", True)
@@ -462,17 +462,17 @@ def test_create_conversation_with_members(sessions):
         return ("Failed to get user2 ID", False)
 
     response = session1.post(
-        f'{TEST_SERVER_URL}/createConv',
+        f'{TEST_SERVER_URL}/create_conv',
         params={'name': 'Group Chat', 'members': json.dumps([user2_id]), 'private': 'true'}
     )
 
     assert response.status_code == 200, f"Expected 200, got {response.status_code}"
-    conv_id = int(response.text.strip('"'))
+    conv_id = response.json()['id']
     _cleanup_manager.register_conversation(conv_id)
 
     # Verify both users have access
-    convs1 = session1.post(f'{TEST_SERVER_URL}/getUserConvs').json()
-    convs2 = session2.post(f'{TEST_SERVER_URL}/getUserConvs').json()
+    convs1 = session1.post(f'{TEST_SERVER_URL}/get_user_convs').json()
+    convs2 = session2.post(f'{TEST_SERVER_URL}/get_user_convs').json()
 
     assert any(c['id'] == conv_id for c in convs1), "User1 should have access"
     assert any(c['id'] == conv_id for c in convs2), "User2 should have access"
@@ -486,20 +486,17 @@ def test_create_conversation_with_members(sessions):
 @with_test_user("edit_conv")
 def test_edit_conversation(session):
     """Test editing a conversation."""
-    conv_id = int(session.post(
-        f'{TEST_SERVER_URL}/createConv',
-        params={'name': 'Original Name', 'members': json.dumps([]), 'private': 'true'}
-    ).text.strip('"'))
+    conv_id = XXX_PLACEHOLDER
 
     response = session.post(
-        f'{TEST_SERVER_URL}/editConv',
+        f'{TEST_SERVER_URL}/edit_conv',
         params={'id': conv_id, 'element': 'name', 'value': 'New Name'}
     )
 
     assert response.status_code == 200
 
     # Verify change
-    convs = session.post(f'{TEST_SERVER_URL}/getUserConvs').json()
+    convs = session.post(f'{TEST_SERVER_URL}/get_user_convs').json()
     conv = next(c for c in convs if c['id'] == conv_id)
     assert conv['name'] == 'New Name'
 
@@ -509,12 +506,9 @@ def test_edit_conversation(session):
 @with_test_user("conv_content")
 def test_get_conversation_content(session):
     """Test retrieving conversation content."""
-    conv_id = int(session.post(
-        f'{TEST_SERVER_URL}/createConv',
-        params={'name': 'Content Test', 'members': json.dumps([]), 'private': 'true'}
-    ).text.strip('"'))
+    conv_id = XXX_PLACEHOLDER
 
-    response = session.get(f'{TEST_SERVER_URL}/getConvContent', params={'convId': conv_id})
+    response = session.get(f'{TEST_SERVER_URL}/get_conv_content', params={'convId': conv_id})
     assert response.status_code == 200
 
     content = response.json()
@@ -529,7 +523,7 @@ def test_get_conversation_content(session):
 def test_create_api_key(session):
     """Test creating an API key."""
     response = session.post(
-        f'{TEST_SERVER_URL}/createApiKey',
+        f'{TEST_SERVER_URL}/create_api_key',
         json={'name': 'Test API Key', 'permissions': []}
     )
 
@@ -538,7 +532,7 @@ def test_create_api_key(session):
     assert 'id' in api_key_data and 'key' in api_key_data and 'name' in api_key_data
 
     # Verify key exists
-    keys = session.get(f'{TEST_SERVER_URL}/getUserApiKeys').json()
+    keys = session.get(f'{TEST_SERVER_URL}/get_user_api_keys').json()
     assert any(k['id'] == api_key_data['id'] for k in keys)
 
     return (f"API key created with ID {api_key_data['id']}", True)
@@ -548,10 +542,10 @@ def test_create_api_key(session):
 def test_get_user_api_keys(session):
     """Test retrieving user's API keys."""
     # Create 2 keys
-    session.post(f'{TEST_SERVER_URL}/createApiKey', json={'name': 'Key 1', 'permissions': []})
-    session.post(f'{TEST_SERVER_URL}/createApiKey', json={'name': 'Key 2', 'permissions': []})
+    session.post(f'{TEST_SERVER_URL}/create_api_key', json={'name': 'Key 1', 'permissions': []})
+    session.post(f'{TEST_SERVER_URL}/create_api_key', json={'name': 'Key 2', 'permissions': []})
 
-    response = session.get(f'{TEST_SERVER_URL}/getUserApiKeys')
+    response = session.get(f'{TEST_SERVER_URL}/get_user_api_keys')
     keys = response.json()
 
     assert len(keys) >= 2
@@ -566,15 +560,15 @@ def test_get_user_api_keys(session):
 def test_revoke_api_key(session):
     """Test revoking an API key."""
     key_data = session.post(
-        f'{TEST_SERVER_URL}/createApiKey',
+        f'{TEST_SERVER_URL}/create_api_key',
         json={'name': 'To Revoke', 'permissions': []}
     ).json()
 
-    response = session.post(f'{TEST_SERVER_URL}/revokeApiKey', params={'id': key_data['id']})
+    response = session.post(f'{TEST_SERVER_URL}/revoke_api_key', params={'id': key_data['id']})
     assert response.status_code == 200
 
     # Verify key is gone
-    keys = session.get(f'{TEST_SERVER_URL}/getUserApiKeys').json()
+    keys = session.get(f'{TEST_SERVER_URL}/get_user_api_keys').json()
     assert not any(k['id'] == key_data['id'] for k in keys)
 
     return ("API key revoked", True)
@@ -584,13 +578,13 @@ def test_revoke_api_key(session):
 def test_regenerate_api_key(session):
     """Test regenerating an API key."""
     key_data = session.post(
-        f'{TEST_SERVER_URL}/createApiKey',
+        f'{TEST_SERVER_URL}/create_api_key',
         json={'name': 'To Regenerate', 'permissions': []}
     ).json()
 
     original_key = key_data['key']
 
-    response = session.post(f'{TEST_SERVER_URL}/regenerateApiKey', params={'id': key_data['id']})
+    response = session.post(f'{TEST_SERVER_URL}/regenerate_api_key', params={'id': key_data['id']})
     new_key_data = response.json()
 
     assert new_key_data['key'] != original_key
@@ -613,7 +607,7 @@ def test_get_users_info():
         user2_id = get_user_id(session2)
 
         response = session1.post(
-            f'{TEST_SERVER_URL}/getUsersInfo',
+            f'{TEST_SERVER_URL}/get_users_info',
             params={'users': json.dumps([user1_id, user2_id])}
         )
 
@@ -638,11 +632,11 @@ def test_unauthorized_conversation_access():
             return ("Failed to create users", False)
 
         conv_id = int(session1.post(
-            f'{TEST_SERVER_URL}/createConv',
+            f'{TEST_SERVER_URL}/create_conv',
             params={'name': 'Private', 'members': json.dumps([]), 'private': 'true'}
         ).text.strip('"'))
 
-        response = session2.get(f'{TEST_SERVER_URL}/getConvContent', params={'convId': conv_id})
+        response = session2.get(f'{TEST_SERVER_URL}/get_conv_content', params={'convId': conv_id})
 
         if response.status_code == 200:
             result = response.text
@@ -666,12 +660,12 @@ def test_edit_conversation_forbidden():
             return ("Failed to create users", False)
 
         conv_id = int(session1.post(
-            f'{TEST_SERVER_URL}/createConv',
+            f'{TEST_SERVER_URL}/create_conv',
             params={'name': 'Original', 'members': json.dumps([]), 'private': 'true'}
         ).text.strip('"'))
 
         response = session2.post(
-            f'{TEST_SERVER_URL}/editConv',
+            f'{TEST_SERVER_URL}/edit_conv',
             params={'id': conv_id, 'element': 'name', 'value': 'Hacked'}
         )
 
@@ -693,15 +687,15 @@ def test_revoke_others_api_key():
             return ("Failed to create users", False)
 
         key_data = session1.post(
-            f'{TEST_SERVER_URL}/createApiKey',
+            f'{TEST_SERVER_URL}/create_api_key',
             json={'name': 'Protected Key', 'permissions': []}
         ).json()
 
-        response = session2.post(f'{TEST_SERVER_URL}/revokeApiKey', params={'id': key_data['id']})
+        response = session2.post(f'{TEST_SERVER_URL}/revoke_api_key', params={'id': key_data['id']})
         assert response.status_code in [403, 404]
 
         # Verify key still exists
-        keys = session1.get(f'{TEST_SERVER_URL}/getUserApiKeys').json()
+        keys = session1.get(f'{TEST_SERVER_URL}/get_user_api_keys').json()
         assert any(k['id'] == key_data['id'] for k in keys), "Key should still exist"
 
         return ("Unauthorized revocation prevented", True)
@@ -715,10 +709,10 @@ def test_revoke_others_api_key():
 @with_test_user("server_channels")
 def test_server_has_default_channels(session):
     """Test that new server has default channels."""
-    server_id = int(session.post(f'{TEST_SERVER_URL}/createServer').text.strip('"'))
+    server_id = session.post(f'{TEST_SERVER_URL}/create_server').json()['id']
 
     # Get server details - verify it has categories and channels
-    servers = session.post(f'{TEST_SERVER_URL}/getUserServers').json()
+    servers = session.post(f'{TEST_SERVER_URL}/get_user_servers').json()
     server = next(s for s in servers if s['id'] == server_id)
 
     assert server is not None, "Server should exist"
@@ -738,18 +732,18 @@ def test_multiple_servers_isolation():
             return ("Failed to create users", False)
 
         # User1 creates server
-        server_id1 = int(session1.post(f'{TEST_SERVER_URL}/createServer').text.strip('"'))
+        server_id1 = session1.post(f'{TEST_SERVER_URL}/create_server').json()['id']
 
         # User2 creates server
-        server_id2 = int(session2.post(f'{TEST_SERVER_URL}/createServer').text.strip('"'))
+        server_id2 = session2.post(f'{TEST_SERVER_URL}/create_server').json()['id']
 
         # Verify user1 only sees their server
-        servers1 = session1.post(f'{TEST_SERVER_URL}/getUserServers').json()
+        servers1 = session1.post(f'{TEST_SERVER_URL}/get_user_servers').json()
         assert any(s['id'] == server_id1 for s in servers1)
         assert not any(s['id'] == server_id2 for s in servers1), "Should not see other user's server"
 
         # Verify user2 only sees their server
-        servers2 = session2.post(f'{TEST_SERVER_URL}/getUserServers').json()
+        servers2 = session2.post(f'{TEST_SERVER_URL}/get_user_servers').json()
         assert any(s['id'] == server_id2 for s in servers2)
         assert not any(s['id'] == server_id1 for s in servers2), "Should not see other user's server"
 
@@ -777,14 +771,14 @@ def test_conversation_members_list():
 
         # Create conversation with 3 members
         conv_id = int(session1.post(
-            f'{TEST_SERVER_URL}/createConv',
+            f'{TEST_SERVER_URL}/create_conv',
             params={'name': 'Group', 'members': json.dumps([user2_id, user3_id]), 'private': 'true'}
         ).text.strip('"'))
 
         # Verify all members see the conversation
-        convs1 = session1.post(f'{TEST_SERVER_URL}/getUserConvs').json()
-        convs2 = session2.post(f'{TEST_SERVER_URL}/getUserConvs').json()
-        convs3 = session3.post(f'{TEST_SERVER_URL}/getUserConvs').json()
+        convs1 = session1.post(f'{TEST_SERVER_URL}/get_user_convs').json()
+        convs2 = session2.post(f'{TEST_SERVER_URL}/get_user_convs').json()
+        convs3 = session3.post(f'{TEST_SERVER_URL}/get_user_convs').json()
 
         assert any(c['id'] == conv_id for c in convs1)
         assert any(c['id'] == conv_id for c in convs2)
@@ -806,12 +800,9 @@ def test_conversation_members_list():
 @with_test_user("empty_conv")
 def test_empty_conversation_content(session):
     """Test getting content from empty conversation."""
-    conv_id = int(session.post(
-        f'{TEST_SERVER_URL}/createConv',
-        params={'name': 'Empty', 'members': json.dumps([]), 'private': 'true'}
-    ).text.strip('"'))
+    conv_id = XXX_PLACEHOLDER
 
-    response = session.get(f'{TEST_SERVER_URL}/getConvContent', params={'convId': conv_id})
+    response = session.get(f'{TEST_SERVER_URL}/get_conv_content', params={'convId': conv_id})
     content = response.json()
 
     assert 'messages' in content
@@ -824,18 +815,12 @@ def test_empty_conversation_content(session):
 def test_conversation_privacy(session):
     """Test private vs non-private conversations."""
     # Create private conversation
-    conv_id_private = int(session.post(
-        f'{TEST_SERVER_URL}/createConv',
-        params={'name': 'Private', 'members': json.dumps([]), 'private': 'true'}
-    ).text.strip('"'))
+    conv_id_private = XXX_PLACEHOLDER
 
     # Create non-private conversation
-    conv_id_public = int(session.post(
-        f'{TEST_SERVER_URL}/createConv',
-        params={'name': 'Public', 'members': json.dumps([]), 'private': 'false'}
-    ).text.strip('"'))
+    conv_id_public = XXX_PLACEHOLDER
 
-    convs = session.post(f'{TEST_SERVER_URL}/getUserConvs').json()
+    convs = session.post(f'{TEST_SERVER_URL}/get_user_convs').json()
 
     conv_private = next(c for c in convs if c['id'] == conv_id_private)
     conv_public = next(c for c in convs if c['id'] == conv_id_public)
@@ -852,7 +837,7 @@ def test_conversation_privacy(session):
 @with_test_user("self_info")
 def test_get_user_info_self(session):
     """Test getting own user info."""
-    response = session.post(f'{TEST_SERVER_URL}/getUserInfo')
+    response = session.post(f'{TEST_SERVER_URL}/get_user_info')
     assert response.status_code == 200
 
     user_info = response.json()
@@ -877,7 +862,7 @@ def test_users_info_with_status():
         user2_id = get_user_id(session2)
 
         response = session1.post(
-            f'{TEST_SERVER_URL}/getUsersInfo',
+            f'{TEST_SERVER_URL}/get_users_info',
             params={'users': json.dumps([user1_id, user2_id])}
         )
 
@@ -902,7 +887,7 @@ def test_api_key_name_validation(session):
     # Create key with long name
     long_name = "A" * MAX_NAME_LENGTH_SHORT
     response = session.post(
-        f'{TEST_SERVER_URL}/createApiKey',
+        f'{TEST_SERVER_URL}/create_api_key',
         json={'name': long_name, 'permissions': []}
     )
 
@@ -922,7 +907,7 @@ def test_multiple_api_keys(session):
     created_keys = []
     for i in range(MAX_API_KEYS_TEST):
         response = session.post(
-            f'{TEST_SERVER_URL}/createApiKey',
+            f'{TEST_SERVER_URL}/create_api_key',
             json={'name': f'Key {i}', 'permissions': []}
         )
         if response.status_code == 200:
@@ -932,7 +917,7 @@ def test_multiple_api_keys(session):
         f"Expected at least 3 keys created, got {len(created_keys)}/{MAX_API_KEYS_TEST}"
 
     # Verify all keys exist
-    keys = session.get(f'{TEST_SERVER_URL}/getUserApiKeys').json()
+    keys = session.get(f'{TEST_SERVER_URL}/get_user_api_keys').json()
     assert len(keys) >= len(created_keys), \
         f"Expected at least {len(created_keys)} keys in list, got {len(keys)}"
 
@@ -944,7 +929,7 @@ def test_regenerate_multiple_times(session):
     """Test regenerating same API key multiple times."""
     # Create key
     key_data = session.post(
-        f'{TEST_SERVER_URL}/createApiKey',
+        f'{TEST_SERVER_URL}/create_api_key',
         json={'name': 'Multi Regen', 'permissions': []}
     ).json()
 
@@ -953,7 +938,7 @@ def test_regenerate_multiple_times(session):
 
     # Regenerate multiple times
     for i in range(REGEN_ITERATIONS):
-        response = session.post(f'{TEST_SERVER_URL}/regenerateApiKey', params={'id': key_id})
+        response = session.post(f'{TEST_SERVER_URL}/regenerate_api_key', params={'id': key_id})
         new_key = response.json()['key']
 
         # Verify new key is different from all previous
@@ -970,15 +955,12 @@ def test_regenerate_multiple_times(session):
 @with_test_user("edit_validation")
 def test_edit_conversation_name_validation(session):
     """Test conversation name edit with various inputs."""
-    conv_id = int(session.post(
-        f'{TEST_SERVER_URL}/createConv',
-        params={'name': 'Original', 'members': json.dumps([]), 'private': 'true'}
-    ).text.strip('"'))
+    conv_id = XXX_PLACEHOLDER
 
     # Test with long name
     long_name = "A" * MAX_NAME_LENGTH_LONG
     response = session.post(
-        f'{TEST_SERVER_URL}/editConv',
+        f'{TEST_SERVER_URL}/edit_conv',
         params={'id': conv_id, 'element': 'name', 'value': long_name}
     )
 
@@ -999,7 +981,7 @@ def test_concurrent_conversation_edits(sessions):
 
     # Create shared conversation
     conv_id = int(session1.post(
-        f'{TEST_SERVER_URL}/createConv',
+        f'{TEST_SERVER_URL}/create_conv',
         params={'name': 'Shared', 'members': json.dumps([user2_id]), 'private': 'true'}
     ).text.strip('"'))
 
@@ -1008,13 +990,13 @@ def test_concurrent_conversation_edits(sessions):
     # Execute edits TRULY CONCURRENTLY using threads
     def edit1():
         return session1.post(
-            f'{TEST_SERVER_URL}/editConv',
+            f'{TEST_SERVER_URL}/edit_conv',
             params={'id': conv_id, 'element': 'name', 'value': 'Name from User1'}
         )
 
     def edit2():
         return session2.post(
-            f'{TEST_SERVER_URL}/editConv',
+            f'{TEST_SERVER_URL}/edit_conv',
             params={'id': conv_id, 'element': 'name', 'value': 'Name from User2'}
         )
 
@@ -1026,7 +1008,7 @@ def test_concurrent_conversation_edits(sessions):
     assert response2.status_code == 200, f"User2 edit failed: {response2.status_code}"
 
     # Verify final state exists and is valid
-    convs = session1.post(f'{TEST_SERVER_URL}/getUserConvs').json()
+    convs = session1.post(f'{TEST_SERVER_URL}/get_user_convs').json()
     conv = next(c for c in convs if c['id'] == conv_id)
     assert 'name' in conv, "Conversation should have a name"
     assert conv['name'] in ['Name from User1', 'Name from User2'], \
@@ -1048,17 +1030,17 @@ def test_create_many_conversations():
         created = []
         for i in range(STRESS_TEST_CONVERSATIONS):
             response = session.post(
-                f'{TEST_SERVER_URL}/createConv',
+                f'{TEST_SERVER_URL}/create_conv',
                 params={'name': f'Conv {i}', 'members': json.dumps([]), 'private': 'true'}
             )
             if response.status_code == 200:
-                created.append(int(response.text.strip('"')))
+                created.append(response.json()['id'])
 
         assert len(created) >= 5, \
             f"Expected at least 5 conversations, got {len(created)}/{STRESS_TEST_CONVERSATIONS}"
 
         # Verify all exist
-        convs = session.post(f'{TEST_SERVER_URL}/getUserConvs').json()
+        convs = session.post(f'{TEST_SERVER_URL}/get_user_convs').json()
         assert len(convs) >= len(created), \
             f"Expected at least {len(created)} conversations in list, got {len(convs)}"
 
@@ -1080,12 +1062,12 @@ def test_get_large_conversation_list():
         # Create several conversations
         for i in range(LARGE_LIST_CONVERSATIONS):
             session.post(
-                f'{TEST_SERVER_URL}/createConv',
+                f'{TEST_SERVER_URL}/create_conv',
                 params={'name': f'Large {i}', 'members': json.dumps([]), 'private': 'true'}
             )
 
         # Get all conversations
-        response = session.post(f'{TEST_SERVER_URL}/getUserConvs')
+        response = session.post(f'{TEST_SERVER_URL}/get_user_convs')
         assert response.status_code == 200, f"Failed to get conversations: {response.status_code}"
 
         convs = response.json()
@@ -1118,7 +1100,7 @@ def test_conversation_with_nonexistent_member():
         # Try to create conversation with fake user ID
         fake_user_id = 999999999
         response = session.post(
-            f'{TEST_SERVER_URL}/createConv',
+            f'{TEST_SERVER_URL}/create_conv',
             params={'name': 'Invalid', 'members': json.dumps([fake_user_id]), 'private': 'true'}
         )
 
@@ -1139,13 +1121,13 @@ def test_empty_conversation_name():
             return ("Failed to create user", False)
 
         response = session.post(
-            f'{TEST_SERVER_URL}/createConv',
+            f'{TEST_SERVER_URL}/create_conv',
             params={'name': '', 'members': json.dumps([]), 'private': 'true'}
         )
 
         # Should handle empty name
         if response.status_code == 200:
-            conv_id = int(response.text.strip('"'))
+            conv_id = response.json()['id']
             assert conv_id > 0
             return ("Empty name handled (conversation created)", True)
         else:
@@ -1166,7 +1148,7 @@ def test_special_characters_in_names():
 
         # Test conversation name
         response = session.post(
-            f'{TEST_SERVER_URL}/createConv',
+            f'{TEST_SERVER_URL}/create_conv',
             params={'name': special_name, 'members': json.dumps([]), 'private': 'true'}
         )
 
@@ -1174,7 +1156,7 @@ def test_special_characters_in_names():
 
         # Test API key name
         response2 = session.post(
-            f'{TEST_SERVER_URL}/createApiKey',
+            f'{TEST_SERVER_URL}/create_api_key',
             json={'name': special_name, 'permissions': []}
         )
 
@@ -1199,7 +1181,7 @@ def test_default_status_online():
 
         # Get user info with status
         response = session.post(
-            f'{TEST_SERVER_URL}/getUsersInfo',
+            f'{TEST_SERVER_URL}/get_users_info',
             params={'users': json.dumps([user_id])}
         )
 
@@ -1236,7 +1218,7 @@ def test_set_custom_status():
         }
 
         response = session.post(
-            f'{TEST_SERVER_URL}/editUser',
+            f'{TEST_SERVER_URL}/edit_user',
             params={
                 'element': 'status',
                 'value': json.dumps(custom_status)
@@ -1247,7 +1229,7 @@ def test_set_custom_status():
 
         # Verify status was set
         users = session.post(
-            f'{TEST_SERVER_URL}/getUsersInfo',
+            f'{TEST_SERVER_URL}/get_users_info',
             params={'users': json.dumps([user_id])}
         ).json()
 
@@ -1279,7 +1261,7 @@ def test_set_do_not_disturb_status():
         }
 
         response = session.post(
-            f'{TEST_SERVER_URL}/editUser',
+            f'{TEST_SERVER_URL}/edit_user',
             params={
                 'element': 'status',
                 'value': json.dumps(dnd_status)
@@ -1290,7 +1272,7 @@ def test_set_do_not_disturb_status():
 
         # Verify DND status
         users = session.post(
-            f'{TEST_SERVER_URL}/getUsersInfo',
+            f'{TEST_SERVER_URL}/get_users_info',
             params={'users': json.dumps([user_id])}
         ).json()
 
@@ -1322,7 +1304,7 @@ def test_set_idle_status():
         }
 
         response = session.post(
-            f'{TEST_SERVER_URL}/editUser',
+            f'{TEST_SERVER_URL}/edit_user',
             params={
                 'element': 'status',
                 'value': json.dumps(idle_status)
@@ -1333,7 +1315,7 @@ def test_set_idle_status():
 
         # Verify idle status
         users = session.post(
-            f'{TEST_SERVER_URL}/getUsersInfo',
+            f'{TEST_SERVER_URL}/get_users_info',
             params={'users': json.dumps([user_id])}
         ).json()
 
@@ -1365,7 +1347,7 @@ def test_set_invisible_status():
         }
 
         response = session.post(
-            f'{TEST_SERVER_URL}/editUser',
+            f'{TEST_SERVER_URL}/edit_user',
             params={
                 'element': 'status',
                 'value': json.dumps(invisible_status)
@@ -1376,7 +1358,7 @@ def test_set_invisible_status():
 
         # Verify invisible status
         users = session.post(
-            f'{TEST_SERVER_URL}/getUsersInfo',
+            f'{TEST_SERVER_URL}/get_users_info',
             params={'users': json.dumps([user_id])}
         ).json()
 
@@ -1409,7 +1391,7 @@ def test_status_with_emoji():
             }
 
             response = session.post(
-                f'{TEST_SERVER_URL}/editUser',
+                f'{TEST_SERVER_URL}/edit_user',
                 params={
                     'element': 'status',
                     'value': json.dumps(status)
@@ -1421,7 +1403,7 @@ def test_status_with_emoji():
 
             # Verify emoji was set
             users = session.post(
-                f'{TEST_SERVER_URL}/getUsersInfo',
+                f'{TEST_SERVER_URL}/get_users_info',
                 params={'users': json.dumps([user_id])}
             ).json()
 
@@ -1454,7 +1436,7 @@ def test_clear_status():
         }
 
         session.post(
-            f'{TEST_SERVER_URL}/editUser',
+            f'{TEST_SERVER_URL}/edit_user',
             params={'element': 'status', 'value': json.dumps(custom)}
         )
 
@@ -1467,7 +1449,7 @@ def test_clear_status():
         }
 
         response = session.post(
-            f'{TEST_SERVER_URL}/editUser',
+            f'{TEST_SERVER_URL}/edit_user',
             params={'element': 'status', 'value': json.dumps(cleared)}
         )
 
@@ -1475,7 +1457,7 @@ def test_clear_status():
 
         # Verify status was cleared
         users = session.post(
-            f'{TEST_SERVER_URL}/getUsersInfo',
+            f'{TEST_SERVER_URL}/get_users_info',
             params={'users': json.dumps([user_id])}
         ).json()
 
@@ -1505,21 +1487,21 @@ def test_multiple_users_different_statuses():
 
         # Set different statuses
         session1.post(
-            f'{TEST_SERVER_URL}/editUser',
+            f'{TEST_SERVER_URL}/edit_user',
             params={'element': 'status', 'value': json.dumps({
                 "mode": 0, "text": "Online", "emoji": "✅", "expiration": None
             })}
         )
 
         session2.post(
-            f'{TEST_SERVER_URL}/editUser',
+            f'{TEST_SERVER_URL}/edit_user',
             params={'element': 'status', 'value': json.dumps({
                 "mode": 2, "text": "Busy", "emoji": "🔴", "expiration": None
             })}
         )
 
         session3.post(
-            f'{TEST_SERVER_URL}/editUser',
+            f'{TEST_SERVER_URL}/edit_user',
             params={'element': 'status', 'value': json.dumps({
                 "mode": 1, "text": "Away", "emoji": "🌙", "expiration": None
             })}
@@ -1527,7 +1509,7 @@ def test_multiple_users_different_statuses():
 
         # Get all users info
         users = session1.post(
-            f'{TEST_SERVER_URL}/getUsersInfo',
+            f'{TEST_SERVER_URL}/get_users_info',
             params={'users': json.dumps([user1_id, user2_id, user3_id])}
         ).json()
 
@@ -1564,7 +1546,7 @@ def test_status_text_length():
         }
 
         response = session.post(
-            f'{TEST_SERVER_URL}/editUser',
+            f'{TEST_SERVER_URL}/edit_user',
             params={'element': 'status', 'value': json.dumps(long_status)}
         )
 
@@ -1573,7 +1555,7 @@ def test_status_text_length():
 
         if response.status_code == 200:
             users = session.post(
-                f'{TEST_SERVER_URL}/getUsersInfo',
+                f'{TEST_SERVER_URL}/get_users_info',
                 params={'users': json.dumps([user_id])}
             ).json()
 
@@ -1602,7 +1584,7 @@ def test_status_mode_validation():
         }
 
         response = session.post(
-            f'{TEST_SERVER_URL}/editUser',
+            f'{TEST_SERVER_URL}/edit_user',
             params={'element': 'status', 'value': json.dumps(invalid_status)}
         )
 
@@ -1622,7 +1604,7 @@ def test_edit_own_message(session):
     """Test that a user can edit their own message."""
     # Create conversation
     conv_response = session.post(
-        f'{TEST_SERVER_URL}/createConversation',
+        f'{TEST_SERVER_URL}/create_conversation',
         params={'name': 'Edit Test Conv'}
     )
     assert conv_response.status_code == 200
@@ -1636,7 +1618,7 @@ def test_edit_own_message(session):
     # Edit the message
     new_content = 'Edited message'
     response = session.post(
-        f'{TEST_SERVER_URL}/editMessage',
+        f'{TEST_SERVER_URL}/edit_message',
         params={
             'message': msg_id,
             'content': new_content
@@ -1655,7 +1637,7 @@ def test_cannot_edit_others_message(sessions):
 
     # User 1 creates conversation and sends message
     conv_response = session1.post(
-        f'{TEST_SERVER_URL}/createConversation',
+        f'{TEST_SERVER_URL}/create_conversation',
         params={'name': 'Edit Security Test'}
     )
     assert conv_response.status_code == 200
@@ -1667,7 +1649,7 @@ def test_cannot_edit_others_message(sessions):
 
     # User 2 tries to edit user 1's message (should fail)
     response = session2.post(
-        f'{TEST_SERVER_URL}/editMessage',
+        f'{TEST_SERVER_URL}/edit_message',
         params={
             'message': msg_id,
             'content': 'Hacked message'
@@ -1685,7 +1667,7 @@ def test_edit_nonexistent_message(session):
     """Test editing a message that doesn't exist."""
     # Try to edit nonexistent message
     response = session.post(
-        f'{TEST_SERVER_URL}/editMessage',
+        f'{TEST_SERVER_URL}/edit_message',
         params={
             'message': 999999,
             'content': 'Should fail'
@@ -1703,7 +1685,7 @@ def test_edit_empty_content(session):
     """Test editing a message with empty content."""
     # Create conversation
     conv_response = session.post(
-        f'{TEST_SERVER_URL}/createConversation',
+        f'{TEST_SERVER_URL}/create_conversation',
         params={'name': 'Empty Edit Test'}
     )
     assert conv_response.status_code == 200
@@ -1714,7 +1696,7 @@ def test_edit_empty_content(session):
 
     # Try to edit with empty content
     response = session.post(
-        f'{TEST_SERVER_URL}/editMessage',
+        f'{TEST_SERVER_URL}/edit_message',
         params={
             'message': msg_id,
             'content': ''
@@ -1732,7 +1714,7 @@ def test_edit_with_special_characters(session):
     """Test editing a message with special characters."""
     # Create conversation
     conv_response = session.post(
-        f'{TEST_SERVER_URL}/createConversation',
+        f'{TEST_SERVER_URL}/create_conversation',
         params={'name': 'Special Char Test'}
     )
     assert conv_response.status_code == 200
@@ -1744,7 +1726,7 @@ def test_edit_with_special_characters(session):
     # Edit with special characters
     special_content = 'Test <script>alert("xss")</script> & "quotes"'
     response = session.post(
-        f'{TEST_SERVER_URL}/editMessage',
+        f'{TEST_SERVER_URL}/edit_message',
         params={
             'message': msg_id,
             'content': special_content
@@ -1761,7 +1743,7 @@ def test_edit_without_auth():
     try:
         # Try to edit without session/auth
         response = requests.post(
-            f'{TEST_SERVER_URL}/editMessage',
+            f'{TEST_SERVER_URL}/edit_message',
             params={
                 'message': 1,
                 'content': 'Should fail'
@@ -1782,7 +1764,7 @@ def test_multiple_edits_same_message(session):
     """Test editing the same message multiple times."""
     # Create conversation
     conv_response = session.post(
-        f'{TEST_SERVER_URL}/createConversation',
+        f'{TEST_SERVER_URL}/create_conversation',
         params={'name': 'Multiple Edits Test'}
     )
     assert conv_response.status_code == 200
@@ -1794,7 +1776,7 @@ def test_multiple_edits_same_message(session):
     # Edit multiple times
     for i in range(3):
         response = session.post(
-            f'{TEST_SERVER_URL}/editMessage',
+            f'{TEST_SERVER_URL}/edit_message',
             params={
                 'message': msg_id,
                 'content': f'Edit number {i+1}'
