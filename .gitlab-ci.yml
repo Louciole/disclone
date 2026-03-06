@@ -51,8 +51,7 @@ test:
     - vesta nginx setup
     - vesta nginx mime
     - vesta db init
-    - ln -s /etc/nginx/sites-available/mycelium.conf /etc/nginx/sites-enabled/
-    - cat /etc/nginx/sites-available/mycelium.conf
+    - ls /etc/nginx/sites-available/
     - nginx -t
     - service nginx reload
     - vesta test
