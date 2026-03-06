@@ -1,7 +1,7 @@
 import urllib.parse
 from unicodedata import category
 
-import fastwsgi
+import fastpysgi
 from vesta import Server, HTTPError, HTTPRedirect
 import json
 import re
@@ -24,7 +24,7 @@ PATH = dirname(abspath(__file__))
 # Storage quota constants (in bytes)
 USER_STORAGE_QUOTA = 15 * 1024 * 1024 * 1024  # 15 GB
 SERVER_STORAGE_QUOTA = 5 * 1024 * 1024 * 1024  # 5 GB
-fastwsgi.server.max_content_length = 100 * 1024 * 1024  # 100 MB
+fastpysgi.server.max_content_length = 100 * 1024 * 1024  # 100 MB
 
 
 class Mycelium(Server):
