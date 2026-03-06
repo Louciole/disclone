@@ -32,6 +32,7 @@ test:
     - apt-get update && apt-get install -y git && apt-get install -y gcc
     - apt install -y libpq-dev
     - sed -i 's/localhost/postgres/g' /builds/Louciole/disclone/tests/backend/server.ini
+    - sed -i 's/localhost/postgres/g' /builds/Louciole/disclone/tests/calls/server.ini
   script:
     - echo 'Running tests...'
     - python -m venv venv
@@ -45,15 +46,39 @@ test-e2e:
   image: mcr.microsoft.com/playwright:v1.51.1-noble
   services:
     - postgres:16
+
+  variables:
+    POSTGRES_DB: postgres
+    POSTGRES_USER: postgres
+    POSTGRES_PASSWORD: postgres
+    POSTGRES_HOST_AUTH_METHOD: trust
+
   before_script:
-    - apt-get update && apt-get install -y python3 python3-venv python3-pip gcc libpq-dev git postgresql-client
+    - apt-get update && apt-get install -y python3 python3-venv python3-pip gcc libpq-dev git postgresql-client nginx
     - python3 -m venv venv
     - source venv/bin/activate
     - pip install -r requirements.txt
     - vesta install
+    - vesta nginx setup
+    - vesta nginx mime
 
     - npm ci
     - npx playwright install --with-deps chromium
+
+    # Install PostgreSQL client
+    - apt-get update -qq && apt-get install -y -qq postgresql-client
+
+    # Wait for PostgreSQL to be ready
+    - until PGPASSWORD=postgres psql -h postgres -U postgres -c '\q'; do echo "Waiting for postgres..."; sleep 2; done
+
+    # Create test database and user
+    - PGPASSWORD=postgres psql -h postgres -U postgres -c "CREATE USER disclone_test WITH PASSWORD 'disclone1';" || echo "User already exists"
+    - PGPASSWORD=postgres psql -h postgres -U postgres -c "CREATE DATABASE mycelium OWNER disclone_test;" || echo "Database might already exist"
+    - PGPASSWORD=postgres psql -h postgres -U postgres -c "CREATE DATABASE uniauth OWNER disclone_test;" || echo "Database might already exist"
+
+    - apt-get update && apt-get install -y git && apt-get install -y gcc
+    - apt install -y libpq-dev
+    - sed -i 's/localhost/postgres/g' /builds/Louciole/disclone/server.ini
   script:
     - source venv/bin/activate
     - python server.py &
