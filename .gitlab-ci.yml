@@ -20,7 +20,7 @@ test:
   before_script:
     # Install PostgreSQL client
     - apt-get update -qq && apt-get install -y -qq postgresql-client
-    - apt-get install -y nginx
+    - apt-get install -y nginx && apt-get install -y nodejs
 
     # Wait for PostgreSQL to be ready
     - until PGPASSWORD=postgres psql -h postgres -U postgres -c '\q'; do echo "Waiting for postgres..."; sleep 2; done
