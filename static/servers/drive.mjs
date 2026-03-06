@@ -17,6 +17,10 @@ function goToDriveChannel(id){
     const drive = lookFor(id, global.state.currentServer.dirs.drives)
     global.convs[id] = {id: id, name: drive ? drive.name : "Salon de stockage", type: "drive"}
 
+    if (global.state.isMobile) {
+        mobileDisplayContent()
+    }
+
     targetElt = document.getElementById("channel".concat(global.state.activeChan.slug))
     targetElt.classList.add("selected")
 

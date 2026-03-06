@@ -1,5 +1,6 @@
 <div class="selected-info">
     <div class="title">
+        ${global.state.isMobile?'<img class="icon" src="/static/icons/material/back.svg" onclick="mobileHideContent()" style="margin-right: 0.6rem"/>':''}
         <img class="icon" src="/static/icons/material/note.svg"/>
         ${Subscribe("global.notes[global.state.activeChan.id].name", ()=>{return global.notes[global.state.activeChan.id].name})}
     </div>

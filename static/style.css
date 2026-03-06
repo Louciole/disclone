@@ -3547,6 +3547,7 @@ img[src="/static/attachments/null"]{
 
 .mobile #content{
     display: none;
+    width: 100vw;
 }
 
 .mobile #sec-column{
@@ -5877,11 +5878,11 @@ span.progress-bar {
     cursor: pointer;
 }
 
-/* Poll voters modal */
 .poll-voters-count {
     color: var(--text2);
     font-size: 0.85rem;
     margin-bottom: 0.6rem;
+    border-bottom: solid 1px var(--text2bis);
 }
 
 .poll-voters-content {
@@ -5926,6 +5927,7 @@ span.progress-bar {
     flex-direction: column;
     gap: 0.4rem;
     max-height: 20rem;
+    border-left: solid 1px var(--text2bis);
 }
 
 .poll-voter-item {

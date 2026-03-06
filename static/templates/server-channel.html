@@ -1,6 +1,7 @@
 <div class="neutral" ondragover="event.preventDefault();event.currentTarget.classList.add('dragging')">
     <div class="selected-info">
         <div class="title">
+            ${global.state.isMobile?'<img class="icon" src="/static/icons/material/back.svg" onclick="mobileHideContent()" style="margin-right: 0.6rem"/>':''}
             <img class="icon" src="/static/icons/material/hashtag.svg"/>
             ${Subscribe("global.convs["+global.state.activeConv+"].name", ()=>{return global.convs[global.state.activeConv].name})}
         </div>

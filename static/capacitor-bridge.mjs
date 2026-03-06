@@ -75,7 +75,6 @@ document.addEventListener('click', (e) => {
 export async function setBadge(count) {
   if (!isNative) return;
   try {
-    // Try native badge via setApplicationIconBadgeNumber (iOS) / shortcut badge (Android)
     if (window.Capacitor?.Plugins?.Badge) {
       await window.Capacitor.Plugins.Badge.set({ count });
     }
@@ -242,8 +241,8 @@ async function registerNotificationActions() {
       {
         id: 'CALL_ACTION',
         actions: [
-          { id: 'answer', title: '✅ Answer' },
-          { id: 'decline', title: '❌ Decline', destructive: true },
+          { id: 'answer', title: 'Answer' },
+          { id: 'decline', title: 'Decline', destructive: true },
         ],
       },
     ],
@@ -369,6 +368,13 @@ async function setupStatusBar() {
 function injectSystemBars() {
   if (document.getElementById('cap-system-bars')) return;
 
+  // Safety net: ensure viewport-fit=cover is set so env(safe-area-inset-*)
+  // returns real values. Without this the bars would have height 0.
+  const vmeta = document.querySelector('meta[name="viewport"]');
+  if (vmeta && !vmeta.content.includes('viewport-fit')) {
+    vmeta.content += ',viewport-fit=cover';
+  }
+
   const style = document.createElement('style');
   style.id = 'cap-system-bars';
   style.textContent = `
@@ -399,9 +405,41 @@ function injectSystemBars() {
   const bottom = document.createElement('div');
   bottom.id = 'cap-bottom-bar';
 
-  // Insert as first children of body so they render on every page
   document.body.prepend(bottom);
   document.body.prepend(top);
+
+  const body = document.querySelector("body")
+  body.style.boxSizing = "border-box"
+  body.style.paddingTop = `env(safe-area-inset-top, 24px)`
+  body.style.paddingBottom = `env(safe-area-inset-bottom, 16px)`
+
+
+  // JS fallback: env() requires a layout pass to resolve.
+  // After paint, check if the computed height is still 0 on Android
+  // and force sensible pixel values (status bar ~24dp, gesture bar ~16dp at mdpi).
+  if (window.Capacitor?.getPlatform() === 'android') {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const topH = parseFloat(getComputedStyle(top).height);
+        const botH = parseFloat(getComputedStyle(bottom).height);
+        // If env() didn't resolve, fall back to window.screen density-aware defaults
+        const dpr = window.devicePixelRatio || 1;
+        if (topH === 0) {
+          // ~24dp status bar height
+          top.style.height = Math.round(24 * dpr * 0.5) + 'px';
+        }
+        if (botH === 0) {
+          // ~16dp gesture bar height (only when gesture nav is active)
+          // We can't detect gesture vs button nav reliably in JS, so we use
+          // a small default that looks fine on both
+          bottom.style.height = Math.round(16 * dpr * 0.5) + 'px';
+        }
+
+        body.style.paddingTop = top.style.height
+        body.style.paddingBottom = bottom.style.height
+      });
+    });
+  }
 }
 
 function injectSafeAreaCSS() {

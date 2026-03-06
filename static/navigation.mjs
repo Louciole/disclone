@@ -61,6 +61,10 @@ function goToConv(convId){
         loadCallState(convId);
     }
 
+    if (global.state.isMobile) {
+        mobileDisplayContent()
+    }
+
     targetElt = document.getElementById("conv".concat(convId))
     targetElt.classList.add("selected")
 
@@ -82,6 +86,28 @@ function goToConv(convId){
 }
 window.goToConv = goToConv
 
+function mobileDisplayContent(){
+    const content = document.getElementById('content')
+    const secColumn = document.getElementById('sec-column')
+    const maincolumn = document.getElementById('main-selector')
+
+    content.style.display="flex"
+    secColumn.style.display="none"
+    maincolumn.style.display="none"
+}
+window.mobileDisplayContent = mobileDisplayContent
+
+function mobileHideContent(){
+    const content = document.getElementById('content')
+    const secColumn = document.getElementById('sec-column')
+    const maincolumn = document.getElementById('main-selector')
+
+    content.style.display="none"
+    secColumn.style.display="flex"
+    maincolumn.style.display="flex"
+}
+window.mobileHideContent = mobileHideContent
+
 function goToChannel(id){
     let targetElt
     if(global.state.activeChan){
@@ -92,6 +118,10 @@ function goToChannel(id){
     global.state.activeConv = id
     global.state.activeChan = {id:id, slug:"-conv-"+id, type:"conv"}
     loadChan(id)
+
+    if (global.state.isMobile) {
+        mobileDisplayContent()
+    }
 
     targetElt = document.getElementById("channel".concat(global.state.activeChan.slug))
     targetElt.classList.add("selected")
@@ -113,6 +143,10 @@ function goToVocalChannel(id){
     const room = lookFor(id, global.state.currentServer.dirs.vocals)
     global.convs[id] = {id: id, name: room ? room.name : "Note Channel", type: "note"}
 
+    if (global.state.isMobile) {
+        mobileDisplayContent()
+    }
+
     targetElt = document.getElementById("channel".concat(global.state.activeChan.slug))
     targetElt.classList.add("selected")
 
@@ -132,6 +166,10 @@ function goToNoteChannel(id){
     if (!global.convs) global.convs = {}
     loadNote(id)
 
+    if (global.state.isMobile) {
+        mobileDisplayContent()
+    }
+
     targetElt = document.getElementById("channel".concat(global.state.activeChan.slug))
     targetElt.classList.add("selected")
 
@@ -148,6 +186,10 @@ function goToFriends(event){
 
     global.state.activeConv = undefined
     event.currentTarget.classList.add("selected")
+
+    if (global.state.isMobile) {
+        mobileDisplayContent()
+    }
 
     goTo('content',"friends",undefined,false)
     goTo('friends-block','main-friend')

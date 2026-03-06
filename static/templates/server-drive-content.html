@@ -1,5 +1,6 @@
 <div class="selected-info">
     <div class="title">
+        ${global.state.isMobile?'<img class="icon" src="/static/icons/material/back.svg" onclick="mobileHideContent()" style="margin-right: 0.6rem"/>':''}
         <img class="icon" src="/static/icons/material/folder.svg" style="margin-right: 0.5rem;">
         ${Subscribe("global.convs["+global.state.activeConv+"].name", ()=>{return global.convs[global.state.activeConv].name})}
     </div>
