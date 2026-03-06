@@ -56,9 +56,8 @@ test:
     - service nginx reload
     - vesta test
     - python server.py &
-    - sleep 3
     - npx playwright test --config tests/playwright.config.mjs
-
+    - wait
 
 build-apk:
   stage: build
