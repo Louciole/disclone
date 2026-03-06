@@ -53,7 +53,7 @@ test:
     - vesta db init
     - ls /etc/nginx/sites-available/
     - nginx -t
-    - service nginx reload
+    - service nginx restart
     - vesta test
     - python server.py &
     - npx playwright test --config tests/playwright.config.mjs
