@@ -27,6 +27,7 @@ test:
 
     # Create test database and user
     - PGPASSWORD=postgres psql -h postgres -U postgres -c "CREATE USER disclone_test WITH PASSWORD 'disclone1';" || echo "User already exists"
+    - PGPASSWORD=postgres psql -h postgres -U postgres -c "ALTER USER disclone_test WITH SUPERUSER;" || echo "User might already be a superuser"
     - PGPASSWORD=postgres psql -h postgres -U postgres -c "CREATE DATABASE mycelium OWNER disclone_test;" || echo "Database might already exist"
     - PGPASSWORD=postgres psql -h postgres -U postgres -c "CREATE DATABASE uniauth OWNER disclone_test;" || echo "Database might already exist"
 
