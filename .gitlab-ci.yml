@@ -20,8 +20,7 @@ test:
   before_script:
     # Install PostgreSQL client
     - apt-get update -qq && apt-get install -y -qq postgresql-client
-    - apt-get install -y nginx && apt-get install -y nodejs npm
-    - echo 'exec "$@"' > /usr/bin/sudo && chmod +x /usr/bin/sudo # Create a fake sudo command to avoid issues with scripts that expect it
+    - apt-get install -y nginx && apt-get install -y nodejs npm sudo
 
     # Wait for PostgreSQL to be ready
     - until PGPASSWORD=postgres psql -h postgres -U postgres -c '\q'; do echo "Waiting for postgres..."; sleep 2; done
