@@ -52,6 +52,8 @@ test:
     - vesta nginx mime
     - vesta db init
     - ln -s /etc/nginx/sites-available/mycelium.conf /etc/nginx/sites-enabled/
+    - cat /etc/nginx/sites-available/mycelium.conf
+    - nginx -t
     - service nginx reload
     - vesta test
     - python server.py &
