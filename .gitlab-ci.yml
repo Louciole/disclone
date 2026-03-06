@@ -5,23 +5,11 @@ stages:
 
 test:
   stage: test
-  image: python:3.11-slim-bookworm
+  image: python:3.12-slim-bookworm
 
   services:
     - name: postgres:16
       alias: postgres
-
-  variables:
-    POSTGRES_DB: postgres
-    POSTGRES_USER: postgres
-    POSTGRES_PASSWORD: postgres
-    POSTGRES_HOST_AUTH_METHOD: trust
-    # Variables for test database connection
-    DB_HOST: postgres
-    DB_USER: test_user
-    DB_PASSWORD: test_password
-    DB_NAME: test_vesta_db
-    DB_PORT: "5432"
 
   before_script:
     # Install PostgreSQL client
@@ -33,11 +21,13 @@ test:
     # Create test database and user
     - PGPASSWORD=postgres psql -h postgres -U postgres -c "CREATE USER disclone_test WITH PASSWORD 'disclone1';" || echo "User already exists"
     - PGPASSWORD=postgres psql -h postgres -U postgres -c "CREATE DATABASE mycelium OWNER disclone_test;" || echo "Database might already exist"
+    - PGPASSWORD=postgres psql -h postgres -U postgres -c "CREATE DATABASE uniauth OWNER disclone_test;" || echo "Database might already exist"
 
-  script:
-    - echo 'Running tests...'
     - apt-get update && apt-get install -y git && apt-get install -y gcc
     - apt install -y libpq-dev
+    - sed -i 's/localhost/postgres/g' /builds/Louciole/disclone/tests/backend/server.ini
+  script:
+    - echo 'Running tests...'
     - python -m venv venv
     - source venv/bin/activate
     - pip install -r requirements.txt
