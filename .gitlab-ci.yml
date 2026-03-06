@@ -11,6 +11,12 @@ test:
     - name: postgres:16
       alias: postgres
 
+  variables:
+    POSTGRES_DB: postgres
+    POSTGRES_USER: postgres
+    POSTGRES_PASSWORD: postgres
+    POSTGRES_HOST_AUTH_METHOD: trust
+
   before_script:
     # Install PostgreSQL client
     - apt-get update -qq && apt-get install -y -qq postgresql-client
