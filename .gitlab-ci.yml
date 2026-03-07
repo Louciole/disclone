@@ -2,6 +2,7 @@ stages:
   - test
   - test-e2e
   - build
+  - deploy
 
 test:
   stage: test
