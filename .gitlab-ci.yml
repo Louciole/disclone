@@ -59,6 +59,14 @@ test:
     - npx playwright test --config tests/playwright.config.mjs
     - wait
 
+  artifacts:
+    name: "test-results"
+    paths:
+      - tests/test-results.xml
+      - tests/playwright-report/
+    expire_in: 1 week
+
+
 build-apk:
   stage: build
   image: mingc/android-build-box:latest
