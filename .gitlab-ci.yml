@@ -34,9 +34,9 @@ test:
 
     - apt-get update && apt-get install -y git && apt-get install -y gcc
     - apt install -y libpq-dev
-    - sed -i 's/localhost/postgres/g' /builds/Louciole/disclone/tests/backend/server.ini
-    - sed -i 's/localhost/postgres/g' /builds/Louciole/disclone/tests/calls/server.ini
-    - sed -i 's/localhost/postgres/g' /builds/Louciole/disclone/server.ini
+    - sed -i 's/DB_HOST = localhost/DB_HOST = postgres/g' server.ini
+    - sed -i 's/DB_HOST = localhost/DB_HOST = postgres/g' tests/backend/server.ini
+    - sed -i 's/DB_HOST = localhost/DB_HOST = postgres/g' tests/calls/server.ini
 
     # Install Playwright dependencies and browsers
     - npm ci
@@ -58,13 +58,6 @@ test:
     - python server.py &
     - npx playwright test --config tests/playwright.config.mjs
     - wait
-
-  artifacts:
-    name: "test-results"
-    paths:
-      - tests/test-results.xml
-      - tests/playwright-report/
-    expire_in: 1 week
 
 
 build-apk:
@@ -105,3 +98,39 @@ build-apk:
     paths:
       - mycelium-release.apk
     expire_in: 2 week
+
+
+publish-play-store:
+  stage: deploy
+  image: mingc/android-build-box:latest
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "release"' # Déclenchement sur la branche release
+
+  variables:
+    GRADLE_USER_HOME: "$CI_PROJECT_DIR/.gradle"
+
+  before_script:
+    # Installation de Fastlane
+    - apt-get update -qq
+    - apt-get install -y ruby-full build-essential
+    - gem install fastlane
+
+  script:
+    - cd capacitor-app
+    - npm install
+    - npx cap sync android
+    - cd android
+
+    - echo "$SUPPLY_JSON_KEY_DATA" > play-store-key.json
+
+    - chmod +x gradlew
+    - ./gradlew bundleRelease \
+      -Pandroid.injected.signing.store.file="$CI_PROJECT_DIR/capacitor-app/android/app/mycelium.keystore" \
+      -Pandroid.injected.signing.store.password="$ANDROID_KEY_PASSWORD" \
+      -Pandroid.injected.signing.key.alias="$ANDROID_KEY_ALIAS" \
+      -Pandroid.injected.signing.key.password="$ANDROID_KEY_PASSWORD"
+
+    - fastlane supply --aab app/build/outputs/bundle/release/app-release.aab \
+      --json_key play-store-key.json \
+      --package_name "dev.carbonlab.mycelium.app" \
+      --track "internal"
