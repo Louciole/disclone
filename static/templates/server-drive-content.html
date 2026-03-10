@@ -20,16 +20,39 @@
             ${Subscribe('global.driveCurrentFolder['.concat(global.state.activeChan.id,']'), ()=>{
                 const currentFolder = global.driveCurrentFolder[global.state.activeChan.id];
                 if (currentFolder && currentFolder.length > 0) {
-                    return `<div class="icon-wrapper" onclick="navigateDriveFolderUp()">
-                        <img class="icon" src="/static/icons/material/reply.svg"/>
-                        <span class="tooltip bottom">${_t("Go back")}</span>
-                    </div>
-                    <span style="margin-left: 0.5rem;">${_t("Current folder")}: ${currentFolder[currentFolder.length - 1].name}</span>`;
+                    let breadcrumb = `<div class="drive-breadcrumb-item"
+                        ondragover="onDriveRootDragOver(event)"
+                        ondragleave="onDriveRootDragLeave(event)"
+                        ondrop="onDriveBreadcrumbDrop(event, null)">
+                        <div class="icon-wrapper" onclick="navigateDriveFolderUp()">
+                            <img class="icon" src="/static/icons/material/reply.svg"/>
+                            <span class="tooltip bottom">${_t("Go back")}</span>
+                        </div>
+                    </div>`;
+                    // Show the full folder path as breadcrumb items (each is a drop target)
+                    for (let i = 0; i < currentFolder.length; i++) {
+                        const f = currentFolder[i];
+                        const isLast = i === currentFolder.length - 1;
+                        if (isLast) {
+                            breadcrumb += `<span class="drive-breadcrumb-sep">/</span>
+                                <span class="drive-breadcrumb-current">${f.name}</span>`;
+                        } else {
+                            breadcrumb += `<span class="drive-breadcrumb-sep">/</span>
+                                <span class="drive-breadcrumb-item"
+                                    ondragover="onDriveRootDragOver(event)"
+                                    ondragleave="onDriveRootDragLeave(event)"
+                                    ondrop="onDriveBreadcrumbDrop(event, ${f.id})"
+                                    style="cursor:pointer;">${f.name}</span>`;
+                        }
+                    }
+                    return breadcrumb;
                 }
                 return '<h3>' + _t("Files and folders") + '</h3>';
             })}
         </div>
-        <div id="drive-files-list" class="" style="flex: 1; overflow-y: auto;">
+        <div id="drive-files-list" class=""
+             style="flex: 1; overflow-y: auto;"
+             onclick="if(event.target === this || event.target.id === 'drive-files-list') clearDriveSelection()">
             ${Subscribe('global.driveFolders['.concat(global.state.activeChan.id,']'), ()=>{
                 const folders = global.driveFolders[global.state.activeChan.id] || [];
                 const files = global.driveFiles[global.state.activeChan.id] || [];

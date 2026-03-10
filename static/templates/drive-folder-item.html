@@ -1,4 +1,11 @@
-<div class="drive-folder-item" data-folder-id="${element.id}" ondblclick="openDriveFolder(${element.id})">
+<div class="drive-folder-item" data-folder-id="${element.id}"
+     draggable="true"
+     ondragstart="onDriveItemDrag(event, 'folder', ${element.id})"
+     ondragover="onDriveFolderDragOver(event)"
+     ondragleave="onDriveFolderDragLeave(event)"
+     ondrop="onDriveFolderDrop(event, ${element.id})"
+     ondblclick="openDriveFolder(${element.id})"
+     onclick="toggleDriveSelection('folder', ${element.id}, event)">
     <div class="file-icon">
         <img class="icon" src="/static/icons/material/folder.svg" alt="folder"/>
     </div>

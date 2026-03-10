@@ -17,6 +17,7 @@ import websockets
 
 from os.path import abspath, dirname
 from callManager import CallManager
+from driveManager import DriveManager
 
 B62 = string.digits + string.ascii_letters
 PATH = dirname(abspath(__file__))
@@ -36,6 +37,7 @@ class Mycelium(Server):
     def __init__(self, *args, **kwargs):
         super().__init__(path=PATH, configFile="/server.ini", noStart=True)
         self.callManager = CallManager(self.db)
+        self.drive = DriveManager(self)
         self._refreshAdminCache()  # Initialize admin cache
         self.start()
 
@@ -846,432 +848,54 @@ class Mycelium(Server):
 
     @Server.expose
     def uploadDriveOnBehalf(self, API_KEY, email, filename, file):
-        key = self.db.getSomething("api_key", API_KEY, "key")
-        if not key:
-            raise HTTPError(self.response, 403, "forbidden")
-
-        key_user = self.db.getSomething("mycelium_account", key["owner"])
-        if not key_user or not self.isAdmin(key_user["id"]):
-            raise HTTPError(self.response, 403, "forbidden")
-
-        user = self.uniauth.getUserCredentials(email)
-        if not user:
-            user =  self.uniauth.getSomething("additional_mail", email, "email")
-            if not user:
-                raise HTTPError(self.response, 403, "forbidden")
-            uid = user["account"]
-        else:
-            uid = user["id"]
-
-        print("Uploading file on behalf of user", uid, filename)
-        personal_server = self.db.getSomething("personal_server", uid, "owner")
-        if not personal_server:
-            raise HTTPError(self.response, 403, "no personal server found")
-
-        first_drive = self.db.getFilters("drive_channel", ["server", "=", personal_server["server"], "order by place asc limit 1"])
-        if not first_drive or first_drive == []:
-            raise HTTPError(self.response, 403, "no drive channel found")
-
-        # Upload the file to the first drive channel
-        self.uploadDrive(uid, first_drive[0]["id"], (filename, file))
+        return self.drive.upload_on_behalf(API_KEY, email, filename, file)
 
     @Server.expose
     def upload_drive_file(self, drive_id, filename, file, parent_folder=None):
-        """
-        Upload a file to a drive channel (authenticated user endpoint).
-
-        Args:
-            drive_id: ID of the drive channel
-            filename: Name of the file
-            file: Base64 encoded file content (with or without data URI prefix)
-            parent_folder: Optional ID of parent folder
-
-        Returns:
-            JSON with file_id
-        """
-        uid = self.getUser()
-
-        # Verify access to the drive channel
-        drive = self.db.getSomething("drive_channel", drive_id)
-        if not drive:
-            raise HTTPError(self.response, 404, "Drive channel not found")
-
-        # Check if user has access to the server
-        access = self.db.getFilters("accessserver", ["account", "=", uid, "and", "server", "=", drive["server"]])
-        if not access:
-            raise HTTPError(self.response, 403, "No access to this drive")
-
-        # Check channel-level access for private drives
-        if drive.get("is_private") and not self.checkChannelAccess(uid, drive_id, "drive", "send-messages"):
-            raise HTTPError(self.response, 403, "No permission for this drive channel")
-
-        # If parent_folder is specified, verify it exists and belongs to the same drive
-        if parent_folder and parent_folder != "null":
-            parent_folder = int(parent_folder)
-            parent = self.db.getSomething("drive_folder", parent_folder)
-            if not parent or parent["drive_channel"] != int(drive_id):
-                raise HTTPError(self.response, 404, "Parent folder not found or doesn't belong to this drive")
-        else:
-            parent_folder = None
-
-        # Upload the file
-        file_id = self.uploadDrive(uid, drive_id, (filename, file), parent_folder)
-        return json.dumps({"file_id": file_id, "filename": filename})
+        return self.drive.upload_file(drive_id, filename, file, parent_folder)
 
     @Server.expose
     def get_drive_files(self, drive_id, parent_folder=None):
-        """
-        Get all files in a drive channel (or within a parent folder).
+        return self.drive.get_files(drive_id, parent_folder)
 
-        Args:
-            drive_id: ID of the drive channel
-            parent_folder: Optional ID of parent folder (None for root level)
-
-        Returns:
-            JSON list of files with metadata
-        """
-        uid = self.getUser()
-
-        # Verify access to the drive channel
-        drive = self.db.getSomething("drive_channel", drive_id)
-        if not drive:
-            raise HTTPError(self.response, 404, "Drive channel not found")
-
-        # Check if user has access to the server
-        access = self.db.getFilters("accessserver", ["account", "=", uid, "and", "server", "=", drive["server"]])
-        if not access:
-            raise HTTPError(self.response, 403, "No access to this drive")
-
-        # Get files
-        if parent_folder and parent_folder != "null":
-            files = self.db.getAll("drive_file", int(parent_folder), "parent_folder")
-        else:
-            # Get root level files (where parent_folder is NULL)
-            files = self.db.getFilters("drive_file", ["drive_channel", "=", drive_id, "and", "parent_folder", "is", None])
-
-        if files == None:
-            files = []
-
-        # Add uploader info for each file
-        for file in files:
-            uploader = self.db.getSomething("mycelium_account", file["uploader"])
-            if uploader:
-                file["uploader_name"] = uploader["display"]
-                file["uploader_username"] = uploader["username"]
-
-        return json.dumps(files, default=str)
+    @Server.expose
+    def preview_drive_file(self, file_id, max_bytes=2000):
+        return self.drive.preview_file(file_id, max_bytes)
 
     @Server.expose
     def download_drive_file(self, file_id):
-        """
-        Download a file from a drive channel.
-
-        Args:
-            file_id: ID of the file in drive_file table
-
-        Returns:
-            The file content
-        """
-        uid = self.getUser()
-
-        # Get file info
-        file_info = self.db.getSomething("drive_file", file_id)
-        if not file_info:
-            raise HTTPError(self.response, 404, "File not found")
-
-        # Get drive channel
-        drive = self.db.getSomething("drive_channel", file_info["drive_channel"])
-        if not drive:
-            raise HTTPError(self.response, 404, "Drive channel not found")
-
-        # Check if user has access to the server
-        access = self.db.getFilters("accessserver", ["account", "=", uid, "and", "server", "=", drive["server"]])
-        if not access:
-            raise HTTPError(self.response, 403, "No access to this file")
-
-
-        filepath = self.path + "/static/attachments/" + file_info["filepath"]
-
-        if not os.path.exists(filepath):
-            raise HTTPError(self.response, 404, "File not found on disk")
-
-        # Detect MIME type
-        mime_type, _ = mimetypes.guess_type(file_info["filename"])
-        if not mime_type:
-            mime_type = "application/octet-stream"
-
-        # Read file in binary mode
-        with open(filepath, 'rb') as f:
-            file_content = f.read()
-
-        # Set proper headers for download
-        self.response.headers.append(('Content-Type', mime_type))
-        self.response.headers.append(('Content-Disposition', f'attachment; filename="{file_info["filename"]}"'))
-        self.response.headers.append(('Content-Length', str(len(file_content))))
-
-
-        return file_content
+        return self.drive.download_file(file_id)
 
     @Server.expose
     def delete_drive_file(self, file_id):
-        """
-        Delete a file from a drive channel.
-
-        Args:
-            file_id: ID of the file in drive_file table
-
-        Returns:
-            Success message
-        """
-        uid = self.getUser()
-
-        # Get file info
-        file_info = self.db.getSomething("drive_file", file_id)
-        if not file_info:
-            raise HTTPError(self.response, 404, "File not found")
-
-        # Get drive channel
-        drive = self.db.getSomething("drive_channel", file_info["drive_channel"])
-        if not drive:
-            raise HTTPError(self.response, 404, "Drive channel not found")
-
-        # Check if user has access to the server
-        access = self.db.getFilters("accessserver", ["account", "=", uid, "and", "server", "=", drive["server"]])
-        if not access:
-            raise HTTPError(self.response, 403, "No access to this file")
-
-        # Only uploader or server owner can delete
-        server_info = self.db.getSomething("server", drive["server"])
-        if file_info["uploader"] != uid and server_info["owner"] != uid:
-            # Check if user has admin/edit rights
-            if not self.checkAccessRights(uid, drive["server"], "edit"):
-                raise HTTPError(self.response, 403, "Only uploader or server admins can delete files")
-
-        # Delete the physical file only if no other record references it
-        filepath = self.path + "/static/attachments/" + file_info["filepath"]
-        if self._isFilepathOrphaned(file_info["filepath"], exclude_drive_file_id=file_id):
-            try:
-                if os.path.exists(filepath):
-                    os.remove(filepath)
-            except Exception as e:
-                print(f"Error deleting file {filepath}: {e}")
-
-        # Delete from database
-        self.db.deleteSomething("drive_file", file_id)
-
-        self._adjustStorage(drive["server"], -file_info.get("size", 0))
-
-        return json.dumps({"status": "ok", "message": "File deleted successfully"})
+        return self.drive.delete_file(file_id)
 
     @Server.expose
     def create_drive_folder(self, drive_id, foldername, parent_folder=None):
-        """
-        Create a folder in a drive channel.
-
-        Args:
-            drive_id: ID of the drive channel
-            foldername: Name of the folder
-            parent_folder: Optional ID of parent folder (None for root level)
-
-        Returns:
-            JSON with folder_id
-        """
-        uid = self.getUser()
-
-        # Verify access to the drive channel
-        drive = self.db.getSomething("drive_channel", drive_id)
-        if not drive:
-            raise HTTPError(self.response, 404, "Drive channel not found")
-
-        # Check if user has access to the server
-        access = self.db.getFilters("accessserver", ["account", "=", uid, "and", "server", "=", drive["server"]])
-        if not access:
-            raise HTTPError(self.response, 403, "No access to this drive")
-
-        # If parent_folder is specified, verify it exists and belongs to the same drive
-        if parent_folder and parent_folder != "null":
-            parent_folder = int(parent_folder)
-            parent = self.db.getSomething("drive_folder", parent_folder)
-            if not parent or parent["drive_channel"] != int(drive_id):
-                raise HTTPError(self.response, 404, "Parent folder not found or doesn't belong to this drive")
-        else:
-            parent_folder = None
-
-        # Create the folder
-        folder_id = self.db.insertDict("drive_folder", {
-            "drive_channel": drive_id,
-            "foldername": foldername,
-            "parent_folder": parent_folder,
-            "creator": uid
-        }, getId=True)
-
-        return json.dumps({"folder_id": folder_id, "foldername": foldername})
+        return self.drive.create_folder(drive_id, foldername, parent_folder)
 
     @Server.expose
     def get_drive_folders(self, drive_id, parent_folder=None):
-        """
-        Get all folders in a drive channel (or within a parent folder).
-
-        Args:
-            drive_id: ID of the drive channel
-            parent_folder: Optional ID of parent folder (None for root level)
-
-        Returns:
-            JSON list of folders with metadata
-        """
-        uid = self.getUser()
-
-        # Verify access to the drive channel
-        drive = self.db.getSomething("drive_channel", drive_id)
-        if not drive:
-            raise HTTPError(self.response, 404, "Drive channel not found")
-
-        # Check if user has access to the server
-        access = self.db.getFilters("accessserver", ["account", "=", uid, "and", "server", "=", drive["server"]])
-        if not access:
-            raise HTTPError(self.response, 403, "No access to this drive")
-
-        # Get folders
-        if parent_folder and parent_folder != "null":
-            folders = self.db.getAll("drive_folder", int(parent_folder), "parent_folder")
-        else:
-            # Get root level folders (where parent_folder is NULL)
-            folders = self.db.getFilters("drive_folder", ["drive_channel", "=", drive_id, "and", "parent_folder", "is", None])
-
-        # Add creator info for each folder
-        for folder in folders:
-            creator = self.db.getSomething("mycelium_account", folder["creator"])
-            if creator:
-                folder["creator_name"] = creator["display"]
-                folder["creator_username"] = creator["username"]
-
-        return json.dumps(folders, default=str)
+        return self.drive.get_folders(drive_id, parent_folder)
 
     @Server.expose
     def delete_drive_folder(self, folder_id):
-        """
-        Delete a folder from a drive channel (and all its contents).
+        return self.drive.delete_folder(folder_id)
 
-        Args:
-            folder_id: ID of the folder in drive_folder table
+    @Server.expose
+    def move_drive_file(self, file_id, target_folder=None):
+        return self.drive.move_file(file_id, target_folder)
 
-        Returns:
-            Success message
-        """
-        uid = self.getUser()
+    @Server.expose
+    def move_drive_folder(self, folder_id, target_folder=None):
+        return self.drive.move_folder(folder_id, target_folder)
 
-        # Get folder info
-        folder_info = self.db.getSomething("drive_folder", folder_id)
-        if not folder_info:
-            raise HTTPError(self.response, 404, "Folder not found")
-
-        # Get drive channel
-        drive = self.db.getSomething("drive_channel", folder_info["drive_channel"])
-        if not drive:
-            raise HTTPError(self.response, 404, "Drive channel not found")
-
-        # Check if user has access to the server
-        access = self.db.getFilters("accessserver", ["account", "=", uid, "and", "server", "=", drive["server"]])
-        if not access:
-            raise HTTPError(self.response, 403, "No access to this folder")
-
-        # Only creator or server owner can delete
-        server_info = self.db.getSomething("server", drive["server"])
-        if folder_info["creator"] != uid and server_info["owner"] != uid:
-            # Check if user has admin/edit rights
-            if not self.checkAccessRights(uid, drive["server"], "edit"):
-                raise HTTPError(self.response, 403, "Only creator or server admins can delete folders")
-
-        # Recursively collect all files in this folder tree for storage tracking and cleanup
-        total_size = 0
-
-        def collect_folder_files(fid):
-            nonlocal total_size
-            files = self.db.getAll("drive_file", fid, "parent_folder")
-            for f in files:
-                total_size += f.get("size", 0)
-                filepath = self.path + "/static/attachments/" + f["filepath"]
-                try:
-                    if os.path.exists(filepath):
-                        os.remove(filepath)
-                except Exception as e:
-                    print(f"Error deleting file {filepath}: {e}")
-            # Recurse into subfolders
-            subfolders = self.db.getAll("drive_folder", fid, "parent_folder")
-            for sf in subfolders:
-                collect_folder_files(sf["id"])
-
-        collect_folder_files(folder_id)
-
-        # Delete folder from database (CASCADE will handle files and subfolders)
-        self.db.deleteSomething("drive_folder", folder_id)
-
-        if total_size > 0:
-            self._adjustStorage(drive["server"], -total_size)
-
-        return json.dumps({"status": "ok", "message": "Folder deleted successfully"})
+    @Server.expose
+    def move_drive_items(self, items, target_folder=None):
+        return self.drive.move_items(items, target_folder)
 
     def uploadDrive(self, user_id, drive_id, file, parent_folder=None):
-        """
-        Upload a file to a drive channel.
-
-        Args:
-            user_id: ID of the user uploading the file
-            drive_id: ID of the drive channel
-            file: Tuple containing (filename, base64_encoded_content)
-            parent_folder: Optional ID of parent folder
-
-        Returns:
-            ID of the created drive_file entry
-        """
-        import mimetypes
-
-        # Extract filename and content from tuple
-        filename, content = file
-
-        # Add dataURI prefix if not present
-        if not content.startswith("data:"):
-            # Detect MIME type from filename extension
-            mime_type, _ = mimetypes.guess_type(filename)
-            if not mime_type:
-                mime_type = "application/octet-stream"  # default for unknown types
-
-            # Add the data URI prefix
-            content = f"data:{mime_type};base64,{content}"
-
-        filenameParts = filename.rsplit('.')
-        name = filenameParts[0]
-        extension = filenameParts[1] if len(filenameParts) > 1 else ''
-
-        # Calculate file size (approximate from base64) before saving
-        if "," in content:
-            content_data = content.split(",")[1]
-        else:
-            content_data = content
-        file_size = int(len(content_data) * 3 / 4)
-
-        # Check storage quota before saving file to disk
-        drive = self.db.getSomething("drive_channel", drive_id)
-        if drive:
-            self._checkQuota(drive["server"], file_size)
-
-        # Category is set to the drive_id to organize files by drive
-        filepath = self.saveFile(content, name=name, ext=extension, category=f"drive_{drive_id}")
-
-        # Insert file record into database
-        file_id = self.db.insertDict("drive_file", {
-            "drive_channel": drive_id,
-            "filename": filename,
-            "filepath": filepath,
-            "size": file_size,
-            "uploader": user_id,
-            "parent_folder": parent_folder
-        }, getId=True)
-
-        if drive:
-            self._adjustStorage(drive["server"], file_size)
-
-        return file_id
+        return self.drive.upload(user_id, drive_id, file, parent_folder)
 
     def isAdmin(self, uid):
         # Use cached admin list for performance (instead of DB query every time)
