@@ -15,3 +15,4 @@ yarn.lock
 /static/framework/
 /test-results/
 /playwright-report/
+serviceAccountKey.json

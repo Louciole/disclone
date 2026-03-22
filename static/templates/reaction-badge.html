@@ -1,0 +1,11 @@
+<div class="reaction-badge ${element.voters.includes(global.user.id) ? 'reacted' : ''}"
+     onclick="toggleReaction(${element.messageId}, '${element.emoji}')">
+    <span class="emoji">${element.emoji}</span>
+    <span class="count">
+        ${element.voters.length}
+    </span>
+    <div class="reaction-tooltip tooltip"
+         onclick="event.stopPropagation();openReactionVoters(${element.place}, ${element.messageId}, '${element.emoji}')">
+        ${renderReactionTooltipText(element.place, element.messageId, element.emoji, element.voters)}
+    </div>
+</div>

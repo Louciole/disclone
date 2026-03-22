@@ -46,6 +46,28 @@ export async function onMessage(event) {
                         }
                     }
                     break;
+                case "reaction_updated":
+                    const reactionData = message.content.content;
+                    const msgId = reactionData.messageId;
+                    const conversationId = reactionData.place;
+                    const reactionsDict = reactionData.reactions;
+
+                    const conv = global.convs[conversationId];
+                    if (conv && conv.messages && conv.messages[msgId]) {
+                        // Backend sent a dict like {"👍": [userId1, userId2], ...}
+                        // We need to convert this to the client-side format
+                        const clientReactions = {};
+                        for (const e in reactionsDict) {
+                            clientReactions[e] = {
+                                count: reactionsDict[e].length,
+                                reacted_by_me: reactionsDict[e].includes(global.user.id),
+                                voters: reactionsDict[e]
+                            };
+                        }
+                        
+                        setElement(`global.convs[${conversationId}].messages[${msgId}].reactions`, clientReactions);
+                    }
+                    break;
                 case "friend_request":
                     loadUsers([message.content.content["kopinprincipal"]])
                     pushElement('global.user.invitations', message.content.content)
@@ -93,15 +115,15 @@ export async function onMessage(event) {
                     const editData = message.content.content;
                     const messageId = editData.id.id; // Backend sends message object with id property
                     const newContent = editData.content;
-                    const conversationId = editData.id.place;
+                    const conversationId2 = editData.id.place;
 
-                    const conv = global.convs[conversationId];
-                    if (conv && conv.messages && conv.messages[messageId]) {
-                        setElement(`global.convs[${conversationId}].messages[${messageId}].body`, newContent);
-                        setElement(`global.convs[${conversationId}].messages[${messageId}].edited`, true);
+                    const conv2 = global.convs[conversationId2];
+                    if (conv2 && conv2.messages && conv2.messages[messageId]) {
+                        setElement(`global.convs[${conversationId2}].messages[${messageId}].body`, newContent);
+                        setElement(`global.convs[${conversationId2}].messages[${messageId}].edited`, true);
                         // If message has a poll, also update the poll question in the DOM directly
-                        if (conv.messages[messageId].poll) {
-                            conv.messages[messageId].poll.question = newContent;
+                        if (conv2.messages[messageId].poll) {
+                            conv2.messages[messageId].poll.question = newContent;
                             const pollTitle = document.querySelector(`#message-${messageId} .poll-message h3`);
                             if (pollTitle) pollTitle.textContent = newContent;
                         }

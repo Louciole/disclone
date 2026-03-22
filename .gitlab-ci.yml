@@ -83,6 +83,7 @@ build-apk:
     - npm install
     - mkdir -p android/app
     - echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/app/mycelium.keystore
+    - echo "$FIREBASE_ADMIN_KEY_BASE64" | base64 -d > serviceAccountKey.json
     - npx cap sync android
     - cd android
     - chmod +x gradlew
@@ -105,13 +106,12 @@ publish-play-store:
   stage: deploy
   image: mingc/android-build-box:latest
   rules:
-    - if: '$CI_COMMIT_BRANCH == "release"' # Déclenchement sur la branche release
+    - if: '$CI_COMMIT_BRANCH == "release"'
 
   variables:
     GRADLE_USER_HOME: "$CI_PROJECT_DIR/.gradle"
 
   before_script:
-    # Installation de Fastlane
     - apt-get update -qq
     - apt-get install -y ruby-full build-essential
     - gem install fastlane
@@ -119,6 +119,7 @@ publish-play-store:
   script:
     - cd capacitor-app
     - npm install
+    - echo "$FIREBASE_ADMIN_KEY_BASE64" | base64 -d > serviceAccountKey.json
     - npx cap sync android
     - cd android
 

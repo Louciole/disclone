@@ -12,6 +12,10 @@ import random
 import datetime
 import requests
 
+# Firebase imports for FCM push notifications
+import firebase_admin
+from firebase_admin import credentials, messaging
+
 # websockets imports
 import websockets
 
@@ -39,7 +43,63 @@ class Mycelium(Server):
         self.callManager = CallManager(self.db)
         self.drive = DriveManager(self)
         self._refreshAdminCache()  # Initialize admin cache
+
+        if not self.config.getboolean("server", "DEBUG"):
+            cred_path = os.path.join(PATH, "serviceAccountKey.json")
+            if os.path.exists(cred_path):
+                try:
+                    cred = credentials.Certificate(cred_path)
+                    firebase_admin.initialize_app(cred)
+                    print("Firebase Admin SDK initialized successfully")
+                except Exception as e:
+                    print(f"Failed to initialize Firebase Admin SDK: {e}")
+            else:
+                print(f"Warning: {cred_path} not found. Push notifications will not work.")
+        else:
+            print("Running in DEBUG mode: Firebase Admin SDK initialization skipped.")
+
         self.start()
+
+    def sendPushNotification(self, uid, data):
+        """
+        Send a generic push notification to a user's registered devices.
+        uid: target user ID
+        data: dict with 'title', 'body', and optional 'data' dict
+        """
+        # Do not send notifications in DEBUG mode
+        if self.config.getboolean("server", "DEBUG"):
+            return
+
+        # Get user's tokens
+        tokens_records = self.db.getFilters("device_token", ["account", "=", uid])
+        if not tokens_records:
+            return
+
+        tokens = [t["token"] for t in tokens_records]
+
+        try:
+            # Construct MulticastMessage
+            message = messaging.MulticastMessage(
+                notification=messaging.Notification(
+                    title=data.get("title", "Mycelium"),
+                    body=data.get("body", "New activity"),
+                ),
+                data={k: str(v) for k, v in data.get("data", {}).items()},
+                tokens=tokens,
+            )
+            
+            response = messaging.send_multicast(message)
+            
+            if response.failure_count > 0:
+                print(f"Failed to send {response.failure_count} push notifications")
+                for idx, resp in enumerate(response.responses):
+                    if not resp.success:
+                        # Check error code and delete if 'registration-token-not-registered'
+                        err_code = resp.exception.code
+                        if err_code == 'messaging/registration-token-not-registered':
+                             self.db.execute("DELETE FROM device_token WHERE token = %s", (tokens[idx],))
+        except Exception as e:
+            print(f"Error sending push notifications: {e}")
 
     @Server.expose
     def index(self):
@@ -122,39 +182,49 @@ class Mycelium(Server):
                         client = self.db.getSomething("active_client", data["clientID"])
                         await self.sendStatusUpdatesAsync(client["userid"])
 
-                # ===== Gestion des appels WebRTC =====
                 case "callStart":
-                    # Démarrer un nouvel appel
                     if self.checkWSAuth(websocket, data["clientID"]):
                         client = self.db.getSomething("active_client", data["clientID"])
                         conv_id = data.get("conversation_id")
                         call_type = data.get("call_type", "audio")
 
-                        # Vérifier que l'utilisateur a accès à la conversation
                         access = self.db.getFilters("accessconversation",
                             ["conversation", "=", conv_id, "and", "account", "=", client["userid"]])
 
                         if access:
                             call = self.callManager.create_call(conv_id, client["userid"], call_type)
 
-                            # Notifier tous les membres de la conversation
                             members = self.db.getAll("accessconversation", conv_id, "conversation")
 
-                            # DEBUG: Log conversation members
                             print(f"🔔 [call_started] Conv {conv_id}: {len(members)} members, initiated by user {client['userid']}")
 
                             for member in members:
                                 member_id = member["account"]
-                                print(f"   → Sending call_started to user {member_id}")
+                                if member_id == client["userid"]:
+                                    continue
+                                    
+                                print(f"Sending call_started to user {member_id}")
 
                                 try:
                                     await self.sendNotificationAsync(member_id, {
                                         "type": "call_started",
                                         "content": call.to_dict()
                                     })
-                                    print(f"   ✅ Sent call_started to user {member_id}")
+                                    
+                                    # Send Push Notification for Incoming Call
+                                    self.sendPushNotification(member_id, {
+                                        "title": "Incoming Call",
+                                        "body": "Incoming call...",
+                                        "data": {
+                                            "type": "call", 
+                                            "call_id": call.id, 
+                                            "conv_id": str(conv_id)
+                                        }
+                                    })
+                                    
+                                    print(f"Sent call_started to user {member_id}")
                                 except Exception as e:
-                                    print(f"   ❌ Error sending to user {member_id}: {e}")
+                                    print(f"Error sending to user {member_id}: {e}")
 
                 case "callJoin":
                     # Rejoindre un appel existant
@@ -587,7 +657,7 @@ class Mycelium(Server):
         uid = self.getUser()
         users = self.db.getFilters("mycelium_account", ["id", "in", json.loads(users)])
         self.getUsersStatus(users)
-        return (json.dumps(users, default=str))
+        return json.dumps(users, default=str)
 
 
     @Server.expose
@@ -614,6 +684,7 @@ class Mycelium(Server):
             content = {}
             content["messages"] = self.db.getFilters("message", ["place", "=", conv_id, "order by timestamp"])
             self._enrichMessagesWithPolls(content["messages"], uid)
+            self._enrichMessagesWithReactions(content["messages"])
             return json.dumps(content, default=str)
 
 
@@ -716,6 +787,7 @@ class Mycelium(Server):
         content = {"name": chan["name"], "id": channel_id}
         content["messages"] = self.db.getFilters("message", ["place", "=", channel_id, "order by timestamp"])
         self._enrichMessagesWithPolls(content["messages"], uid)
+        self._enrichMessagesWithReactions(content["messages"])
         return json.dumps(content, default=str)
 
     @Server.expose
@@ -1195,9 +1267,18 @@ class Mycelium(Server):
 
     def notifyConvMessage(self,uid ,conv, message):
         members = self.db.getAll("accessconversation", conv["id"], "conversation")
+        sender_name = self.db.getSomething("mycelium_account", uid).get("display", "User")
+        
         for user in members:
             if user["account"] != uid:
                 self.sendNotification(user["account"], {"type": "message", "content": message})
+                
+                # Push Notification for DM
+                self.sendPushNotification(user["account"], {
+                    "title": sender_name,
+                    "body": message.get("body", "New message"),
+                    "data": {"type": "message", "conv_id": str(conv["id"])}
+                })
 
                 notif  = self.db.getFilters("offline_notifs", ["account", "=", user['account'], "and", "conversation", "=", conv["id"]])
                 if notif != []:
@@ -1261,6 +1342,13 @@ class Mycelium(Server):
                     self.db.edit("offline_notifs", notif[0]["id"], "number", notif[0]["number"] + 1)
                 else:
                     self.db.insertDict("offline_notifs", {"account": target_uid, "conversation": channel["id"]})
+                
+                # Push Notification for Mention
+                self.sendPushNotification(target_uid, {
+                    "title": f"Mentioned in {channel.get('name', 'channel')}",
+                    "body": message.get("body", "New mention"),
+                    "data": {"type": "mention", "channel_id": str(channel["id"])}
+                })
 
 
     @Server.expose
@@ -1393,6 +1481,85 @@ class Mycelium(Server):
                                 "options": [{"id": o["id"], "text": o["text"], "creator": o["creator"]} for o in options],
                                 "votes": {str(k): v for k, v in votes_dict.items()}
                             }
+                            
+    def _enrichMessagesWithReactions(self, messages):
+        for msg in messages:
+            reactions = self.db.getAll("message_reaction", msg["id"], "message")
+            reactions_dict = {}
+            for r in reactions:
+                emoji = r["emoji"]
+                if emoji not in reactions_dict:
+                    reactions_dict[emoji] = []
+                reactions_dict[emoji].append(r["account"])
+            msg["reactions"] = reactions_dict
+
+    @Server.expose
+    def toggle_reaction(self, message_id, emoji):
+        uid = self.getUser()
+        
+        # Check if user has access to the message
+        message = self.db.getSomething("message", message_id)
+        if not message:
+            raise HTTPError(self.response, 404, "Message not found")
+            
+        channel = self.db.getSomething("textual_channel", message["place"])
+        if channel:
+            if channel.get("is_private") and not self.checkChannelAccess(uid, channel["id"], "textual", "view"):
+                raise HTTPError(self.response, 403, "no permission to view this channel")
+        else:
+            conv = self.db.getFilters("accessconversation", ["conversation", "=", message["place"], "and", "account", "=", uid])
+            if not conv:
+                 raise HTTPError(self.response, 403, "no permission to view this conversation")
+
+        existing_reaction = self.db.getFilters("message_reaction", [
+            "message", "=", message_id, "and",
+            "account", "=", uid, "and",
+            "emoji", "=", emoji
+        ])
+
+        if existing_reaction:
+            self.db.deleteSomething("message_reaction", existing_reaction[0]["id"])
+            action = "removed"
+        else:
+            self.db.insertDict("message_reaction", {
+                "message": message_id,
+                "account": uid,
+                "emoji": emoji
+            })
+            action = "added"
+            
+        # Re-fetch reactions for this message to broadcast the updated state
+        reactions = self.db.getAll("message_reaction", message_id, "message")
+        
+        broadcast_reactions_dict = {}
+        for r in reactions:
+            e = r["emoji"]
+            if e not in broadcast_reactions_dict:
+                broadcast_reactions_dict[e] = []
+            broadcast_reactions_dict[e].append(r["account"])
+            
+        notif_data = {
+            "type": "reaction_updated",
+            "content": {
+                "messageId": message_id,
+                "place": message["place"],
+                "emoji": emoji,
+                "reactions": broadcast_reactions_dict
+            }
+        }
+        
+        if channel:
+            members = self.db.getFilters("accessserver", ["server", "=", channel["server"]])
+            for m in members:
+                if m["account"] != uid:
+                    self.sendNotification(m["account"], notif_data)
+        else:
+            members = self.db.getAll("accessconversation", message["place"], "conversation")
+            for m in members:
+                if m["account"] != uid:
+                    self.sendNotification(m["account"], notif_data)
+
+        return json.dumps({"success": True, "action": action, "reactions": broadcast_reactions_dict})
 
     def _getPollConvAccess(self, uid, poll_id):
         """Check if user has access to the conversation containing a poll. Returns (poll, message) or raises 403."""
@@ -1959,7 +2126,7 @@ class Mycelium(Server):
         return json.dumps({"status": "ok"})
 
     @Server.expose
-    def edit_server_channel(self, server_id, action, field=None, value=None, targetId=None, channel_type=None):
+    def edit_server_channel(self, server_id, action="edit", field=None, value=None, targetId=None, channel_type=None):
         uid = self.getUser()
         if not self.checkAccessRights(uid, server_id, "edit"):
             raise HTTPError(self.response, 403)
@@ -1980,7 +2147,7 @@ class Mycelium(Server):
 
             channel_id = self.db.insertDict(table, defaults, getId=True)
             channel = self.db.getSomething(table, channel_id)
-            return json.dumps({"channel": channel, "type": ct}, default=str)
+            return json.dumps({"channel": channel, "type": channel_type}, default=str)
 
         table_name = self._getChannelTable(channel_type) or "textual_channel"
         chan = self.db.getSomething(table_name, targetId)
@@ -2506,6 +2673,7 @@ class Mycelium(Server):
 
     @Server.expose
     def send_email(self, server_id, to, subject, body):
+        uid = self.getUser()
         op = self.db.getSomething("op_servs", server_id, "server")
         if not op:
             raise HTTPError(self.response, 403, "forbidden")
@@ -2588,6 +2756,7 @@ class Mycelium(Server):
             else :
                 self.getUsersStatus([status])
 
+            status["status"]["mode"] = int(status["status"]["mode"])
             self.sendNotification(client["userid"], {"type": "update_status" ,"content": status})
 
     async def sendStatusUpdatesAsync(self, uid):

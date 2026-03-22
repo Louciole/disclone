@@ -4659,7 +4659,7 @@ input:checked + .slider:before {
     padding: 0.5rem;
     border-radius: 4px;
     transition: all 0.2s;
-}
+    }
 
 .close-btn:hover {
     background: var(--bg4);
@@ -6153,4 +6153,68 @@ span.progress-bar {
 
 .poll-message .btn.small:not(.blue):hover {
     text-decoration: underline;
+}
+
+.reactions-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    margin-top: 0.3rem;
+    overflow: visible !important;
+}
+
+.reaction-badge {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: var(--bg3);
+    border: 1px solid var(--text3);
+    border-radius: 0.5rem;
+    padding: 0.15rem 0.4rem;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+    overflow: visible !important;
+}
+
+.reaction-badge:hover {
+    background: var(--bg4);
+    border-color: var(--text2bis);
+}
+
+.reaction-badge.reacted {
+    background: rgba(88, 101, 242, 0.15);
+    border-color: var(--accent);
+}
+
+.reaction-badge.reacted .count {
+    color: var(--accent-light);
+}
+
+.reaction-badge .count {
+    color: var(--text2);
+    font-weight: 500;
+}
+
+.reaction-badge .reaction-tooltip {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.3rem;
+    cursor: pointer;
+    transform: translateY(-80%);
+}
+
+.reaction-badge:hover .reaction-tooltip {
+    visibility: visible;
+}
+
+.reaction-tooltip .emoji-big {
+    font-size: 1.5rem;
+}
+
+.reaction-tooltip .voters {
+    font-size: 0.7rem;
 }

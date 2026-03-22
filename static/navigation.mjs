@@ -217,11 +217,124 @@ function insertStandardEmoji(event,target){
     }else if(target === "status"){
         setElement("global.user.status.emoji",event.currentTarget.innerHTML)
         closeFM('emoji-board')
+    } else if (target === "reaction") {
+        const messageId = global.state.reactionPickerTarget;
+        const emoji = event.currentTarget.innerHTML;
+        toggleReaction(messageId, emoji);
+        closeFM('reaction-picker');
     } else {
         target.innerHTML = event.currentTarget.innerHTML
     }
 }
 window.insertStandardEmoji = insertStandardEmoji
+
+function openReactionPicker(event, messageId) {
+    global.state.reactionPickerTarget = messageId;
+    toggleFM('reaction-picker');
+    const picker = document.getElementById('reaction-picker');
+    const rect = event.currentTarget.getBoundingClientRect();
+    picker.style.top = `${Math.max(10, rect.top - picker.offsetHeight - 10)}px`;
+    picker.style.left = `${rect.left - picker.offsetWidth }px`;
+    picker.style.bottom = 'unset'
+    picker.style.width = 'fit-content'
+}
+window.openReactionPicker = openReactionPicker;
+
+function toggleReaction(messageId, emoji) {
+    const convId = global.state.activeConv;
+    if (!convId || !global.convs[convId] || !global.convs[convId].messages[messageId]) return;
+
+    // let msgReactions = global.convs[convId].messages[messageId].reactions;
+    // let hasReacted = msgReactions[emoji]?.includes(global.user.id)
+    // const newReactions = { ...msgReactions };
+    //
+    // if (hasReacted) {
+    //     if (newReactions[emoji].length <= 0) {
+    //         delete newReactions[emoji];
+    //     } else {
+    //         if(newReactions[emoji]) {
+    //              newReactions[emoji] = newReactions[emoji].filter(v => v !== global.user.id);
+    //         }
+    //     }
+    // } else {
+    //     if (!newReactions[emoji]) {
+    //         newReactions[emoji] = [];
+    //     }
+    //     if(newReactions[emoji] && !newReactions[emoji]?.includes(global.user.id)) {
+    //          newReactions[emoji].push(global.user.id);
+    //     }
+    // }
+
+    // setElement(`global.convs[${convId}].messages[${messageId}].reactions`, newReactions);
+    
+    xhr(`toggle_reaction?message_id=${messageId}&emoji=${encodeURIComponent(emoji)}`, (e) => {
+        if (e.target.status === 200) {
+            const response = JSON.parse(e.target.responseText);
+            setElement(`global.convs[${global.state.activeConv}].messages[${messageId}].reactions`, response.reactions);
+        } else {
+             console.error("Failed to toggle reaction");
+        }
+    }, "POST");
+}
+window.toggleReaction = toggleReaction;
+
+
+function renderReactionTooltipText(place, messageId, emoji, voters) {
+    const msg = global.convs[place]?.messages?.[messageId];
+    if (!msg || !msg.reactions || !msg.reactions[emoji]) return '';
+
+    if (voters.length === 0) return '';
+    
+    // Show up to 3 names, then 'and X others'
+    let displayNames = [];
+    let othersCount = 0;
+    
+    for(let i=0; i < voters.length; i++) {
+       const vid = voters[i];
+       if (vid === global.user.id) {
+           displayNames.push(_t("Vous"));
+       } else if (global.users[vid]) {
+           displayNames.push(global.users[vid].display);
+       } else {
+           displayNames.push(`User #${vid}`);
+           loadUsers([vid]);
+       }
+    }
+    
+    if (displayNames.length > 3) {
+        othersCount = displayNames.length - 3;
+        displayNames = displayNames.slice(0, 3);
+    }
+    
+    let text = displayNames.join(', ');
+    if (othersCount > 0) {
+        text += ` ${_t('et')} ${othersCount} ${_t('autres')}`;
+    }
+    
+    return `<div class="emoji-big">${emoji}</div><div class="voters">${text}</div>`;
+}
+window.renderReactionTooltipText = renderReactionTooltipText;
+
+function openReactionVoters(place, messageId, emoji) {
+    const msg = global.convs[place]?.messages?.[messageId];
+    if (!msg || !msg.reactions || !msg.reactions[emoji]) return;
+    
+    const voters = msg.reactions[emoji] || [];
+    
+    const data = {
+        totalVoters: voters.length,
+        poll: { question: `${_t('Réactions')} ${emoji}` },
+        options: [{ id: 1, text: emoji }],
+        votes: { '1': voters }
+    };
+    
+    global.state.pollVotersData = data;
+    global.state.pollVotersSelectedOption = 1;
+    
+    openMenu('poll-voters');
+    setTimeout(() => {window.renderPollVotersContent();}, 100);
+}
+window.openReactionVoters = openReactionVoters;
 
 function updatePreview(formID, event, defaultValue, evaluation=undefined){
     if(global.state["currentForm"]?.id !== formID){

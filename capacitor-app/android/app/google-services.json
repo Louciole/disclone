@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "46965239824",
+    "project_id": "mycelium-6816a",
+    "storage_bucket": "mycelium-6816a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:46965239824:android:aebae15e84c94ba8985a95",
+        "android_client_info": {
+          "package_name": "dev.carbonlab.mycelium.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAfaXXo6elzvBi7R9ZJJ8Ch58sO2ToEwMA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

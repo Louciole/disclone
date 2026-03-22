@@ -101,6 +101,16 @@ create table if not exists message (
     attachments json
 );
 
+create table if not exists message_reaction (
+    id bigserial NOT NULL PRIMARY KEY,
+    message integer NOT NULL REFERENCES message(id) ON DELETE CASCADE,
+    account integer NOT NULL,
+    emoji varchar(255) NOT NULL,
+    UNIQUE(message, account, emoji)
+);
+
+create index if not exists idx_message_reaction_message on message_reaction(message);
+
 create table if not exists blockship (
     id bigserial NOT NULL PRIMARY KEY,
     blocker integer not null,
@@ -342,4 +352,3 @@ create table if not exists poll_vote (
 
 create index if not exists idx_poll_vote_poll on poll_vote(poll);
 create index if not exists idx_poll_vote_option on poll_vote(option);
-
