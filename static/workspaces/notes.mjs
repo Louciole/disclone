@@ -7,6 +7,7 @@ import {
     evaluateText
 } from "./formulaEngine.mjs";
 import {mountDatabase} from "./database.mjs";
+import {mountSpreadsheet} from "./spreadsheet.mjs";
 
 class Editor {
     constructor() {
@@ -123,6 +124,14 @@ class Editor {
     }
 
     deleteBlock(blockId) {
+        const block = this.blocks[blockId]
+        if (block?.type === "spreadsheet" && global.state.spreadsheetViews) {
+            delete global.state.spreadsheetViews[blockId]
+        }
+        if (block?.type === "database" && global.state.databaseViews) {
+            delete global.state.databaseViews[blockId]
+        }
+
         delete this.blocks[blockId]
         delete global.notes[global.state.activeChan.id].blocks[blockId]
         const blockElement = document.querySelector(`[data-block-id="${blockId}"]`)
@@ -311,11 +320,17 @@ class Editor {
     convertBlock(target, blockId, newType = "interactiveElement") {
         const block = this.blocks[blockId]
         if(newType === "interactiveElement"){
-            target.oninput = ""
-            target.onkeydown = ""
-            target.onblur = ""
-            target.onfocus = ""
-            target.contenteditable = "false"
+            target.oninput = null
+            target.onkeydown = null
+            target.onblur = null
+            target.onfocus = null
+            target.removeAttribute("oninput")
+            target.removeAttribute("onkeydown")
+            target.removeAttribute("onblur")
+            target.removeAttribute("onfocus")
+            target.removeAttribute("data-placeholder")
+            target.contentEditable = "false"
+            target.setAttribute("contenteditable", "false")
 
             // Persist the block type change synchronously so server-side
             // resources (e.g. note_database) are created before we try to load them
@@ -329,6 +344,12 @@ class Editor {
                 const containerEl = target.querySelector('.note-database')
                 if (containerEl) {
                     mountDatabase(block.uuid, channelId, containerEl)
+                }
+            } else if (block.type === "spreadsheet") {
+                const channelId = global.state.activeChan.id
+                const containerEl = target.querySelector('.note-spreadsheet')
+                if (containerEl) {
+                    mountSpreadsheet(block.uuid, channelId, containerEl)
                 }
             }
         }
@@ -345,6 +366,13 @@ class Editor {
         }
 
         if(event.key === "Backspace" && block.content === ""){
+            if (block.type === "spreadsheet" && global.state.spreadsheetViews) {
+                delete global.state.spreadsheetViews[blockId]
+            }
+            if (block.type === "database" && global.state.databaseViews) {
+                delete global.state.databaseViews[blockId]
+            }
+
             block.content = blockTypes[block.type].initiator
             event.currentTarget.classList.remove("note-"+block.type)
             event.currentTarget.innerText = block.content
@@ -465,6 +493,7 @@ const blockTypes = {
     "showcase": {placeholder: "insert metric", initiator: "/showcase"},
     "synapse": {template: (block)=>{return getTemplate("synapse-root")}, initiator: "/synapse"},
     "database": {template: (block)=>{return fillWith("database-root", [block])}, initiator: "/database", placeholder: "database"},
+    "spreadsheet": {template: (block)=>{return fillWith("spreadsheet-root", [block])}, initiator: "/sheet", placeholder: "spreadsheet"},
 }
 
 const initiators = [
@@ -475,6 +504,7 @@ const initiators = [
     {"type":"showcase", "initiator":"/showcase"},
     {"type":"synapse", "initiator":"/synapse"},
     {"type":"database", "initiator":"/database"},
+    {"type":"spreadsheet", "initiator":"/sheet"},
 ]
 
 

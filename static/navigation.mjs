@@ -317,19 +317,39 @@ window.renderReactionTooltipText = renderReactionTooltipText;
 
 function openReactionVoters(place, messageId, emoji) {
     const msg = global.convs[place]?.messages?.[messageId];
-    if (!msg || !msg.reactions || !msg.reactions[emoji]) return;
-    
-    const voters = msg.reactions[emoji] || [];
-    
+    if (!msg || !msg.reactions) return;
+
+    const allReactions = msg.reactions;
+    const options = [];
+    const votes = {};
+    const allVoters = new Set();
+    let selectedOptionId = 1;
+    let currentId = 1;
+
+    for (const [reactionEmoji, reactionVoters] of Object.entries(allReactions)) {
+        if (reactionVoters && reactionVoters.length > 0) {
+            options.push({ id: currentId, text: reactionEmoji });
+            votes[currentId] = reactionVoters;
+            reactionVoters.forEach(voterId => allVoters.add(voterId));
+
+            if (reactionEmoji === emoji) {
+                selectedOptionId = currentId;
+            }
+            currentId++;
+        }
+    }
+
+    if (options.length === 0) return;
+
     const data = {
-        totalVoters: voters.length,
-        poll: { question: `${_t('Réactions')} ${emoji}` },
-        options: [{ id: 1, text: emoji }],
-        votes: { '1': voters }
+        totalVoters: allVoters.size,
+        poll: { question: `${_t('Réactions')}` },
+        options: options,
+        votes: votes
     };
     
     global.state.pollVotersData = data;
-    global.state.pollVotersSelectedOption = 1;
+    global.state.pollVotersSelectedOption = selectedOptionId;
     
     openMenu('poll-voters');
     setTimeout(() => {window.renderPollVotersContent();}, 100);

@@ -2269,6 +2269,15 @@ class Mycelium(Server):
                         "database_id": db_id,
                         "position": 0.1
                     })
+            if block.get("type") == "spreadsheet" and block.get("uuid"):
+                existing = self.db.getSomething("note_spreadsheet", block["uuid"], "block_uuid")
+                if not existing:
+                    self.db.insertDict("note_spreadsheet", {
+                        "block_uuid": block["uuid"],
+                        "channel": channel,
+                        "rows": 10,
+                        "cols": 5
+                    })
 
             return str(block_id)
         elif op == "delete":
@@ -2307,6 +2316,16 @@ class Mycelium(Server):
                     self.db.insertDict("note_database_row", {
                         "database_id": db_id,
                         "position": 0.1
+                    })
+            # Auto-create note_spreadsheet when block type changes to "spreadsheet"
+            if block.get("type") == "spreadsheet" and block_info.get("type") != "spreadsheet":
+                existing = self.db.getSomething("note_spreadsheet", block["uuid"], "block_uuid")
+                if not existing:
+                    self.db.insertDict("note_spreadsheet", {
+                        "block_uuid": block["uuid"],
+                        "channel": channel,
+                        "rows": 10,
+                        "cols": 5
                     })
 
     def _checkDatabaseAccess(self, uid, channel):
@@ -2353,6 +2372,76 @@ class Mycelium(Server):
             "cells": cells
         }
         return json.dumps(result, default=str)
+
+    @Server.expose
+    def get_spreadsheet_content(self, channel, block_uuid):
+        uid = self.getUser()
+        chan_info = self.db.getSomething("notes_channel", channel)
+        if not chan_info:
+            raise HTTPError(self.response, 404)
+        server_id = chan_info["server"]
+        if not self.db.getFilters("accessserver", ["account", "=", uid, "and", "server", "=", server_id]):
+            raise HTTPError(self.response, 403)
+
+        sheet_info = self.db.getSomething("note_spreadsheet", block_uuid, "block_uuid")
+        if not sheet_info:
+            raise HTTPError(self.response, 404)
+
+        sheet_id = sheet_info["id"]
+        cells_data = self.db.getFilters("note_spreadsheet_cell", ["spreadsheet_id", "=", sheet_id]) or []
+        cells = {c["cell_id"]: c["value"] for c in cells_data}
+
+        result = {
+            "id": sheet_id,
+            "block_uuid": sheet_info["block_uuid"],
+            "rows": sheet_info["rows"],
+            "cols": sheet_info["cols"],
+            "cells": cells
+        }
+        return json.dumps(result, default=str)
+
+    @Server.expose
+    def save_spreadsheet_cell(self, channel, spreadsheet_id, cell_id, value):
+        uid = self.getUser()
+        self._checkDatabaseAccess(uid, channel)
+
+        if value is None:
+            value = ""
+        elif isinstance(value, str) and value.strip() == "":
+            value = ""
+
+        sheet_info = self.db.getSomething("note_spreadsheet", spreadsheet_id)
+        if not sheet_info or int(sheet_info["channel"]) != int(channel):
+            raise HTTPError(self.response, 404)
+
+        existing = self.db.getFilters("note_spreadsheet_cell", ["spreadsheet_id", "=", spreadsheet_id, "and", "cell_id", "=", cell_id])
+        if existing:
+            if value == "":
+                self.db.deleteSomething("note_spreadsheet_cell", existing[0]["id"])
+            else:
+                self.db.edit("note_spreadsheet_cell", existing[0]["id"], "value", value)
+        else:
+            if value != "":
+                self.db.insertDict("note_spreadsheet_cell", {
+                    "spreadsheet_id": spreadsheet_id,
+                    "cell_id": cell_id,
+                    "value": value
+                })
+
+    @Server.expose
+    def save_spreadsheet(self, channel, spreadsheet_id, data):
+        uid = self.getUser()
+        self._checkDatabaseAccess(uid, channel)
+        data = json.loads(data)
+
+        sheet_info = self.db.getSomething("note_spreadsheet", spreadsheet_id)
+        if not sheet_info or int(sheet_info["channel"]) != int(channel):
+            raise HTTPError(self.response, 404)
+
+        allowed = ["rows", "cols"]
+        for key in allowed:
+            if key in data and data[key] != sheet_info.get(key):
+                self.db.edit("note_spreadsheet", spreadsheet_id, key, data[key])
 
     @Server.expose
     def save_database(self, channel, database, op="create"):

@@ -115,31 +115,78 @@ export function expandRange(rangeStr) {
 export function resolveReferences(expression, contextResolver) {
     if (!expression || typeof expression !== 'string') return expression
 
-    // Handle cross-database references: DB("Name").A1 or DB("Name").A1:A3
-    expression = expression.replace(
-        /DB\(["']([^"']+)["']\)\.([A-Z]+\d+(?::[A-Z]+\d+)?)/g,
-        (_, dbName, cellRange) => {
-            const refs = expandRange(cellRange)
-            return refs.map(ref => contextResolver(ref, dbName) ?? '').join(',')
+    // Apply reference replacement only outside quoted string literals.
+    // This preserves formulas like CONCAT("A1") where A1 is plain text.
+    const mapOutsideStrings = (text, transform) => {
+        let result = ''
+        let i = 0
+
+        while (i < text.length) {
+            const ch = text[i]
+            if (ch === '"' || ch === "'") {
+                const quote = ch
+                let literal = quote
+                i += 1
+
+                while (i < text.length) {
+                    const cur = text[i]
+                    literal += cur
+                    if (cur === '\\' && i + 1 < text.length) {
+                        i += 1
+                        literal += text[i]
+                    } else if (cur === quote) {
+                        i += 1
+                        break
+                    }
+                    i += 1
+                }
+
+                result += literal
+                continue
+            }
+
+            const start = i
+            while (i < text.length && text[i] !== '"' && text[i] !== "'") i += 1
+            result += transform(text.slice(start, i))
         }
+
+        return result
+    }
+
+    // Handle cross-database references: DB("Name").A1 or DB("Name").A1:A3
+    expression = mapOutsideStrings(
+        expression,
+        segment => segment.replace(
+            /DB\(["']([^"']+)["']\)\.([A-Z]+\d+(?::[A-Z]+\d+)?)/g,
+            (_, dbName, cellRange) => {
+                const refs = expandRange(cellRange)
+                return refs.map(ref => contextResolver(ref, dbName) ?? '').join(',')
+            }
+        )
     )
 
     // Handle range references: A1:A3 → expanded values
-    expression = expression.replace(
-        /([A-Z]+\d+):([A-Z]+\d+)/g,
-        (match) => {
-            const refs = expandRange(match)
-            return refs.map(ref => contextResolver(ref) ?? '').join(',')
-        }
+    expression = mapOutsideStrings(
+        expression,
+        segment => segment.replace(
+            /([A-Z]+\d+):([A-Z]+\d+)/g,
+            (match) => {
+                const refs = expandRange(match)
+                return refs.map(ref => contextResolver(ref) ?? '').join(',')
+            }
+        )
     )
 
     // Handle single cell references: A1, B2, etc. (must contain at least one digit)
-    expression = expression.replace(
-        /\b([A-Z]+\d+)\b/g,
-        (match) => {
-            const value = contextResolver(match)
-            return value !== undefined && value !== null ? value : ''
-        }
+    expression = mapOutsideStrings(
+        expression,
+        segment => segment.replace(
+            /\b([A-Z]+\d+)\b/g,
+            (match) => {
+                const value = contextResolver(match)
+                return value !== undefined && value !== null ? value : ''
+            }
+        )
     )
 
     return expression
@@ -307,6 +354,46 @@ export function evaluateFunctions(contentArray) {
     return content
 }
 
+function evaluateInnerExpression(inner) {
+    const trimmed = String(inner || '').trim()
+    if (!trimmed) return ''
+
+    // First evaluate any known FUNCTION(...) calls inside the expression.
+    // We repeatedly collapse innermost calls so mixed formulas like
+    // SUM(A1:A2)+3 become 3+3 before arithmetic evaluation.
+    let expr = trimmed
+    while (true) {
+        let changed = false
+        expr = expr.replace(/([A-Z_]+)\(([^()]*)\)/g, (match, fnName, rawArgs) => {
+            const fn = functions[fnName]
+            if (!fn) return match
+            changed = true
+            try {
+                const value = fn(...parseArguments(rawArgs.trim()))
+                return String(value)
+            } catch (_) {
+                return '#ERROR'
+            }
+        })
+        if (!changed) break
+    }
+
+    // Then evaluate arithmetic expressions when the content is strictly numeric/operators.
+    // This avoids executing arbitrary code while supporting formulas like A1+A2.
+    const arithmeticOnly = /^[0-9+\-*/%^().\s]+$/
+    if (arithmeticOnly.test(expr) && /[+\-*/%^]/.test(expr)) {
+        try {
+            const normalized = expr.replace(/\^/g, '**')
+            const result = Function('"use strict"; return (' + normalized + ')')()
+            return result === undefined || result === null ? '' : result
+        } catch (_) {
+            return '#ERROR'
+        }
+    }
+
+    return expr
+}
+
 // ─── High-level API ───────────────────────────────────────────────────
 
 /**
@@ -325,10 +412,11 @@ export function evaluateFormula(formula, contextResolver) {
 
     // Resolve cell references within each {{...}} block
     expression = expression.replace(/\{\{([\s\S]*?)\}\}/g, (_, inner) => {
-        return '{{' + resolveReferences(inner, contextResolver) + '}}'
+        const resolved = resolveReferences(inner, contextResolver)
+        return String(evaluateInnerExpression(resolved))
     })
 
-    return evaluateFunctions(parseFunctions(expression))
+    return expression
 }
 
 /**

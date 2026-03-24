@@ -250,6 +250,26 @@ create index if not exists idx_note_database_row_db on note_database_row(databas
 create index if not exists idx_note_database_cell_row on note_database_cell(row_id);
 create index if not exists idx_note_database_cell_col on note_database_cell(column_id);
 
+create table if not exists note_spreadsheet (
+    id bigserial NOT NULL PRIMARY KEY,
+    block_uuid varchar(36) NOT NULL REFERENCES note_block(uuid) ON DELETE CASCADE,
+    channel integer NOT NULL,
+    rows integer NOT NULL DEFAULT 10,
+    cols integer NOT NULL DEFAULT 5,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+create table if not exists note_spreadsheet_cell (
+    id bigserial NOT NULL PRIMARY KEY,
+    spreadsheet_id integer NOT NULL REFERENCES note_spreadsheet(id) ON DELETE CASCADE,
+    cell_id varchar(10) NOT NULL, -- e.g. A1, B2
+    value text DEFAULT '',
+    UNIQUE(spreadsheet_id, cell_id)
+);
+
+create index if not exists idx_note_spreadsheet_block on note_spreadsheet(block_uuid);
+create index if not exists idx_note_spreadsheet_cell_sheet on note_spreadsheet_cell(spreadsheet_id);
+
 create table if not exists API_key (
     id bigserial NOT NULL PRIMARY KEY,
     key varchar(64) UNIQUE NOT NULL,
