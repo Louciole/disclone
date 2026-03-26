@@ -871,6 +871,18 @@ class Mycelium(Server):
         return self.drive.delete_file(file_id)
 
     @Server.expose
+    def replace_drive_file(self, file_id, filename, file):
+        return self.drive.replace_file(file_id, filename, file)
+
+    @Server.expose
+    def get_drive_file_versions(self, file_id):
+        return self.drive.get_file_versions(file_id)
+
+    @Server.expose
+    def restore_drive_file_version(self, file_id, version_number):
+        return self.drive.restore_file_version(file_id, version_number)
+
+    @Server.expose
     def create_drive_folder(self, drive_id, foldername, parent_folder=None):
         return self.drive.create_folder(drive_id, foldername, parent_folder)
 
@@ -1035,6 +1047,14 @@ class Mycelium(Server):
                 (filepath,)
             ).fetchall()
         if drive_refs:
+            return False
+
+        # Check drive_file_version table
+        version_refs = self.db.cur.execute(
+            "SELECT id FROM drive_file_version WHERE filepath = %s",
+            (filepath,)
+        ).fetchall()
+        if version_refs:
             return False
 
         # Check message.attachments JSON column for any remaining reference
@@ -1980,7 +2000,7 @@ class Mycelium(Server):
 
             channel_id = self.db.insertDict(table, defaults, getId=True)
             channel = self.db.getSomething(table, channel_id)
-            return json.dumps({"channel": channel, "type": ct}, default=str)
+            return json.dumps({"channel": channel, "type": channel_type}, default=str)
 
         table_name = self._getChannelTable(channel_type) or "textual_channel"
         chan = self.db.getSomething(table_name, targetId)

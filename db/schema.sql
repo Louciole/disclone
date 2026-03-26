@@ -270,10 +270,25 @@ create table if not exists drive_file (
     filepath text NOT NULL,
     size bigint,
     uploader integer NOT NULL,
+    version_count integer NOT NULL DEFAULT 1,
     parent_folder integer,
     uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (parent_folder) REFERENCES drive_folder(id) ON DELETE CASCADE
 );
+
+create table if not exists drive_file_version (
+    id bigserial NOT NULL PRIMARY KEY,
+    drive_file integer NOT NULL REFERENCES drive_file(id) ON DELETE CASCADE,
+    version_number integer NOT NULL,
+    filename varchar(255) NOT NULL,
+    filepath text NOT NULL,
+    size bigint,
+    uploader integer NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(drive_file, version_number)
+);
+
+create index if not exists idx_drive_file_version_file on drive_file_version(drive_file);
 
 create table if not exists call_session (
     id bigserial NOT NULL PRIMARY KEY,

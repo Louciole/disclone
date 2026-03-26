@@ -26,10 +26,7 @@ class DriveManager:
             raise HTTPError(self.srv.response, 403, "No access to this drive")
         return drive
 
-    def upload(self, user_id, drive_id, file, parent_folder=None):
-        """Save a file to disk and create a drive_file record. Returns the new file id."""
-        filename, content = file
-
+    def _prepare_upload(self, filename, content):
         # Add dataURI prefix if not present
         if not content.startswith("data:"):
             mime_type, _ = mimetypes.guess_type(filename)
@@ -37,13 +34,20 @@ class DriveManager:
                 mime_type = "application/octet-stream"
             content = f"data:{mime_type};base64,{content}"
 
-        parts = filename.rsplit('.')
+        parts = filename.rsplit('.', 1)
         name = parts[0]
         ext = parts[1] if len(parts) > 1 else ''
 
         # Approximate file size from base64 length
         content_data = content.split(",")[1] if "," in content else content
         file_size = int(len(content_data) * 3 / 4)
+        return content, name, ext, file_size
+
+    def upload(self, user_id, drive_id, file, parent_folder=None):
+        """Save a file to disk and create a drive_file record. Returns the new file id."""
+        filename, content = file
+
+        content, name, ext, file_size = self._prepare_upload(filename, content)
 
         # Check storage quota before saving to disk
         drive = self.srv.db.getSomething("drive_channel", drive_id)
@@ -65,6 +69,108 @@ class DriveManager:
             self.srv._adjustStorage(drive["server"], file_size)
 
         return file_id
+
+    def _check_file_edit_permission(self, uid, file_info, drive):
+        server_info = self.srv.db.getSomething("server", drive["server"])
+        if file_info["uploader"] != uid and server_info["owner"] != uid:
+            if not self.srv.checkAccessRights(uid, drive["server"], "edit"):
+                raise HTTPError(self.srv.response, 403, "Only uploader or server admins can edit file versions")
+
+    def replace_file(self, file_id, filename, file):
+        uid = self.srv.getUser()
+
+        file_info = self.srv.db.getSomething("drive_file", file_id)
+        if not file_info:
+            raise HTTPError(self.srv.response, 404, "File not found")
+
+        drive = self._get_drive_access(file_info["drive_channel"], uid)
+        self._check_file_edit_permission(uid, file_info, drive)
+
+        content, name, ext, file_size = self._prepare_upload(filename, file)
+        old_size = file_info.get("size", 0) or 0
+        delta = file_size - old_size
+
+        if delta > 0:
+            self.srv._checkQuota(drive["server"], delta)
+
+        new_filepath = self.srv.saveFile(content, name=name, ext=ext, category=f"drive_{file_info['drive_channel']}")
+
+        current_version = file_info.get("version_count", 1) or 1
+        self.srv.db.insertDict("drive_file_version", {
+            "drive_file": file_id,
+            "version_number": current_version,
+            "filename": file_info["filename"],
+            "filepath": file_info["filepath"],
+            "size": old_size,
+            "uploader": file_info["uploader"]
+        })
+
+        self.srv.db.edit("drive_file", file_id, "filename", filename)
+        self.srv.db.edit("drive_file", file_id, "filepath", new_filepath)
+        self.srv.db.edit("drive_file", file_id, "size", file_size)
+        self.srv.db.edit("drive_file", file_id, "uploader", uid)
+        self.srv.db.edit("drive_file", file_id, "version_count", current_version + 1)
+
+        if delta != 0:
+            self.srv._adjustStorage(drive["server"], delta)
+
+        return json.dumps({"status": "ok", "file_id": file_id, "version_count": current_version + 1})
+
+    def get_file_versions(self, file_id):
+        uid = self.srv.getUser()
+
+        file_info = self.srv.db.getSomething("drive_file", file_id)
+        if not file_info:
+            raise HTTPError(self.srv.response, 404, "File not found")
+
+        self._get_drive_access(file_info["drive_channel"], uid)
+
+        versions = self.srv.db.getFilters("drive_file_version", [
+            "drive_file", "=", file_id, "order by version_number desc"
+        ]) or []
+
+        for v in versions:
+            uploader = self.srv.db.getSomething("mycelium_account", v["uploader"])
+            if uploader:
+                v["uploader_name"] = uploader["display"]
+                v["uploader_username"] = uploader["username"]
+
+        return json.dumps(versions, default=str)
+
+    def restore_file_version(self, file_id, version_number):
+        uid = self.srv.getUser()
+
+        file_info = self.srv.db.getSomething("drive_file", file_id)
+        if not file_info:
+            raise HTTPError(self.srv.response, 404, "File not found")
+
+        drive = self._get_drive_access(file_info["drive_channel"], uid)
+        self._check_file_edit_permission(uid, file_info, drive)
+
+        target = self.srv.db.getFilters("drive_file_version", [
+            "drive_file", "=", file_id, "and", "version_number", "=", int(version_number)
+        ])
+        if not target:
+            raise HTTPError(self.srv.response, 404, "Version not found")
+        target = target[0]
+
+        current_version = file_info.get("version_count", 1) or 1
+        self.srv.db.insertDict("drive_file_version", {
+            "drive_file": file_id,
+            "version_number": current_version,
+            "filename": file_info["filename"],
+            "filepath": file_info["filepath"],
+            "size": file_info.get("size", 0) or 0,
+            "uploader": file_info["uploader"]
+        })
+
+        self.srv.db.edit("drive_file", file_id, "filename", target["filename"])
+        self.srv.db.edit("drive_file", file_id, "filepath", target["filepath"])
+        self.srv.db.edit("drive_file", file_id, "size", target.get("size", 0) or 0)
+        self.srv.db.edit("drive_file", file_id, "uploader", uid)
+        self.srv.db.edit("drive_file", file_id, "version_count", current_version + 1)
+
+        return json.dumps({"status": "ok", "file_id": file_id, "version_count": current_version + 1})
 
     def upload_on_behalf(self, API_KEY, email, filename, file):
         key = self.srv.db.getSomething("api_key", API_KEY, "key")
@@ -199,15 +305,23 @@ class DriveManager:
             if not self.srv.checkAccessRights(uid, drive["server"], "edit"):
                 raise HTTPError(self.srv.response, 403, "Only uploader or server admins can delete files")
 
-        filepath = self.srv.path + "/static/attachments/" + file_info["filepath"]
-        if self.srv._isFilepathOrphaned(file_info["filepath"], exclude_drive_file_id=file_id):
-            try:
-                if os.path.exists(filepath):
-                    os.remove(filepath)
-            except Exception as e:
-                print(f"Error deleting file {filepath}: {e}")
+        versions = self.srv.db.getAll("drive_file_version", file_id, "drive_file") or []
+        candidate_paths = {file_info["filepath"]}
+        for version in versions:
+            if version.get("filepath"):
+                candidate_paths.add(version["filepath"])
 
         self.srv.db.deleteSomething("drive_file", file_id)
+
+        for stored_path in candidate_paths:
+            filepath = self.srv.path + "/static/attachments/" + stored_path
+            if self.srv._isFilepathOrphaned(stored_path):
+                try:
+                    if os.path.exists(filepath):
+                        os.remove(filepath)
+                except Exception as e:
+                    print(f"Error deleting file {filepath}: {e}")
+
         self.srv._adjustStorage(drive["server"], -file_info.get("size", 0))
         return json.dumps({"status": "ok", "message": "File deleted successfully"})
 
