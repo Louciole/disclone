@@ -108,7 +108,6 @@ class DriveManager:
         self.srv.db.edit("drive_file", file_id, "filename", filename)
         self.srv.db.edit("drive_file", file_id, "filepath", new_filepath)
         self.srv.db.edit("drive_file", file_id, "size", file_size)
-        self.srv.db.edit("drive_file", file_id, "uploader", file_info["uploader"])
         self.srv.db.edit("drive_file", file_id, "version_count", current_version + 1)
 
         if delta != 0:
@@ -160,7 +159,7 @@ class DriveManager:
             "version_number": current_version,
             "filename": file_info["filename"],
             "filepath": file_info["filepath"],
-            "size": file_info.get("size", 0) or 0,
+            "size": file_info.get("size", 0),
             "uploader": file_info["uploader"]
         })
 
