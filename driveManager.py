@@ -108,7 +108,7 @@ class DriveManager:
         self.srv.db.edit("drive_file", file_id, "filename", filename)
         self.srv.db.edit("drive_file", file_id, "filepath", new_filepath)
         self.srv.db.edit("drive_file", file_id, "size", file_size)
-        self.srv.db.edit("drive_file", file_id, "uploader", uid)
+        self.srv.db.edit("drive_file", file_id, "uploader", file_info["uploader"])
         self.srv.db.edit("drive_file", file_id, "version_count", current_version + 1)
 
         if delta != 0:
@@ -167,7 +167,7 @@ class DriveManager:
         self.srv.db.edit("drive_file", file_id, "filename", target["filename"])
         self.srv.db.edit("drive_file", file_id, "filepath", target["filepath"])
         self.srv.db.edit("drive_file", file_id, "size", target.get("size", 0) or 0)
-        self.srv.db.edit("drive_file", file_id, "uploader", uid)
+        self.srv.db.edit("drive_file", file_id, "uploader", target["uploader"])
         self.srv.db.edit("drive_file", file_id, "version_count", current_version + 1)
 
         return json.dumps({"status": "ok", "file_id": file_id, "version_count": current_version + 1})
