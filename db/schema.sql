@@ -207,7 +207,10 @@ create table if not exists note_block (
     type varchar(50) NOT NULL,
     position float NOT NULL DEFAULT 0.1,
     content text default '',
-    uuid varchar(36) NOT NULL UNIQUE
+    uuid varchar(36) NOT NULL UNIQUE,
+    row_group varchar(36),
+    column_index integer DEFAULT 0,
+    sub_position float DEFAULT 0.1
 );
 
 create table if not exists note_database (
@@ -254,21 +257,33 @@ create table if not exists note_spreadsheet (
     id bigserial NOT NULL PRIMARY KEY,
     block_uuid varchar(36) NOT NULL REFERENCES note_block(uuid) ON DELETE CASCADE,
     channel integer NOT NULL,
-    rows integer NOT NULL DEFAULT 10,
-    cols integer NOT NULL DEFAULT 5,
+    rows integer NOT NULL DEFAULT 3,
+    cols integer NOT NULL DEFAULT 2,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 create table if not exists note_spreadsheet_cell (
     id bigserial NOT NULL PRIMARY KEY,
     spreadsheet_id integer NOT NULL REFERENCES note_spreadsheet(id) ON DELETE CASCADE,
-    cell_id varchar(10) NOT NULL, -- e.g. A1, B2
+    row_idx integer NOT NULL CHECK (row_idx >= 1),
+    col_idx integer NOT NULL CHECK (col_idx >= 0),
     value text DEFAULT '',
-    UNIQUE(spreadsheet_id, cell_id)
+    UNIQUE(spreadsheet_id, row_idx, col_idx)
+);
+
+create table if not exists note_spreadsheet_col (
+    id bigserial NOT NULL PRIMARY KEY,
+    spreadsheet_id integer NOT NULL REFERENCES note_spreadsheet(id) ON DELETE CASCADE,
+    col_idx integer NOT NULL CHECK (col_idx >= 0),
+    width_px integer NOT NULL DEFAULT 120 CHECK (width_px >= 40 AND width_px <= 1200),
+    UNIQUE(spreadsheet_id, col_idx)
 );
 
 create index if not exists idx_note_spreadsheet_block on note_spreadsheet(block_uuid);
 create index if not exists idx_note_spreadsheet_cell_sheet on note_spreadsheet_cell(spreadsheet_id);
+create index if not exists idx_note_spreadsheet_cell_sheet_row on note_spreadsheet_cell(spreadsheet_id, row_idx);
+create index if not exists idx_note_spreadsheet_cell_sheet_col on note_spreadsheet_cell(spreadsheet_id, col_idx);
+create index if not exists idx_note_spreadsheet_col_sheet on note_spreadsheet_col(spreadsheet_id);
 
 create table if not exists API_key (
     id bigserial NOT NULL PRIMARY KEY,

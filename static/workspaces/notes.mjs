@@ -1,5 +1,6 @@
 import {Markdown} from "../markdown/markdown.mjs";
 import {xhr} from "../framework/templating.mjs";
+import {setElement, updateElement} from "../framework/vesta.mjs";
 import {} from "./synapse.mjs";
 import {normalizeIfNeeded} from "../drag.mjs";
 import {
@@ -19,6 +20,8 @@ class Editor {
         }
         this.draggedBlockId = null
 
+        this.reorderDOM()
+        
         // After DOM is rendered, re-mount interactive blocks (database, synapse, etc.)
         requestAnimationFrame(() => this._mountInteractiveBlocks())
     }
@@ -35,50 +38,89 @@ class Editor {
         }
     }
 
-    getSortedBlocks() {
-        // Returns blocks sorted by position (primary) and id (secondary)
-        return Object.values(this.blocks).sort((a, b) => {
-            if (a.position === b.position) {
-                return a.id - b.id
+    getRenderableRows() {
+        const toNumber = (value, fallback = 0) => {
+            const num = Number(value)
+            return Number.isFinite(num) ? num : fallback
+        }
+
+        const compareBlocks = (a, b) => {
+            const subA = toNumber(a.sub_position, toNumber(a.position, 0))
+            const subB = toNumber(b.sub_position, toNumber(b.position, 0))
+            if (subA !== subB) return subA - subB
+
+            const posA = toNumber(a.position, 0)
+            const posB = toNumber(b.position, 0)
+            if (posA !== posB) return posA - posB
+
+            return String(a.uuid).localeCompare(String(b.uuid))
+        }
+
+        const rowsById = new Map()
+
+        for (const block of Object.values(this.blocks)) {
+            const rowId = block.row_group || block.uuid
+            const rowPosition = toNumber(block.position, 0)
+            const colIndex = toNumber(block.column_index, 0)
+
+            let row = rowsById.get(rowId)
+            if (!row) {
+                row = {id: rowId, position: rowPosition, columns: new Map()}
+                rowsById.set(rowId, row)
+            } else {
+                row.position = Math.min(row.position, rowPosition)
             }
-            return a.position - b.position
-        })
+
+            const colBlocks = row.columns.get(colIndex) || []
+            colBlocks.push(block)
+            row.columns.set(colIndex, colBlocks)
+        }
+
+        return Array.from(rowsById.values())
+            .sort((a, b) => {
+                if (a.position !== b.position) return a.position - b.position
+                return String(a.id).localeCompare(String(b.id))
+            })
+            .map((row) => ({
+                id: row.id,
+                position: row.position,
+                columnsArray: Array.from(row.columns.entries())
+                    .sort(([colA], [colB]) => colA - colB)
+                    .map(([, blocks]) => blocks.sort(compareBlocks))
+            }))
     }
 
-    createBlock({type = "text", content = "", position = null, afterBlockId = null}, addDom = true) {
-        this.DOMElement = document.getElementById("note-editor");
+    createBlock({type = "text", content = "", position = null, afterBlockId = null, rowGroup = null, colIndex = 0}, addDom = true) {
         // generate uuid for block id
         const newBlockId = crypto.randomUUID()
+        
+        let targetPosition = position
+        let subPosition = 0
 
         // Calculate position
-        if (position !== null && afterBlockId === null) {
-            // Position was explicitly provided (from add button click)
-            // Find the next block after this position
-            const sortedBlocks = this.getSortedBlocks()
-            const currentBlockIndex = sortedBlocks.findIndex(b => b.position === position)
-
-            if (currentBlockIndex !== -1 && currentBlockIndex < sortedBlocks.length - 1) {
-                // Insert between current and next
-                const nextBlock = sortedBlocks[currentBlockIndex + 1]
-                position = (position + nextBlock.position) / 2
-            } else {
-                // Add at the end
-                position = position + 0.1
-            }
-        } else if (position === null) {
+        if (targetPosition !== null && afterBlockId === null) {
+             targetPosition = targetPosition + 0.1
+        } else if (targetPosition === null) {
             // No position provided, add at the end
-            const sortedBlocks = this.getSortedBlocks()
-            if (sortedBlocks.length === 0) {
-                position = 0.1
+            const rows = this.getRenderableRows()
+            if (rows.length === 0) {
+                targetPosition = 0.1
             } else {
-                position = sortedBlocks[sortedBlocks.length - 1].position + 0.1
+                targetPosition = rows[rows.length - 1].position + 0.1
             }
         }
 
-        this.blocks[newBlockId] = {"uuid":newBlockId, "type":type, "content": content, position: position};
+        this.blocks[newBlockId] = {
+            "uuid": newBlockId, 
+            "type": type, 
+            "content": content, 
+            "position": targetPosition,
+            "row_group": rowGroup || newBlockId,
+            "column_index": colIndex,
+            "sub_position": subPosition
+        };
 
         if (addDom){
-            this.DOMElement.insertAdjacentHTML("beforeend", fillWith('note-block', [this.blocks[newBlockId]]));
             this.reorderDOM()
         }
 
@@ -90,33 +132,32 @@ class Editor {
         xhr("/save_block?channel="+global.state.activeChan.id+"&block="+encodeURIComponent(JSON.stringify(this.blocks[newBlockId]))+"&op=create", onload)
     }
 
-    moveBlock(blockId, newPosition) {
+    moveBlock(blockId, newPosition, newRowGroup = null, newColIndex = null, newSubPosition = null) {
         const block = this.blocks[blockId]
         if (!block) return
 
         block.position = newPosition
+        if (newRowGroup !== null) block.row_group = newRowGroup
+        if (newColIndex !== null) block.column_index = newColIndex
+        if (newSubPosition !== null) block.sub_position = newSubPosition
+        
         this.reorderDOM()
         this.checkAndNormalizePositions()
 
         this.saveBlock(block.uuid)
 
-        console.log("Block moved:", blockId, "new position:", newPosition)
+        console.log("Block moved:", blockId, "new pos:", newPosition, "row:", newRowGroup, "col:", newColIndex)
     }
 
     reorderDOM() {
-        // Reorder DOM elements based on sorted blocks
-        const sortedBlocks = this.getSortedBlocks()
-        const container = document.getElementById("note-editor")
+        updateElement('global.notes['+global.state.activeChan.id+'].blocks')
 
-        sortedBlocks.forEach(block => {
-            const blockElement = container.querySelector(`[data-block-id="${block.uuid}"]`)
-            if (blockElement) {
-                container.appendChild(blockElement)
-            }
-        })
+        // updateElement re-renders rows and replaces interactive block DOM.
+        requestAnimationFrame(() => this._mountInteractiveBlocks())
     }
 
     checkAndNormalizePositions() {
+         // TODO: Normalize sub_positions too
         const blocks = Object.values(this.blocks)
         normalizeIfNeeded(blocks, 'position', (item) => {
             this.saveBlock(item.uuid)
@@ -127,6 +168,12 @@ class Editor {
         const block = this.blocks[blockId]
         if (block?.type === "spreadsheet" && global.state.spreadsheetViews) {
             delete global.state.spreadsheetViews[blockId]
+            if (global.state.activeSpreadsheetFormulaEditor?.blockUuid === blockId) {
+                global.state.activeSpreadsheetFormulaEditor = null
+            }
+            if (global.state.spreadsheetSnapshots) {
+                delete global.state.spreadsheetSnapshots[blockId]
+            }
         }
         if (block?.type === "database" && global.state.databaseViews) {
             delete global.state.databaseViews[blockId]
@@ -134,10 +181,8 @@ class Editor {
 
         delete this.blocks[blockId]
         delete global.notes[global.state.activeChan.id].blocks[blockId]
-        const blockElement = document.querySelector(`[data-block-id="${blockId}"]`)
-        if (blockElement) {
-            blockElement.remove()
-        }
+        
+        this.reorderDOM()
 
         const onload = function () {
 
@@ -179,42 +224,46 @@ class Editor {
         // Remove all existing drop indicators
         document.querySelectorAll('.drop-indicator').forEach(el => el.remove())
 
-        // Calculate if we're above or below the target
         const blockElement = event.currentTarget.closest('.block')
         const rect = blockElement.getBoundingClientRect()
-        const midpoint = rect.top + rect.height / 2
-        const isAbove = event.clientY < midpoint
-
-        // Check if this drop would result in no movement
-        const sortedBlocks = this.getSortedBlocks()
-        const draggedIndex = sortedBlocks.findIndex(b => b.uuid === this.draggedBlockId)
-        const targetIndex = sortedBlocks.findIndex(b => b.uuid === blockId)
-
-        // Don't show indicator if drop would result in same position
-        if (isAbove) {
-            // Dropping above target: would be pointless if target is immediately after dragged
-            if (targetIndex === draggedIndex + 1) {
-                return // No movement would occur
-            }
-        } else {
-            // Dropping below target: would be pointless if target is immediately before dragged
-            if (targetIndex === draggedIndex - 1) {
-                return // No movement would occur
-            }
+        
+        // Calculate relative mouse position (0.0 to 1.0)
+        const relX = (event.clientX - rect.left) / rect.width
+        const relY = (event.clientY - rect.top) / rect.height
+        
+        // Determine drop zone (left, right, top, bottom)
+        const margin = 0.15 // 15% edge margin for side drops
+        
+        let dropType = 'horizontal'
+        let isAfter = relY > 0.5
+        
+        if (relX < margin) {
+            dropType = 'vertical'
+            isAfter = false // Left
+        } else if (relX > 1 - margin) {
+            dropType = 'vertical'
+            isAfter = true // Right
         }
 
         // Create and position the drop indicator
         const indicator = document.createElement('div')
-        indicator.className = 'drop-indicator'
+        indicator.className = 'drop-indicator ' + dropType
 
-        if (isAbove) {
-            blockElement.parentNode.insertBefore(indicator, blockElement)
-        } else {
-            if (blockElement.nextSibling) {
-                blockElement.parentNode.insertBefore(indicator, blockElement.nextSibling)
+        if (dropType === 'horizontal') {
+            if (isAfter) {
+                if (blockElement.nextSibling) {
+                    blockElement.parentNode.insertBefore(indicator, blockElement.nextSibling)
+                } else {
+                    blockElement.parentNode.appendChild(indicator)
+                }
             } else {
-                blockElement.parentNode.appendChild(indicator)
+                blockElement.parentNode.insertBefore(indicator, blockElement)
             }
+        } else {
+            // Horizontal drop (side by side)
+            indicator.style.left = isAfter ? 'auto' : '0'
+            indicator.style.right = isAfter ? '0' : 'auto'
+            blockElement.appendChild(indicator)
         }
     }
 
@@ -228,55 +277,84 @@ class Editor {
 
         if (!draggedBlock || !targetBlock) return
 
-        // Calculate new position based on drop location
-        const sortedBlocks = this.getSortedBlocks()
-        const draggedIndex = sortedBlocks.findIndex(b => b.uuid === this.draggedBlockId)
-        const targetIndex = sortedBlocks.findIndex(b => b.uuid === blockId)
-
-        // Determine if we're dropping above or below
         const blockElement = event.currentTarget.closest('.block')
         const rect = blockElement.getBoundingClientRect()
-        const midpoint = rect.top + rect.height / 2
-        const isAbove = event.clientY < midpoint
-
-        // Validate that this drop would actually result in a position change
-        if (isAbove && targetIndex === draggedIndex + 1) {
-            // Dropping above the block immediately after = no change
-            this.cleanupDragState()
-            return
+        
+        const relX = (event.clientX - rect.left) / rect.width
+        const relY = (event.clientY - rect.top) / rect.height
+        
+        const margin = 0.15
+        
+        let isHorizontalDrop = false
+        let isAfter = relY > 0.5
+        
+        if (relX < margin) {
+            isHorizontalDrop = true
+            isAfter = false
+        } else if (relX > 1 - margin) {
+            isHorizontalDrop = true
+            isAfter = true
         }
-        if (!isAbove && targetIndex === draggedIndex - 1) {
-            // Dropping below the block immediately before = no change
-            this.cleanupDragState()
-            return
-        }
 
-        let newPosition
-        if (isAbove) {
-            // Insert above target
-            if (targetIndex === 0) {
-                newPosition = targetBlock.position / 2
-            } else {
-                const prevBlock = sortedBlocks[targetIndex - 1]
-                newPosition = (prevBlock.position + targetBlock.position) / 2
+        if (isHorizontalDrop) {
+            // Create or join a row
+            const targetRowGroup = targetBlock.row_group || targetBlock.uuid
+            
+            // Ensure target is properly grouped
+            targetBlock.row_group = targetRowGroup
+            targetBlock.column_index = targetBlock.column_index || 0
+            
+            const newColIndex = isAfter ? targetBlock.column_index + 1 : Math.max(0, targetBlock.column_index - 0.5)
+            
+            this.moveBlock(this.draggedBlockId, targetBlock.position, targetRowGroup, newColIndex, 0)
+            
+            // Normalize column indices for this row
+            const rows = this.getRenderableRows()
+            const targetRow = rows.find(r => r.id === targetRowGroup)
+            if(targetRow) {
+               let flatCols = []
+               targetRow.columnsArray.forEach(c => flatCols.push(...c))
+               // sort by old column index
+               flatCols.sort((a,b) => a.column_index - b.column_index)
+               // reassign integer indices
+               let currentGroup = -1
+               let colIdx = -1
+               for(let i=0; i<flatCols.length; i++) {
+                   if(flatCols[i].column_index !== currentGroup) {
+                       currentGroup = flatCols[i].column_index
+                       colIdx++
+                   }
+                   flatCols[i].column_index = colIdx
+                   this.saveBlock(flatCols[i].uuid)
+               }
             }
+
         } else {
-            // Insert below target
-            if (targetIndex === sortedBlocks.length - 1) {
-                newPosition = targetBlock.position + 0.1
-            } else {
-                const nextBlock = sortedBlocks[targetIndex + 1]
-                newPosition = (targetBlock.position + nextBlock.position) / 2
-            }
+             // Vertical Drop
+             const targetRowGroup = targetBlock.row_group || targetBlock.uuid
+             const targetColIndex = targetBlock.column_index || 0
+             
+             // If dropping on a block that is the only one in its row, 
+             // we probably want to create a new row above/below it.
+             // If the row has multiple columns, we want to stay in this column.
+             
+             const rows = this.getRenderableRows()
+             const targetRow = rows.find(r => r.id === targetRowGroup)
+             const isMultiColumnRow = targetRow && targetRow.columnsArray.length > 1
+             
+             if (isMultiColumnRow) {
+                 // Insert within the same column
+                 let newSubPos = isAfter ? (targetBlock.sub_position || 0) + 0.5 : (targetBlock.sub_position || 0) - 0.5
+                 this.moveBlock(this.draggedBlockId, targetBlock.position, targetRowGroup, targetColIndex, newSubPos)
+             } else {
+                 // Insert as a new full-width row
+                 let newPos = isAfter ? targetBlock.position + 0.1 : targetBlock.position - 0.1
+                 // Give it its own row group
+                 this.moveBlock(this.draggedBlockId, newPos, this.draggedBlockId, 0, 0)
+             }
         }
 
-        this.moveBlock(this.draggedBlockId, newPosition)
-
-        // Remove drag classes and drop indicators
-        document.querySelectorAll('.block').forEach(block => {
-            block.classList.remove('dragging')
-        })
-        document.querySelectorAll('.drop-indicator').forEach(el => el.remove())
+        this.cleanupDragState()
     }
 
     onInput(blockId, event) {
@@ -288,7 +366,7 @@ class Editor {
                 block.type = parsedInitiator.initiator.type
                 block.content = parsedInitiator.content
                 if (blockTypes[block.type].template) {
-                    this.convertBlock(event.currentTarget, blockId)
+                    this.convertBlock(event.currentTarget, blockId, "interactiveElement", true)
                     return // block is now interactive, don't touch its DOM further
                 }
                 if (blockTypes[block.type].placeholder) {
@@ -317,7 +395,7 @@ class Editor {
         console.log("Input event:",this.blocks[blockId], event.currentTarget.innerText);
     }
 
-    convertBlock(target, blockId, newType = "interactiveElement") {
+    convertBlock(target, blockId, newType = "interactiveElement", persistTypeChange = false) {
         const block = this.blocks[blockId]
         if(newType === "interactiveElement"){
             target.oninput = null
@@ -332,9 +410,10 @@ class Editor {
             target.contentEditable = "false"
             target.setAttribute("contenteditable", "false")
 
-            // Persist the block type change synchronously so server-side
-            // resources (e.g. note_database) are created before we try to load them
-            xhr("/save_block?channel="+global.state.activeChan.id+"&block="+encodeURIComponent(JSON.stringify(block))+"&op=edit", ()=>{}, "GET", false)
+            if (persistTypeChange) {
+                // Persist type transitions before mounting interactive resources.
+                xhr("/save_block?channel="+global.state.activeChan.id+"&block="+encodeURIComponent(JSON.stringify(block))+"&op=edit", ()=>{}, "GET", false)
+            }
 
             target.innerHTML = blockTypes[block.type].template(block)
 
@@ -368,6 +447,12 @@ class Editor {
         if(event.key === "Backspace" && block.content === ""){
             if (block.type === "spreadsheet" && global.state.spreadsheetViews) {
                 delete global.state.spreadsheetViews[blockId]
+                if (global.state.activeSpreadsheetFormulaEditor?.blockUuid === blockId) {
+                    global.state.activeSpreadsheetFormulaEditor = null
+                }
+                if (global.state.spreadsheetSnapshots) {
+                    delete global.state.spreadsheetSnapshots[blockId]
+                }
             }
             if (block.type === "database" && global.state.databaseViews) {
                 delete global.state.databaseViews[blockId]
@@ -395,11 +480,22 @@ class Editor {
             block.content = contentBeforeCursor
             event.currentTarget.innerText = block.content
 
-            this.createBlock({type: "text", content: contentAfterCursor, afterBlockId: blockId})
+            this.createBlock({
+                type: "text", 
+                content: contentAfterCursor, 
+                afterBlockId: blockId,
+                rowGroup: block.row_group,
+                colIndex: block.column_index
+            })
             // put cursor to end of new block
-            const newBlockElement = document.querySelector(`[data-block-id="${Object.keys(this.blocks).length - 1}"] .content`)
-            this.putCursorToEnd(newBlockElement)
-            newBlockElement.focus();
+            // Find the correct DOM element instead of assuming it's the last one created globally
+            setTimeout(() => {
+                 const newBlockElement = document.querySelector(`[data-block-id="${Object.keys(this.blocks)[Object.keys(this.blocks).length - 1]}"] .content`)
+                 if(newBlockElement) {
+                     this.putCursorToEnd(newBlockElement)
+                     newBlockElement.focus();
+                 }
+            }, 0)
 
         }
     }

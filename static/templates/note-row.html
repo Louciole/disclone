@@ -1,0 +1,7 @@
+<div class="note-row" data-row-id="${element.id}">
+    ${element.columnsArray.map(col => `
+        <div class="note-column">
+            ${fillWith('note-block', col)}
+        </div>
+    `).join('')}
+</div>

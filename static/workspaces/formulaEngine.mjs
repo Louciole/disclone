@@ -10,16 +10,25 @@
  * Cell references (A1, B3, etc.) are resolved via a contextResolver callback
  * that maps column-letter + row-number to actual cell values.
  *
- * Cross-database references use DB("Database Name").A1 syntax,
- * resolved by the contextResolver (not the engine itself).
+ * Cross-table references use TABLE("block_uuid").A1 syntax.
+ * Legacy DB("Name").A1 syntax is still accepted for compatibility.
+ * Resolution is delegated to contextResolver (not the engine itself).
  */
 
 // ─── Function Registry ────────────────────────────────────────────────
 
 const functions = {}
 
+function normalizeFunctionName(name) {
+    return String(name || '').trim().toUpperCase()
+}
+
+function getRegisteredFunction(name) {
+    return functions[normalizeFunctionName(name)]
+}
+
 export function registerFunction(name, fn) {
-    functions[name.toUpperCase()] = fn
+    functions[normalizeFunctionName(name)] = fn
 }
 
 // ─── Built-in Aggregation Functions ───────────────────────────────────
@@ -85,22 +94,205 @@ export function colLetterToIndex(letter) {
  * Expand a range reference like A1:A3 into individual cell refs [A1, A2, A3]
  */
 export function expandRange(rangeStr) {
-    const match = rangeStr.match(/^([A-Z]+)(\d+):([A-Z]+)(\d+)$/)
+    const normalized = String(rangeStr || '').toUpperCase()
+    const match = normalized.match(/^([A-Z]+)(\d+):([A-Z]+)(\d+)$/)
     if (!match) return [rangeStr]
 
     const [, startCol, startRow, endCol, endRow] = match
     const startColIdx = colLetterToIndex(startCol)
     const endColIdx = colLetterToIndex(endCol)
-    const startRowNum = parseInt(startRow)
-    const endRowNum = parseInt(endRow)
+    const startRowNum = parseInt(startRow, 10)
+    const endRowNum = parseInt(endRow, 10)
+
+    const colMin = Math.min(startColIdx, endColIdx)
+    const colMax = Math.max(startColIdx, endColIdx)
+    const rowMin = Math.min(startRowNum, endRowNum)
+    const rowMax = Math.max(startRowNum, endRowNum)
 
     const refs = []
-    for (let c = startColIdx; c <= endColIdx; c++) {
-        for (let r = startRowNum; r <= endRowNum; r++) {
+    for (let c = colMin; c <= colMax; c++) {
+        for (let r = rowMin; r <= rowMax; r++) {
             refs.push(colIndexToLetter(c) + r)
         }
     }
     return refs
+}
+
+function mapOutsideStrings(text, transform) {
+    let result = ''
+    let i = 0
+
+    while (i < text.length) {
+        const ch = text[i]
+        if (ch === '"' || ch === "'") {
+            const quote = ch
+            let literal = quote
+            i += 1
+
+            while (i < text.length) {
+                const cur = text[i]
+                literal += cur
+                if (cur === '\\' && i + 1 < text.length) {
+                    i += 1
+                    literal += text[i]
+                } else if (cur === quote) {
+                    i += 1
+                    break
+                }
+                i += 1
+            }
+
+            result += literal
+            continue
+        }
+
+        const start = i
+        while (i < text.length && text[i] !== '"' && text[i] !== "'") i += 1
+        result += transform(text.slice(start, i))
+    }
+
+    return result
+}
+
+function serializeResolvedValue(value) {
+    if (value === undefined || value === null) return ''
+
+    if (Array.isArray(value)) {
+        return value.flat(Infinity).map(serializeResolvedValue).join(',')
+    }
+
+    if (typeof value === 'number') {
+        return isFinite(value) ? String(value) : ''
+    }
+
+    if (typeof value === 'boolean') {
+        return value ? 'true' : 'false'
+    }
+
+    const str = String(value)
+    const trimmed = str.trim()
+    if (trimmed === '') return ''
+
+    // Keep numeric and spreadsheet error tokens unquoted.
+    if (/^-?\d+(?:\.\d+)?$/.test(trimmed) || /^#[A-Z0-9_!]+$/i.test(trimmed)) {
+        return trimmed
+    }
+
+    // Quote text so it cannot be reparsed as a cell reference in later passes.
+    return JSON.stringify(str)
+}
+
+function replaceCrossTableReferences(expression, contextResolver) {
+    let result = ''
+    let i = 0
+
+    while (i < expression.length) {
+        const ch = expression[i]
+        if (ch === '"' || ch === "'") {
+            const quote = ch
+            result += quote
+            i += 1
+            while (i < expression.length) {
+                const cur = expression[i]
+                result += cur
+                if (cur === '\\' && i + 1 < expression.length) {
+                    i += 1
+                    result += expression[i]
+                } else if (cur === quote) {
+                    i += 1
+                    break
+                }
+                i += 1
+            }
+            continue
+        }
+
+        const tailUpper = expression.slice(i).toUpperCase()
+        const isTable = tailUpper.startsWith('TABLE(')
+        const isDb = tailUpper.startsWith('DB(')
+        if (!isTable && !isDb) {
+            result += ch
+            i += 1
+            continue
+        }
+
+        const kindLen = isTable ? 5 : 2
+        const start = i
+        let j = i + kindLen
+        if (expression[j] !== '(') {
+            result += ch
+            i += 1
+            continue
+        }
+
+        j += 1
+        const quote = expression[j]
+        if (quote !== '"' && quote !== "'") {
+            result += ch
+            i += 1
+            continue
+        }
+
+        j += 1
+        let id = ''
+        let idClosed = false
+        while (j < expression.length) {
+            const cur = expression[j]
+            if (cur === '\\' && j + 1 < expression.length) {
+                id += expression[j + 1]
+                j += 2
+                continue
+            }
+            if (cur === quote) {
+                idClosed = true
+                j += 1
+                break
+            }
+            id += cur
+            j += 1
+        }
+        if (!idClosed) {
+            result += ch
+            i += 1
+            continue
+        }
+
+        while (j < expression.length && /\s/.test(expression[j])) j += 1
+        if (expression[j] !== ')') {
+            result += ch
+            i += 1
+            continue
+        }
+
+        j += 1
+        while (j < expression.length && /\s/.test(expression[j])) j += 1
+        if (expression[j] !== '.') {
+            result += ch
+            i += 1
+            continue
+        }
+
+        j += 1
+        while (j < expression.length && /\s/.test(expression[j])) j += 1
+        const refMatch = expression.slice(j).match(/^([A-Z]+\d+(?::[A-Z]+\d+)?)/i)
+        if (!refMatch) {
+            result += ch
+            i += 1
+            continue
+        }
+
+        const cellRange = refMatch[1]
+        const refs = expandRange(String(cellRange).toUpperCase())
+        result += refs.map(ref => serializeResolvedValue(contextResolver(ref, id))).join(',')
+        i = j + cellRange.length
+
+        if (i <= start) {
+            // Safety guard against accidental non-advancing parses.
+            i = start + 1
+        }
+    }
+
+    return result
 }
 
 /**
@@ -108,71 +300,26 @@ export function expandRange(rangeStr) {
  * contextResolver(cellRef, dbName?) → value
  *
  * Handles:
- *   - Cross-database refs: DB("Name").A1 or DB("Name").A1:A3
+ *   - Cross-table refs: TABLE("id").A1 or TABLE("id").A1:A3
+ *   - Legacy cross-database refs: DB("Name").A1 or DB("Name").A1:A3
  *   - Range expansion: A1:A3 → individual values
  *   - Single cell refs: A1, B2, etc.
  */
 export function resolveReferences(expression, contextResolver) {
     if (!expression || typeof expression !== 'string') return expression
 
-    // Apply reference replacement only outside quoted string literals.
-    // This preserves formulas like CONCAT("A1") where A1 is plain text.
-    const mapOutsideStrings = (text, transform) => {
-        let result = ''
-        let i = 0
-
-        while (i < text.length) {
-            const ch = text[i]
-            if (ch === '"' || ch === "'") {
-                const quote = ch
-                let literal = quote
-                i += 1
-
-                while (i < text.length) {
-                    const cur = text[i]
-                    literal += cur
-                    if (cur === '\\' && i + 1 < text.length) {
-                        i += 1
-                        literal += text[i]
-                    } else if (cur === quote) {
-                        i += 1
-                        break
-                    }
-                    i += 1
-                }
-
-                result += literal
-                continue
-            }
-
-            const start = i
-            while (i < text.length && text[i] !== '"' && text[i] !== "'") i += 1
-            result += transform(text.slice(start, i))
-        }
-
-        return result
-    }
-
-    // Handle cross-database references: DB("Name").A1 or DB("Name").A1:A3
-    expression = mapOutsideStrings(
-        expression,
-        segment => segment.replace(
-            /DB\(["']([^"']+)["']\)\.([A-Z]+\d+(?::[A-Z]+\d+)?)/g,
-            (_, dbName, cellRange) => {
-                const refs = expandRange(cellRange)
-                return refs.map(ref => contextResolver(ref, dbName) ?? '').join(',')
-            }
-        )
-    )
+    // Handle cross-table references: TABLE("id").A1 or TABLE("id").A1:A3
+    // Also supports legacy DB("Name") syntax for backward compatibility.
+    expression = replaceCrossTableReferences(expression, contextResolver)
 
     // Handle range references: A1:A3 → expanded values
     expression = mapOutsideStrings(
         expression,
         segment => segment.replace(
-            /([A-Z]+\d+):([A-Z]+\d+)/g,
+            /([A-Z]+\d+):([A-Z]+\d+)/gi,
             (match) => {
-                const refs = expandRange(match)
-                return refs.map(ref => contextResolver(ref) ?? '').join(',')
+                const refs = expandRange(String(match).toUpperCase())
+                return refs.map(ref => serializeResolvedValue(contextResolver(ref))).join(',')
             }
         )
     )
@@ -181,10 +328,10 @@ export function resolveReferences(expression, contextResolver) {
     expression = mapOutsideStrings(
         expression,
         segment => segment.replace(
-            /\b([A-Z]+\d+)\b/g,
+            /\b([A-Z]+\d+)\b/gi,
             (match) => {
-                const value = contextResolver(match)
-                return value !== undefined && value !== null ? value : ''
+                const value = contextResolver(String(match).toUpperCase())
+                return serializeResolvedValue(value)
             }
         )
     )
@@ -244,9 +391,9 @@ export function parseFunctions(text) {
         }
 
         const inner = text.substring(start + 2, end - 2)
-        const funcMatch = inner.match(/^([A-Z_]+)\(([\s\S]*)\)$/)
+        const funcMatch = inner.match(/^([A-Z_][A-Z0-9_]*)\(([\s\S]*)\)$/i)
         if (funcMatch) {
-            result.push({ type: 'function', name: funcMatch[1], args: parseArguments(funcMatch[2].trim()) })
+            result.push({ type: 'function', name: normalizeFunctionName(funcMatch[1]), args: parseArguments(funcMatch[2].trim()) })
         } else {
             result.push({ type: 'text', content: text.substring(start, end) })
         }
@@ -320,15 +467,15 @@ export function parseArgument(arg) {
         return arg.slice(1, -1)
     }
 
-    if (arg === 'true') return true
-    if (arg === 'false') return false
+    if (/^true$/i.test(arg)) return true
+    if (/^false$/i.test(arg)) return false
 
     if (!isNaN(arg) && arg !== '') return parseFloat(arg)
 
     // Nested function call
-    const nestedMatch = arg.match(/^([A-Z_]+)\(([\s\S]*)\)$/)
+    const nestedMatch = arg.match(/^([A-Z_][A-Z0-9_]*)\(([\s\S]*)\)$/i)
     if (nestedMatch) {
-        const func = functions[nestedMatch[1]]
+        const func = getRegisteredFunction(nestedMatch[1])
         if (func) {
             return func(...parseArguments(nestedMatch[2].trim()))
         }
@@ -343,7 +490,7 @@ export function evaluateFunctions(contentArray) {
         if (part.type === "text") {
             content += part.content
         } else if (part.type === "function") {
-            const func = functions[part.name]
+            const func = getRegisteredFunction(part.name)
             if (func) {
                 content += func(...part.args)
             } else {
@@ -364,8 +511,8 @@ function evaluateInnerExpression(inner) {
     let expr = trimmed
     while (true) {
         let changed = false
-        expr = expr.replace(/([A-Z_]+)\(([^()]*)\)/g, (match, fnName, rawArgs) => {
-            const fn = functions[fnName]
+        expr = expr.replace(/([A-Z_][A-Z0-9_]*)\(([^()]*)\)/gi, (match, fnName, rawArgs) => {
+            const fn = getRegisteredFunction(fnName)
             if (!fn) return match
             changed = true
             try {
@@ -391,6 +538,19 @@ function evaluateInnerExpression(inner) {
         }
     }
 
+    // If resolution produced a single quoted literal, return plain text value.
+    if (/^"(?:\\.|[^"\\])*"$/.test(expr)) {
+        try {
+            return JSON.parse(expr)
+        } catch (_) {
+            return expr
+        }
+    }
+
+    if (/^'(?:\\.|[^'\\])*'$/.test(expr)) {
+        return expr.slice(1, -1).replace(/\\'/g, "'")
+    }
+
     return expr
 }
 
@@ -411,7 +571,7 @@ export function evaluateFormula(formula, contextResolver) {
     if (!expression.includes('{{')) return formula
 
     // Resolve cell references within each {{...}} block
-    expression = expression.replace(/\{\{([\s\S]*?)\}\}/g, (_, inner) => {
+    expression = expression.replace(/{{([\s\S]*?)}}/g, (_, inner) => {
         const resolved = resolveReferences(inner, contextResolver)
         return String(evaluateInnerExpression(resolved))
     })

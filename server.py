@@ -87,9 +87,9 @@ class Mycelium(Server):
                 data={k: str(v) for k, v in data.get("data", {}).items()},
                 tokens=tokens,
             )
-            
+
             response = messaging.send_multicast(message)
-            
+
             if response.failure_count > 0:
                 print(f"Failed to send {response.failure_count} push notifications")
                 for idx, resp in enumerate(response.responses):
@@ -202,7 +202,7 @@ class Mycelium(Server):
                                 member_id = member["account"]
                                 if member_id == client["userid"]:
                                     continue
-                                    
+
                                 print(f"Sending call_started to user {member_id}")
 
                                 try:
@@ -210,18 +210,18 @@ class Mycelium(Server):
                                         "type": "call_started",
                                         "content": call.to_dict()
                                     })
-                                    
+
                                     # Send Push Notification for Incoming Call
                                     self.sendPushNotification(member_id, {
                                         "title": "Incoming Call",
                                         "body": "Incoming call...",
                                         "data": {
-                                            "type": "call", 
-                                            "call_id": call.id, 
+                                            "type": "call",
+                                            "call_id": call.id,
                                             "conv_id": str(conv_id)
                                         }
                                     })
-                                    
+
                                     print(f"Sent call_started to user {member_id}")
                                 except Exception as e:
                                     print(f"Error sending to user {member_id}: {e}")
@@ -1268,11 +1268,11 @@ class Mycelium(Server):
     def notifyConvMessage(self,uid ,conv, message):
         members = self.db.getAll("accessconversation", conv["id"], "conversation")
         sender_name = self.db.getSomething("mycelium_account", uid).get("display", "User")
-        
+
         for user in members:
             if user["account"] != uid:
                 self.sendNotification(user["account"], {"type": "message", "content": message})
-                
+
                 # Push Notification for DM
                 self.sendPushNotification(user["account"], {
                     "title": sender_name,
@@ -1342,7 +1342,7 @@ class Mycelium(Server):
                     self.db.edit("offline_notifs", notif[0]["id"], "number", notif[0]["number"] + 1)
                 else:
                     self.db.insertDict("offline_notifs", {"account": target_uid, "conversation": channel["id"]})
-                
+
                 # Push Notification for Mention
                 self.sendPushNotification(target_uid, {
                     "title": f"Mentioned in {channel.get('name', 'channel')}",
@@ -1481,7 +1481,7 @@ class Mycelium(Server):
                                 "options": [{"id": o["id"], "text": o["text"], "creator": o["creator"]} for o in options],
                                 "votes": {str(k): v for k, v in votes_dict.items()}
                             }
-                            
+
     def _enrichMessagesWithReactions(self, messages):
         for msg in messages:
             reactions = self.db.getAll("message_reaction", msg["id"], "message")
@@ -1496,7 +1496,7 @@ class Mycelium(Server):
     @Server.expose
     def toggle_reaction(self, message_id, emoji):
         uid = self.getUser()
-        
+
         # Check if user has access to the message
         message = self.db.getSomething("message", message_id)
         if not message:
@@ -1530,7 +1530,7 @@ class Mycelium(Server):
             
         # Re-fetch reactions for this message to broadcast the updated state
         reactions = self.db.getAll("message_reaction", message_id, "message")
-        
+
         broadcast_reactions_dict = {}
         for r in reactions:
             e = r["emoji"]
@@ -1547,7 +1547,7 @@ class Mycelium(Server):
                 "reactions": broadcast_reactions_dict
             }
         }
-        
+
         if channel:
             members = self.db.getFilters("accessserver", ["server", "=", channel["server"]])
             for m in members:
@@ -2275,8 +2275,8 @@ class Mycelium(Server):
                     self.db.insertDict("note_spreadsheet", {
                         "block_uuid": block["uuid"],
                         "channel": channel,
-                        "rows": 10,
-                        "cols": 5
+                        "rows": 3,
+                        "cols": 2
                     })
 
             return str(block_id)
@@ -2324,8 +2324,8 @@ class Mycelium(Server):
                     self.db.insertDict("note_spreadsheet", {
                         "block_uuid": block["uuid"],
                         "channel": channel,
-                        "rows": 10,
-                        "cols": 5
+                        "rows": 3,
+                        "cols": 2
                     })
 
     def _checkDatabaseAccess(self, uid, channel):
@@ -2389,16 +2389,43 @@ class Mycelium(Server):
 
         sheet_id = sheet_info["id"]
         cells_data = self.db.getFilters("note_spreadsheet_cell", ["spreadsheet_id", "=", sheet_id]) or []
-        cells = {c["cell_id"]: c["value"] for c in cells_data}
+        cells = {self._sheet_ref(c["col_idx"], c["row_idx"]): c["value"] for c in cells_data}
+        col_widths = self._get_sheet_col_widths(sheet_id)
 
         result = {
             "id": sheet_id,
             "block_uuid": sheet_info["block_uuid"],
             "rows": sheet_info["rows"],
             "cols": sheet_info["cols"],
-            "cells": cells
+            "cells": cells,
+            "col_widths": col_widths,
         }
         return json.dumps(result, default=str)
+
+    @Server.expose
+    def get_spreadsheet_snapshot(self, channel, block_uuid):
+        uid = self.getUser()
+        chan_info = self.db.getSomething("notes_channel", channel)
+        if not chan_info:
+            raise HTTPError(self.response, 404)
+        server_id = chan_info["server"]
+        if not self.db.getFilters("accessserver", ["account", "=", uid, "and", "server", "=", server_id]):
+            raise HTTPError(self.response, 403)
+
+        sheet_info = self.db.getSomething("note_spreadsheet", block_uuid, "block_uuid")
+        if not sheet_info or int(sheet_info["channel"]) != int(channel):
+            raise HTTPError(self.response, 404)
+
+        cells_data = self.db.getFilters("note_spreadsheet_cell", ["spreadsheet_id", "=", sheet_info["id"]]) or []
+        cells = {self._sheet_ref(c["col_idx"], c["row_idx"]): c["value"] for c in cells_data}
+
+        return json.dumps({
+            "id": sheet_info["id"],
+            "block_uuid": sheet_info["block_uuid"],
+            "rows": sheet_info["rows"],
+            "cols": sheet_info["cols"],
+            "cells": cells,
+        }, default=str)
 
     @Server.expose
     def save_spreadsheet_cell(self, channel, spreadsheet_id, cell_id, value):
@@ -2414,7 +2441,19 @@ class Mycelium(Server):
         if not sheet_info or int(sheet_info["channel"]) != int(channel):
             raise HTTPError(self.response, 404)
 
-        existing = self.db.getFilters("note_spreadsheet_cell", ["spreadsheet_id", "=", spreadsheet_id, "and", "cell_id", "=", cell_id])
+        parsed = self._parse_sheet_ref(cell_id)
+        if not parsed:
+            raise HTTPError(self.response, 400)
+
+        row_idx = parsed["row"]
+        col_idx = parsed["col"]
+        if row_idx < 1 or row_idx > int(sheet_info["rows"]) or col_idx < 0 or col_idx >= int(sheet_info["cols"]):
+            raise HTTPError(self.response, 400)
+
+        existing = self.db.getFilters(
+            "note_spreadsheet_cell",
+            ["spreadsheet_id", "=", spreadsheet_id, "and", "row_idx", "=", row_idx, "and", "col_idx", "=", col_idx]
+        )
         if existing:
             if value == "":
                 self.db.deleteSomething("note_spreadsheet_cell", existing[0]["id"])
@@ -2424,7 +2463,8 @@ class Mycelium(Server):
             if value != "":
                 self.db.insertDict("note_spreadsheet_cell", {
                     "spreadsheet_id": spreadsheet_id,
-                    "cell_id": cell_id,
+                    "row_idx": row_idx,
+                    "col_idx": col_idx,
                     "value": value
                 })
 
@@ -2432,16 +2472,222 @@ class Mycelium(Server):
     def save_spreadsheet(self, channel, spreadsheet_id, data):
         uid = self.getUser()
         self._checkDatabaseAccess(uid, channel)
-        data = json.loads(data)
+
+        try:
+            data = json.loads(data)
+        except Exception:
+            raise HTTPError(self.response, 400)
+
+        if not isinstance(data, dict):
+            raise HTTPError(self.response, 400)
 
         sheet_info = self.db.getSomething("note_spreadsheet", spreadsheet_id)
         if not sheet_info or int(sheet_info["channel"]) != int(channel):
             raise HTTPError(self.response, 404)
 
-        allowed = ["rows", "cols"]
-        for key in allowed:
-            if key in data and data[key] != sheet_info.get(key):
-                self.db.edit("note_spreadsheet", spreadsheet_id, key, data[key])
+        limits = {
+            "rows": (1, 500),
+            "cols": (1, 200),
+        }
+
+        for key, (min_val, max_val) in limits.items():
+            if key not in data:
+                continue
+
+            try:
+                value = int(data[key])
+            except Exception:
+                raise HTTPError(self.response, 400)
+
+            if value < min_val or value > max_val:
+                raise HTTPError(self.response, 400)
+
+            if value != int(sheet_info.get(key)):
+                self.db.edit("note_spreadsheet", spreadsheet_id, key, value)
+
+    def _get_sheet_col_widths(self, spreadsheet_id):
+        rows = self.db.getFilters("note_spreadsheet_col", ["spreadsheet_id", "=", spreadsheet_id]) or []
+        return {str(r["col_idx"]): int(r["width_px"]) for r in rows}
+
+    @Server.expose
+    def save_spreadsheet_col_width(self, channel, spreadsheet_id, col_idx, width):
+        uid = self.getUser()
+        self._checkDatabaseAccess(uid, channel)
+
+        sheet_info = self.db.getSomething("note_spreadsheet", spreadsheet_id)
+        if not sheet_info or int(sheet_info["channel"]) != int(channel):
+            raise HTTPError(self.response, 404)
+
+        col_idx = int(col_idx)
+        width = int(width)
+        if col_idx < 0 or col_idx >= int(sheet_info["cols"]):
+            raise HTTPError(self.response, 400)
+        if width < 40 or width > 1200:
+            raise HTTPError(self.response, 400)
+
+        existing = self.db.getFilters(
+            "note_spreadsheet_col",
+            ["spreadsheet_id", "=", spreadsheet_id, "and", "col_idx", "=", col_idx]
+        )
+        if existing:
+            self.db.edit("note_spreadsheet_col", existing[0]["id"], "width_px", width)
+        else:
+            self.db.insertDict("note_spreadsheet_col", {
+                "spreadsheet_id": spreadsheet_id,
+                "col_idx": col_idx,
+                "width_px": width,
+            })
+        return json.dumps({"ok": True})
+
+    def _parse_sheet_ref(self, cell_id):
+        m = re.match(r"^([A-Z]+)(\d+)$", str(cell_id or ""))
+        if not m:
+            return None
+
+        letters = m.group(1)
+        row_num = int(m.group(2))
+        if row_num < 1:
+            return None
+        col_idx = 0
+        for ch in letters:
+            col_idx = col_idx * 26 + (ord(ch) - 64)
+        return {"col": col_idx - 1, "row": row_num}
+
+    def _sheet_ref(self, col_idx, row_num):
+        col = int(col_idx)
+        letters = ""
+        while col >= 0:
+            letters = chr(65 + (col % 26)) + letters
+            col = (col // 26) - 1
+        return f"{letters}{int(row_num)}"
+
+    @Server.expose
+    def save_spreadsheet_structure(self, channel, spreadsheet_id, op, ref):
+        uid = self.getUser()
+        self._checkDatabaseAccess(uid, channel)
+
+        sheet_info = self.db.getSomething("note_spreadsheet", spreadsheet_id)
+        if not sheet_info or int(sheet_info["channel"]) != int(channel):
+            raise HTTPError(self.response, 404)
+
+        parsed = self._parse_sheet_ref(ref)
+        if not parsed:
+            raise HTTPError(self.response, 400)
+
+        rows = int(sheet_info["rows"])
+        cols = int(sheet_info["cols"])
+        if parsed["row"] < 1 or parsed["row"] > rows or parsed["col"] < 0 or parsed["col"] >= cols:
+            raise HTTPError(self.response, 400)
+
+        insert_col = None
+        insert_row = None
+        delete_col = None
+        delete_row = None
+
+        if op == "add-col-left":
+            insert_col = parsed["col"]
+            cols += 1
+        elif op == "add-col-right":
+            insert_col = parsed["col"] + 1
+            cols += 1
+        elif op == "add-row-top":
+            insert_row = parsed["row"]
+            rows += 1
+        elif op == "add-row-bottom":
+            insert_row = parsed["row"] + 1
+            rows += 1
+        elif op == "delete-col":
+            if cols <= 1:
+                raise HTTPError(self.response, 400)
+            delete_col = parsed["col"]
+            cols -= 1
+        elif op == "delete-row":
+            if rows <= 1:
+                raise HTTPError(self.response, 400)
+            delete_row = parsed["row"]
+            rows -= 1
+        else:
+            raise HTTPError(self.response, 400)
+
+        existing = self.db.getFilters("note_spreadsheet_cell", ["spreadsheet_id", "=", spreadsheet_id]) or []
+        shifted = []
+        col_width_rows = self.db.getFilters("note_spreadsheet_col", ["spreadsheet_id", "=", spreadsheet_id]) or []
+
+        for cell in existing:
+            c = int(cell.get("col_idx"))
+            r = int(cell.get("row_idx"))
+
+            if insert_col is not None and c >= insert_col:
+                c += 1
+            if insert_row is not None and r >= insert_row:
+                r += 1
+
+            if delete_col is not None:
+                if c == delete_col:
+                    continue
+                if c > delete_col:
+                    c -= 1
+
+            if delete_row is not None:
+                if r == delete_row:
+                    continue
+                if r > delete_row:
+                    r -= 1
+
+            shifted.append({"col_idx": c, "row_idx": r, "value": cell.get("value", "")})
+
+        # Rewrite cells to avoid UNIQUE collisions while shifting coordinates.
+        for cell in existing:
+            self.db.deleteSomething("note_spreadsheet_cell", cell["id"])
+
+        for cell in shifted:
+            value = cell.get("value", "")
+            if value == "":
+                continue
+            self.db.insertDict("note_spreadsheet_cell", {
+                "spreadsheet_id": spreadsheet_id,
+                "row_idx": cell["row_idx"],
+                "col_idx": cell["col_idx"],
+                "value": value
+            })
+
+        # Shift persisted column widths on column insert/delete.
+        if insert_col is not None or delete_col is not None:
+            width_map = {}
+            for row in col_width_rows:
+                idx = int(row["col_idx"])
+                width_map[idx] = int(row["width_px"])
+
+            shifted_widths = {}
+            for idx, width in width_map.items():
+                next_idx = idx
+                if insert_col is not None and next_idx >= insert_col:
+                    next_idx += 1
+                if delete_col is not None:
+                    if next_idx == delete_col:
+                        continue
+                    if next_idx > delete_col:
+                        next_idx -= 1
+                if 0 <= next_idx < cols:
+                    shifted_widths[next_idx] = width
+
+            if insert_col is not None and 0 <= insert_col < cols and insert_col not in shifted_widths:
+                fallback = width_map.get(insert_col, width_map.get(insert_col - 1, 120))
+                shifted_widths[insert_col] = fallback
+
+            for row in col_width_rows:
+                self.db.deleteSomething("note_spreadsheet_col", row["id"])
+
+            for idx, width in shifted_widths.items():
+                self.db.insertDict("note_spreadsheet_col", {
+                    "spreadsheet_id": spreadsheet_id,
+                    "col_idx": idx,
+                    "width_px": width,
+                })
+
+        self.db.edit("note_spreadsheet", spreadsheet_id, "rows", rows)
+        self.db.edit("note_spreadsheet", spreadsheet_id, "cols", cols)
+        return json.dumps({"rows": rows, "cols": cols, "col_widths": self._get_sheet_col_widths(spreadsheet_id)})
 
     @Server.expose
     def save_database(self, channel, database, op="create"):

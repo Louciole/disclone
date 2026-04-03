@@ -9,6 +9,6 @@
 
 <div class="scrollable" style="width: 100%;height: calc(100svh - 3rem);flex-direction: column;">
     <div class="editor" id="note-editor">
-        ${fillWith('note-block', global.state.noteEditor.getSortedBlocks())}
+        ${Subscribe('global.notes['+global.state.activeChan.id+'].blocks', () => fillWith('note-row', global.state.noteEditor.getRenderableRows()))}
     </div>
 </div>
