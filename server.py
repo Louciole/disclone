@@ -171,7 +171,11 @@ class Mycelium(Server):
                     else:
                         self.waiting_clients.pop(data["clientID"])
                 case "typing":
-                    members = self.db.getAll("accessconversation", data["conv"], "conversation")
+                    channel = self.db.getSomething("textual_channel", data["conv"])
+                    if channel:
+                        members = self.db.getFilters("accessserver", ["server", "=", channel["server"]])
+                    else:
+                        members = self.db.getAll("accessconversation", data["conv"], "conversation")
 
                     for user in members:
                         if user["account"] != data["uid"]:
