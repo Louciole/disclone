@@ -179,6 +179,8 @@ class Mycelium(Server):
 
                     for user in members:
                         if user["account"] != data["uid"]:
+                            if channel and channel.get("is_private") and not self.checkChannelAccess(user["account"], data["conv"], "textual", "view"):
+                                continue
                             await self.sendNotificationAsync(user["account"], data)
                 case "changeActivity":
                     if self.checkWSAuth(websocket,data["clientID"]):
