@@ -68,12 +68,13 @@ test.describe('CallManager - E2E', () => {
         const appReady = await page.evaluate(() => {
             return {
                 wsState: window.global?.state?.websocket?.readyState,
+                wsOpen: WebSocket.OPEN,
                 hasCallManager: !!window.global?.state?.callManager,
                 hasClientID: !!window.global?.state?.clientID
             };
         });
 
-        expect(appReady.wsState).toBe(WebSocket.OPEN);
+        expect(appReady.wsState).toBe(appReady.wsOpen);
         expect(appReady.hasCallManager).toBe(true);
         expect(appReady.hasClientID).toBe(true);
     });
