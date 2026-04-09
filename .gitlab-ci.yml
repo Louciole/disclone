@@ -58,7 +58,6 @@ test:
     - vesta test
     - python server.py &
     - npx playwright test --config tests/playwright.config.mjs
-    - wait
 
 
 build-apk:
