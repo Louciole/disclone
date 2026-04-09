@@ -39,6 +39,7 @@ function newServer(){
     request.onload = function() {
         const serv = {name:"New Server",id:JSON.parse(request.responseText).id}
         setElement(`global.servers[${serv.id}]`, serv)
+        updateElement("global.servers")
     };
 
     request.onerror = function() {
@@ -233,7 +234,8 @@ function friend(action, element, event = undefined){
         const status = document.querySelector(".add .status")
         const search= document.querySelector(".add .search")
 
-        if(this.responseText === "ok"){
+        const res = JSON.parse(this.responseText)
+        if(res.status === "ok"){
             status.classList.add("succeed")
             status.classList.remove("failed")
             search.classList.add("succeed")
@@ -244,7 +246,7 @@ function friend(action, element, event = undefined){
             status.classList.add("failed")
             search.classList.remove("succeed")
             search.classList.add("failed")
-            status.innerHTML = this.responseText
+            status.innerHTML = res.error
         }
     };
 
@@ -1399,3 +1401,14 @@ function removeServerTag(index) {
 }
 window.removeServerTag = removeServerTag;
 
+function leaveServer(){
+    const serverId = global.state.currentServer?.id
+    if (!serverId) return
+    if (!confirm(_t("Quitter ce serveur ?"))) return
+    const onload = function() {
+        deleteElement("global.servers", serverId)
+        goTo('sec-column', "column-perso", undefined, true, () => { goTo('sec-selector', "privateMessage") })
+    }
+    xhr("leave_server?server_id=".concat(serverId), onload, "POST")
+}
+window.leaveServer = leaveServer

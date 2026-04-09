@@ -58,6 +58,7 @@ export async function onMessage(event) {
                         // We need to convert this to the client-side format
                         const clientReactions = {};
                         for (const e in reactionsDict) {
+                            console.log(reactionsDict[e])
                             clientReactions[e] = {
                                 count: reactionsDict[e].length,
                                 reacted_by_me: reactionsDict[e].includes(global.user.id),

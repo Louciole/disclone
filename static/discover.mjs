@@ -1,5 +1,6 @@
 import {xhr} from "./framework/templating.mjs";
 import {setElement} from "./framework/vesta.mjs";
+import {loadServers} from "./crud.mjs";
 
 // Initialize discover state
 if (!global.discover) {
@@ -282,9 +283,7 @@ function joinDiscoverServer(serverId) {
             if (response.success) {
                 // Reload server list to update join status
                 loadDiscoverServers();
-
-                // Show notification
-                console.log(`Successfully joined server ID: ${serverId}`);
+                loadServers();
             }
         } catch (e) {
             console.error('Error joining server:', e);

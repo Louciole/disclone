@@ -101,6 +101,47 @@ build-apk:
       - mycelium-release.apk
     expire_in: 2 week
 
+build-aab:
+  stage: build
+  image: mingc/android-build-box:latest
+
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "maine"'
+
+  variables:
+    GRADLE_USER_HOME: "$CI_PROJECT_DIR/.gradle"
+    GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dkotlin.incremental=false"
+
+  cache:
+    key: "project-cache-$CI_COMMIT_REF_SLUG"
+    paths:
+      - .gradle/wrapper
+      - .gradle/caches
+
+  script:
+    - cd capacitor-app
+    - npm install
+    - mkdir -p android/app
+    - echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/app/mycelium.keystore
+    - echo "$FIREBASE_ADMIN_KEY_BASE64" | base64 -d > serviceAccountKey.json
+    - npx cap sync android
+    - cd android
+    - chmod +x gradlew
+    - |
+      ./gradlew bundleRelease \
+        -Pandroid.injected.signing.store.file="$CI_PROJECT_DIR/capacitor-app/android/app/mycelium.keystore" \
+        -Pandroid.injected.signing.store.password="$ANDROID_KEYSTORE_PASSWORD" \
+        -Pandroid.injected.signing.key.alias="$ANDROID_KEY_ALIAS" \
+        -Pandroid.injected.signing.key.password="$ANDROID_KEY_PASSWORD"
+    - cp app/build/outputs/bundle/release/*.aab "$CI_PROJECT_DIR/mycelium-release.aab"
+
+  artifacts:
+    name: "mycelium-release-aab"
+    paths:
+      - mycelium-release.aab
+    expire_in: 2 week
+
+
 
 publish-play-store:
   stage: deploy

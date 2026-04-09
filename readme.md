@@ -35,6 +35,17 @@
 
 6. run `python server.py` to start the server
 
+## Run
+
+to run use 
+
+0. (for windows only) `wsl`
+
+1. `source venv/bin/activate`
+
+2. `python server.py`
+
+
 ## 🖥️ Work
 If you plan to commit something don't forget to IGNORE the *.ini file
 run

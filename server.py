@@ -171,11 +171,18 @@ class Mycelium(Server):
                     else:
                         self.waiting_clients.pop(data["clientID"])
                 case "typing":
-                    members = self.db.getAll("accessconversation", data["conv"], "conversation")
+                    channel = self.db.getSomething("textual_channel", data["conv"])
+                    if channel:
+                        members = self.db.getFilters("accessserver", ["server", "=", channel["server"]])
+                    else:
+                        members = self.db.getAll("accessconversation", data["conv"], "conversation")
 
                     for user in members:
                         if user["account"] != data["uid"]:
+                            if channel and channel.get("is_private") and not self.checkChannelAccess(user["account"], data["conv"], "textual", "view"):
+                                continue
                             await self.sendNotificationAsync(user["account"], data)
+
                 case "changeActivity":
                     if self.checkWSAuth(websocket,data["clientID"]):
                         self.db.edit("active_client", data["clientID"], "idle", data["idle"])
@@ -852,6 +859,15 @@ class Mycelium(Server):
             else:
                 content["messages"] = self.db.getFilters("message", ["place", "=", channel_id, "order by timestamp"])
             return json.dumps(content, default=str)
+
+    @Server.expose
+    def leave_server(self, server_id):
+        uid = self.getUser()
+        records = self.db.getFilters("accessserver", ["account", "=", uid, "and", "server", "=", server_id])
+        if not records:
+            raise HTTPError(self.response, 404, "not found")
+        self.db.deleteSomething("accessserver", records[0]["id"])
+        return json.dumps({"ok": True})
 
     @Server.expose
     def get_user_info(self):
@@ -3091,7 +3107,9 @@ class Mycelium(Server):
             else :
                 self.getUsersStatus([status])
 
-            status["status"]["mode"] = int(status["status"]["mode"])
+            if status["status"].get("mode"):
+                status["status"]["mode"] = int(status["status"]["mode"])
+
             self.sendNotification(client["userid"], {"type": "update_status" ,"content": status})
 
     async def sendStatusUpdatesAsync(self, uid):

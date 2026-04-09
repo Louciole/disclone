@@ -465,6 +465,8 @@ export function displayNotif(notif){
     const bubbles = document.getElementsByClassName("notifIndicator")
     if(notif.content.place){
         const conv_elt = document.getElementById("conv"+notif.content?.place.toString())
+            || document.getElementById("channel-conv-"+notif.content?.place.toString())
+
         if (conv_elt){
             conv_elt.style.setProperty("color", "var(--text)")
         }
