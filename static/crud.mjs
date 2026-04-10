@@ -12,6 +12,7 @@ import {initWebSockets} from "./framework/websockets.mjs"
 import global from "./framework/global.mjs"
 import {xhr} from "./framework/templating.mjs";
 import {goTo, initNavigation} from "./framework/navigation.mjs";
+import imageEditor, { emojiImageEditor } from "/static/imageEditor.mjs"
 
 function changeUsername(){
     const input = document.getElementById("username-input")
@@ -572,21 +573,20 @@ function pasteFileMessage(event) {
 }
 window.pasteFileMessage = pasteFileMessage
 
-import imageEditor from "/static/imageEditor.mjs"
-
 /**
  * Open image resize menu and initialize editor
  * @param {File} file - Image file to edit
- * @param {number} cropRatio - Crop ratio (1 = square/circle, 3 = banner)
+ * @param {number} cropRatio - Crop ratio (1 = square, 3 = banner)
+ * @param {boolean} isCircle - Whether to use a circular crop overlay
  */
-function uploadResizeFile(file, cropRatio = 1) {
+function uploadResizeFile(file, cropRatio = 1, isCircle = false) {
     openMenu("resize-image", false)
 
     // Reset zoom slider
     const slider = document.querySelector('#resize-image input[type="range"]')
     if (slider) slider.value = 1
 
-    imageEditor.init(file, cropRatio).catch(err => {
+    imageEditor.init(file, cropRatio, isCircle).catch(err => {
         console.error("Failed to load image:", err)
         closeMenu('#resize-image')
     })
@@ -775,8 +775,9 @@ function handleImageUpload(file) {
 
     const isBanner = global.state.uploadImage === "banner"
     const cropRatio = isBanner ? 3 : 1 // 3:1 for banners, 1:1 for avatars
+    const isCircle = !isBanner // avatars are round, banners are rectangular
 
-    uploadResizeFile(file, cropRatio)
+    uploadResizeFile(file, cropRatio, isCircle)
 }
 window.handleImageUpload = handleImageUpload
 
@@ -837,6 +838,94 @@ function uploadProfileImage(field="pfp"){
 }
 window.uploadProfileImage = uploadProfileImage
 
+// ── Custom emoji upload ────────────────────────────────────────────────────
+
+// Expose emoji editor controls to HTML onclick handlers
+window.emojiEditorStartDrag = (event) => emojiImageEditor.startDrag(event)
+window.emojiEditorZoom = (value) => { emojiImageEditor.zoom(value); updateEmojiPreview() }
+
+function openEmojiUploadMenu() {
+    document.getElementById('emojiFileInput').click()
+}
+window.openEmojiUploadMenu = openEmojiUploadMenu
+
+function handleEmojiImageUpload(file) {
+    if (!file) return
+    const defaultName = file.name.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9_]/g, '_').replace(/^_+|_+$/g, '') || 'emoji'
+
+    openMenu("emoji-upload", false)
+
+    requestAnimationFrame(() => {
+        const slider = document.querySelector('#emoji-upload input[type="range"]')
+        if (slider) slider.value = 1
+
+        emojiImageEditor.onEndDrag = updateEmojiPreview
+        emojiImageEditor.init(file, 1).then(() => {
+            const nameInput = document.getElementById('emoji-name-input')
+            if (nameInput) nameInput.value = defaultName
+            updateEmojiPreview()
+        }).catch(err => {
+            console.error("Failed to load emoji image:", err)
+            closeMenu('#emoji-upload')
+        })
+    })
+}
+window.handleEmojiImageUpload = handleEmojiImageUpload
+
+function updateEmojiPreview() {
+    emojiImageEditor.getCroppedImageData(64, 'image/png').then(dataUrl => {
+        const large = document.getElementById('emojiPreviewLarge')
+        const small = document.getElementById('emojiPreviewSmall')
+        if (large) large.src = dataUrl
+        if (small) small.src = dataUrl
+    }).catch(() => {})
+}
+window.updateEmojiPreview = updateEmojiPreview
+
+function finishEmojiUpload() {
+    const nameInput = document.getElementById('emoji-name-input')
+    const name = (nameInput?.value || 'emoji').trim().replace(/[^a-zA-Z0-9_]/g, '_').replace(/^_+|_+$/g, '') || 'emoji'
+    const serverId = global.state.currentServer?.id
+    if (!serverId) return
+
+    emojiImageEditor.getCroppedImageData(128, 'image/png').then(result => {
+        const onload = function() {
+            if (handleQuotaError(this)) return
+            try {
+                const response = JSON.parse(this.responseText)
+                if (response.error) { console.error("Emoji upload error:", response.error); return }
+                const emojis = [...(global.state.currentServer.customEmojis || []), response]
+                setElement('global.state.currentServer.customEmojis', emojis)
+                const serv = lookFor(serverId, global.servers)
+                if (serv) serv.customEmojis = emojis
+            } catch(e) { console.error("Failed to parse emoji response:", e) }
+        }
+        xhr(`create_server_emoji?server_id=${serverId}&name=${encodeURIComponent(name)}`, onload, "POST", true, {"value": result})
+        closeMenu('#emoji-upload')
+    }).catch(err => { console.error("Failed to crop emoji:", err) })
+}
+window.finishEmojiUpload = finishEmojiUpload
+
+function deleteServerEmoji(emojiId) {
+    const serverId = global.state.currentServer?.id
+    if (!serverId) return
+    const onload = function() {
+        try {
+            const response = JSON.parse(this.responseText)
+            if (response.status === 'ok') {
+                const emojis = (global.state.currentServer.customEmojis || []).filter(e => e.id !== emojiId)
+                setElement('global.state.currentServer.customEmojis', emojis)
+                const serv = lookFor(serverId, global.servers)
+                if (serv) serv.customEmojis = emojis
+            }
+        } catch(e) { console.error("Failed to parse delete response:", e) }
+    }
+    xhr(`delete_server_emoji?emoji_id=${emojiId}`, onload, "POST")
+}
+window.deleteServerEmoji = deleteServerEmoji
+
+// ── End custom emoji upload ────────────────────────────────────────────────
+
 
 export function loadServer(id){
     const onload = function() { // request successful
@@ -852,7 +941,8 @@ export function loadServer(id){
             description: serv.description,
             is_community: serv.is_community,
             is_featured: serv.is_featured,
-            member_count: serv.member_count
+            member_count: serv.member_count,
+            customEmojis: serv.customEmojis
         };
 
         if (resp.op) {

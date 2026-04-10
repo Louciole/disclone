@@ -4,7 +4,7 @@
       <h3>${global.state.currentServer.name}</h3>
       <div class="item selected" onclick="goTo('setting-server-content', 'server-main-settings',{'category':'currentSettingTab' ,'event': event})">${_t("Vue d'ensemble")}</div>
       <div class="item" id="profil-settings" onclick="goTo( 'setting-server-content', 'server-roles-settings',{'category':'currentSettingTab' ,'event': event})">${_t("Rôles")}</div>
-      <div class="item">${_t("Émojis")}</div>
+      <div class="item" onclick="goTo('setting-server-content', 'server-emoji-settings',{'category':'currentSettingTab','event': event})">${_t("Émojis")}</div>
       <div class="item">${_t("Lien d'invitation personalisé")}</div>
       <hr>
       <h3>${_t("MODÉRATION")}</h3>

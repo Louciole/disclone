@@ -1520,6 +1520,7 @@ let emojis = [
             { "char": "🏳️‍🌈", "name": "rainbow flag" },
             { "char": "🏳️‍⚧️", "name": "transgender flag" },
             { "char": "🏴‍☠️", "name": "pirate flag" },
+            { "char": ":bzh:", "name": "flag Brittany", "img": "/static/images/bzh.png" },
             { "char": "🇦🇨", "name": "flag: Ascension Island" },
             { "char": "🇦🇩", "name": "flag: Andorra" },
             { "char": "🇦🇪", "name": "flag: United Arab Emirates" },

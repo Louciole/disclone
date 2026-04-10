@@ -1,14 +1,14 @@
 /**
- * Helpers pour les tests E2E du CallManager
- * Évite la duplication de code et améliore la maintenabilité
+ * Helpers for CallManager E2E tests.
+ * Avoids code duplication and improves maintainability.
  */
 
 /**
- * Démarre un appel dans une conversation
- * @param {Page} page - La page Playwright
- * @param {number} convId - ID de la conversation
- * @param {string} callType - Type d'appel ('audio' ou 'video')
- * @returns {Promise<Object>} Les données de l'appel créé
+ * Starts a call in a conversation.
+ * @param {Page} page - The Playwright page
+ * @param {number} convId - Conversation ID
+ * @param {string} callType - Call type ('audio' or 'video')
+ * @returns {Promise<Object>} The created call data
  */
 export async function startCall(page, convId, callType = 'audio') {
     const callData = await page.evaluate(async ({ convId, callType }) => {
@@ -28,10 +28,10 @@ export async function startCall(page, convId, callType = 'audio') {
 }
 
 /**
- * Rejoint un appel existant
- * @param {Page} page - La page Playwright
- * @param {number} callId - ID de l'appel
- * @returns {Promise<Object>} Les données de l'appel après join
+ * Joins an existing call.
+ * @param {Page} page - The Playwright page
+ * @param {number} callId - Call ID
+ * @returns {Promise<Object>} Call data after joining
  */
 export async function joinCall(page, callId) {
     const joinData = await page.evaluate(async (callId) => {
@@ -51,10 +51,10 @@ export async function joinCall(page, callId) {
 }
 
 /**
- * Quitte un appel
- * @param {Page} page - La page Playwright
- * @param {number} callId - ID de l'appel
- * @returns {Promise<Object>} Les données après avoir quitté
+ * Leaves a call.
+ * @param {Page} page - The Playwright page
+ * @param {number} callId - Call ID
+ * @returns {Promise<Object>} Data after leaving
  */
 export async function leaveCall(page, callId) {
     const leaveData = await page.evaluate(async (callId) => {
@@ -74,10 +74,10 @@ export async function leaveCall(page, callId) {
 }
 
 /**
- * Récupère l'état actuel d'un appel
- * @param {Page} page - La page Playwright
- * @param {number} convId - ID de la conversation
- * @returns {Promise<Object|null>} L'état de l'appel ou null si pas actif
+ * Gets the current state of a call.
+ * @param {Page} page - The Playwright page
+ * @param {number} convId - Conversation ID
+ * @returns {Promise<Object|null>} The call state, or null if inactive
  */
 export async function getCallState(page, convId) {
     const callState = await page.evaluate(async (convId) => {
@@ -100,11 +100,11 @@ export async function getCallState(page, convId) {
 }
 
 /**
- * Crée une conversation
- * @param {Page} page - La page Playwright
- * @param {string} name - Nom de la conversation
- * @param {Array<number>} memberIds - IDs des membres à inviter
- * @returns {Promise<number>} L'ID de la conversation créée
+ * Creates a conversation.
+ * @param {Page} page - The Playwright page
+ * @param {string} name - Conversation name
+ * @param {Array<number>} memberIds - IDs of members to invite
+ * @returns {Promise<number>} The created conversation ID
  */
 export async function createConversation(page, name, memberIds = []) {
     const convId = await page.evaluate(async ({ name, memberIds }) => {
@@ -127,9 +127,9 @@ export async function createConversation(page, name, memberIds = []) {
 }
 
 /**
- * Récupère les informations de l'utilisateur courant
- * @param {Page} page - La page Playwright
- * @returns {Promise<Object>} Les infos utilisateur
+ * Gets the current user's information.
+ * @param {Page} page - The Playwright page
+ * @returns {Promise<Object>} User info
  */
 export async function getUserInfo(page) {
     const userInfo = await page.evaluate(async () => {
@@ -147,9 +147,9 @@ export async function getUserInfo(page) {
 }
 
 /**
- * Attend que l'application soit complètement initialisée
- * @param {Page} page - La page Playwright
- * @param {number} timeout - Timeout en ms (défaut: 10000)
+ * Waits until the application is fully initialized.
+ * @param {Page} page - The Playwright page
+ * @param {number} timeout - Timeout in ms (default: 10000)
  */
 export async function waitForAppReady(page, timeout = 10000) {
     await page.waitForFunction(() => {
@@ -162,9 +162,9 @@ export async function waitForAppReady(page, timeout = 10000) {
 }
 
 /**
- * Attend que plusieurs utilisateurs soient prêts
- * @param {Array<Page>} pages - Les pages Playwright
- * @param {number} timeout - Timeout en ms (défaut: 10000)
+ * Waits until multiple users are ready.
+ * @param {Array<Page>} pages - Playwright pages
+ * @param {number} timeout - Timeout in ms (default: 10000)
  */
 export async function waitForMultipleUsersReady(pages, timeout = 10000) {
     await Promise.all(pages.map(page => waitForAppReady(page, timeout)));

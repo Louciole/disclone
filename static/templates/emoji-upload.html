@@ -1,0 +1,50 @@
+<section class="menu-wrapper" id="emoji-upload" style="display:none; z-index: 100" onclick="closeMenu()">
+    <div class="menu" onclick="event.stopPropagation()">
+        <div class="close" onpointerdown="closeMenu('#emoji-upload')">+</div>
+        <h2>${_t("Upload an emoji")}</h2>
+        <div class="inline" style="gap: 1.5rem; align-items: flex-start; flex-wrap: wrap">
+            <!-- Editor emoji -->
+            <div class="vertical" style="gap: 0.5rem">
+                <div class="resize-box">
+                    <div class="resize-wrapper crop-rect" style="--crop-width:200px;--crop-height:200px">
+                        <div class="drag-zone">
+                            <canvas id="emojiCanvas" onpointerdown="emojiEditorStartDrag(event)"></canvas>
+                        </div>
+                        <div class="preview"></div>
+                    </div>
+                </div>
+                <div class="inline">
+                    <img class="icon" src="/static/icons/material/image.svg" style="height: 1rem"/>
+                    <input type="range" min="1" max="3" step="0.05" value="1" oninput="emojiEditorZoom(this.value)"/>
+                    <img class="icon" src="/static/icons/material/image.svg" style="height: 2.2rem"/>
+                </div>
+            </div>
+            <!-- Preview + name -->
+            <div class="vertical" style="gap: 1rem; min-width: 140px">
+                <div>
+                    <p style="color: var(--text2); font-size: 0.8rem; margin-bottom: 0.5rem; text-transform: uppercase">${_t("Preview")}</p>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.8rem">
+                        <!-- Reaction preview -->
+                        <div class="reaction-badge" style="cursor: default; pointer-events: none; display: inline-flex; align-items: center; gap: 0.3rem">
+                            <img id="emojiPreviewLarge" style="width: 1.5rem; height: 1.5rem; object-fit: cover">
+                            <span class="count">1</span>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.4rem">
+                        <!-- Small preview -->
+                        <img id="emojiPreviewSmall" style="width: 1rem; height: 1rem; object-fit: cover">
+                        <span style="color: var(--text2); font-size: 0.8rem">${_t("small size")}</span>
+                    </div>
+                </div>
+                <div>
+                    <p style="color: var(--text2); font-size: 0.8rem; margin-bottom: 0.4rem; text-transform: uppercase">${_t("Emoji Name")}</p>
+                    <input type="text" id="emoji-name-input" placeholder="${_t('emoji_name')}" style="width: 100%">
+                </div>
+            </div>
+        </div>
+        <div class="inline space-between" style="margin-top: 1rem">
+            <div class="btn grey" onclick="closeMenu('#emoji-upload')">${_t("Cancel")}</div>
+            <div class="btn blue" onclick="finishEmojiUpload()">${_t("Finish")}</div>
+        </div>
+    </div>
+</section>

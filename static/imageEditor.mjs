@@ -9,7 +9,9 @@
 import global from "/static/framework/global.mjs"
 
 class ImageEditor {
-    constructor() {
+    constructor(canvasId = "imageCanvas") {
+        this.canvasId = canvasId
+        this.onEndDrag = null
         this.reset()
     }
 
@@ -21,7 +23,8 @@ class ImageEditor {
         this.offset = { x: 0, y: 0 } // Image offset in display pixels
         this.dragStart = null
         this.dragStartOffset = null
-        this.cropRatio = 1 // 1 = square/circle, 3 = 3:1 banner, etc.
+        this.cropRatio = 1 // width/height ratio: 1 = square, 3 = 3:1 banner, etc.
+        this.isCircle = false // whether the crop overlay is shown as a circle
         this.imageRatio = 1 // width/height of source image
         this.baseDisplaySize = { width: 0, height: 0 } // Base displayed size at scale=1
         this.cropDisplaySize = { width: 0, height: 0 } // Crop zone size in display pixels
@@ -32,10 +35,12 @@ class ImageEditor {
      * Initialize editor with a new image file
      * @param {File} file - Image file to load
      * @param {number} cropRatio - Width/height ratio for crop area (1 = square, 3 = 3:1 banner)
+     * @param {boolean} isCircle - Whether to render the crop overlay as a circle
      */
-    init(file, cropRatio = 1) {
+    init(file, cropRatio = 1, isCircle = false) {
         this.reset()
         this.cropRatio = cropRatio
+        this.isCircle = isCircle
 
         return new Promise((resolve, reject) => {
             const reader = new FileReader()
@@ -57,7 +62,7 @@ class ImageEditor {
     }
 
     setupCanvas() {
-        this.canvas = document.getElementById("imageCanvas")
+        this.canvas = document.getElementById(this.canvasId)
         this.ctx = this.canvas.getContext("2d")
 
         // Set canvas to image dimensions
@@ -129,7 +134,7 @@ class ImageEditor {
         wrapper.style.setProperty('--crop-y', cropY + 'px')
 
         // Set shape class
-        if (this.cropRatio === 1) {
+        if (this.isCircle) {
             wrapper.classList.add('crop-circle')
             wrapper.classList.remove('crop-rect')
         } else {
@@ -202,6 +207,7 @@ class ImageEditor {
         // Re-enable menu closing after a short delay
         setTimeout(() => {
             global.state.disableClose = false
+            if (this.onEndDrag) this.onEndDrag()
         }, 50)
     }
 
@@ -236,9 +242,11 @@ class ImageEditor {
     /**
      * Get cropped image as base64
      * @param {number} outputSize - Optional fixed output size (width for banners, size for squares)
-     * @returns {Promise<string>} Base64 encoded JPEG
+     * @param {string} format - Image format ('image/jpeg' or 'image/png')
+     * @param {number} quality - JPEG quality (0-1), ignored for PNG
+     * @returns {Promise<string>} Base64 encoded image
      */
-    getCroppedImageData(outputSize = null) {
+    getCroppedImageData(outputSize = null, format = 'image/jpeg', quality = 0.85) {
         return new Promise((resolve, reject) => {
             if (!this.ctx || !this.img.complete) {
                 reject(new Error('Image not loaded'))
@@ -288,19 +296,20 @@ class ImageEditor {
                 0, 0, outWidth, outHeight
             )
 
-            // Convert to base64 JPEG
+            // Convert to base64
             outCanvas.toBlob((blob) => {
                 const reader = new FileReader()
                 reader.onload = () => resolve(reader.result)
                 reader.onerror = reject
                 reader.readAsDataURL(blob)
-            }, 'image/jpeg', 0.85)
+            }, format, quality)
         })
     }
 }
 
-// Create singleton instance
-const imageEditor = new ImageEditor()
+// Create singleton instances
+const imageEditor = new ImageEditor("imageCanvas")
+export const emojiImageEditor = new ImageEditor("emojiCanvas")
 
 // Expose to window for HTML onclick handlers
 window.imageEditorStartDrag = (event) => imageEditor.startDrag(event)

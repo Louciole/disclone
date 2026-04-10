@@ -1160,6 +1160,22 @@ section{
     color:#4f9eea;
 }
 
+.mdBlock .inline-custom-emoji {
+    height: 1.5rem;
+    width: auto;
+    vertical-align: middle;
+    display: inline;
+    border-radius: 3px;
+}
+
+.custom-emoji-item {
+    width: 2rem;
+    height: 100%;
+    object-fit: contain;
+    display: flex;
+    align-items: center;
+}
+
 .separator{
     display: flex;
     width: 100%;

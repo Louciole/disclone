@@ -1,0 +1,109 @@
+.privacy-main {
+    padding: 8rem 0 6rem;
+    min-height: 100vh;
+}
+
+.privacy-header {
+    margin-bottom: 3rem;
+}
+
+.privacy-header h1 {
+    font-size: clamp(3rem, 8vw, 7rem);
+    font-weight: 900;
+    line-height: 0.9;
+    letter-spacing: -0.03em;
+    text-transform: uppercase;
+    margin: 1rem 0 0.5rem;
+}
+
+.privacy-date {
+    color: var(--soft-gray);
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    margin-top: 1rem;
+}
+
+.privacy-intro {
+    max-width: 760px;
+    font-size: 1.15rem;
+    line-height: 1.7;
+    color: var(--soft-gray);
+    margin-bottom: 4rem;
+    padding-bottom: 4rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.privacy-intro .dim {
+    color: var(--fg);
+}
+
+.privacy-body {
+    max-width: 760px;
+}
+
+.privacy-section {
+    margin-bottom: 3.5rem;
+}
+
+.privacy-section h2 {
+    font-size: 1rem;
+    font-family: var(--mono);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    margin-bottom: 1rem;
+}
+
+.privacy-section p {
+    color: var(--soft-gray);
+    line-height: 1.8;
+    margin-bottom: 1rem;
+}
+
+.privacy-section ul {
+    list-style: none;
+    padding: 0;
+    margin: 1rem 0;
+}
+
+.privacy-section ul li {
+    color: var(--soft-gray);
+    line-height: 1.8;
+    padding: 0.4rem 0;
+    padding-left: 1.25rem;
+    position: relative;
+}
+
+.privacy-section ul li::before {
+    content: "—";
+    position: absolute;
+    left: 0;
+    color: var(--accent);
+}
+
+.privacy-section strong {
+    color: var(--fg);
+    font-weight: 500;
+}
+
+.privacy-section a {
+    color: var(--accent);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.2s;
+}
+
+.privacy-section a:hover {
+    border-bottom-color: var(--accent);
+}
+
+.privacy-section code {
+    font-family: var(--mono);
+    font-size: 0.85em;
+    background: var(--gray);
+    border: 1px solid var(--border);
+    padding: 0.1em 0.4em;
+    border-radius: 3px;
+    color: var(--fg);
+}

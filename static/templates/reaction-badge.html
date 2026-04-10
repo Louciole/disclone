@@ -1,6 +1,46 @@
 <div class="reaction-badge ${element.voters.includes(global.user.id) ? 'reacted' : ''}"
      onclick="toggleReaction(${element.messageId}, '${element.emoji}')">
-    <span class="emoji">${element.emoji}</span>
+    ${(() => {
+
+    // handle standard custom emojis
+    if (element.emoji.startsWith('standard:')) {
+    const name = element.emoji.split(':')[2];
+
+    const src = window.CUSTOM_EMOJIS?.[name];
+    if (src) return `<img class="emoji" src="${src}" style="width:1.3rem;height:1.3rem;object-fit:contain;border-radius:3px" title="${element.emoji}">`;
+    }
+
+    if (!element.emoji.startsWith('custom:')) {
+    return `<span class="emoji">${element.emoji}</span>`;
+    }
+
+
+
+
+    const [, sid, eid] = element.emoji.split(':');
+
+    // 1. Check lazy-load cache (cross-server DMs)
+    const cached = global.state?.customEmojiCache?.[eid];
+    if (cached) {
+    return `<img class="emoji" src="/static/attachments/${cached.file}" style="width:1.3rem;height:1.3rem;object-fit:contain;border-radius:3px" title=":${cached.name}:">`;
+    }
+
+
+    // 2. Check locally loaded servers (deduplicated)
+    const seen = new Set();
+    for (const s of Object.values(global.servers || {})) {
+    if (!s || !s.id || seen.has(s.id)) continue;
+    seen.add(s.id);
+    if (String(s.id) === String(sid)) {
+    const e = (s.customEmojis || []).find(x => String(x.id) === String(eid));
+    if (e) return `<img class="emoji" src="/static/attachments/${e.file}" style="width:1.3rem;height:1.3rem;object-fit:contain;border-radius:3px" title=":${e.name}:">`;
+    }
+    }
+
+    // 3. Not found — trigger async fetch and show placeholder
+    setTimeout(() => ensureCustomEmoji(element.emoji, element.place, element.messageId), 0);
+    return `<span class="emoji" style="font-size:0.85rem;opacity:0.5">🖼</span>`;
+    })()}
     <span class="count">
         ${element.voters.length}
     </span>

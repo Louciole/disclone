@@ -7,6 +7,76 @@ import {} from "./servers/drive.mjs"
 let emptyStr = '' //DO NOT REMOVE
 
 /**
+ * Wraps MDToHTML and replaces :emojiname: shortcodes from known custom emojis
+ * with inline <img> elements. Falls back to the raw shortcode if unknown.
+ */
+function renderMessageBody(text) {
+    if (!text) return ''
+    const html = MDToHTML(text)
+
+    // Build name -> file map from all locally loaded servers (deduplicated)
+    const emojiMap = {}
+    const seen = new Set()
+    for (const s of Object.values(global.servers || {})) {
+        if (!s || !s.id || seen.has(s.id)) continue
+        seen.add(s.id)
+        for (const e of (s.customEmojis || [])) {
+            if (e.name && e.file && !emojiMap[e.name]) emojiMap[e.name] = `/static/attachments/${e.file}`
+        }
+    }
+    // Lazily-loaded cross-server cache
+    for (const data of Object.values(global.state?.customEmojiCache || {})) {
+        if (data && data.name && data.file && !emojiMap[data.name]) emojiMap[data.name] = `/static/attachments/${data.file}`
+    }
+
+    // Global custom emojis (built-in, not per-server)
+    for (const [name, src] of Object.entries(window.CUSTOM_EMOJIS || {})) {
+        if (!emojiMap[name]) emojiMap[name] = src
+    }
+
+    if (Object.keys(emojiMap).length === 0) return html
+
+    return html.replace(/:([a-zA-Z0-9_]+):/g, (match, name) => {
+        const src = emojiMap[name]
+        if (!src) return match
+        return `<img class="inline-custom-emoji" src="${src}" alt=":${name}:" title=":${name}:">`
+    })
+}
+window.renderMessageBody = renderMessageBody
+
+/**
+ * Lazily fetch custom emoji data for emojis from servers the viewer isn't in.
+ * When the fetch completes it nudges the reaction container so Vesta re-renders it.
+ * @param {string} emojiRef  - 'custom:serverId:emojiId'
+ * @param {number} convId    - conversation/channel id (for re-render trigger)
+ * @param {number} msgId     - message id (for re-render trigger)
+ */
+function ensureCustomEmoji(emojiRef, convId, msgId) {
+    const [, , eid] = emojiRef.split(':')
+    if (!eid) return
+    if (global.state?.customEmojiCache?.[eid]) return          // already cached
+    if (global.state?._customEmojiLoading?.has(eid)) return    // request in flight
+
+    global.state._customEmojiLoading.add(eid)
+    xhr(`get_custom_emoji?emoji_id=${eid}`, function() {
+        try {
+            const data = JSON.parse(this.responseText)
+            if (data && data.file) {
+                global.state.customEmojiCache[eid] = data
+                // Trigger Vesta re-render of the reactions element for this message
+                const reactions = global.convs?.[convId]?.messages?.[msgId]?.reactions
+                if (reactions) {
+                    setElement(`global.convs[${convId}].messages[${msgId}].reactions`, { ...reactions })
+                }
+            }
+        } catch(e) { /* silently ignore */ }
+        finally { global.state._customEmojiLoading.delete(eid) }
+    })
+}
+window.ensureCustomEmoji = ensureCustomEmoji
+
+
+/**
  * Check if scrolled to bottom and mark conversation notifications as read
  */
 function checkAndMarkConvAsRead() {
@@ -240,32 +310,51 @@ function openReactionPicker(event, messageId) {
 }
 window.openReactionPicker = openReactionPicker;
 
+/**
+ * Insert a custom server emoji (custom:serverId:emojiId) into the target.
+ * @param {string} emojiRef  - 'custom:serverId:emojiId'
+ * @param {string} emojiName - short name used as text fallback
+ * @param {string} target    - 'currentInput', 'reaction', or 'status'
+ * @param {string} file      - filename in /static/attachments/
+ */
+function insertCustomEmoji(emojiRef, emojiName, target, file) {
+    if (target === 'reaction') {
+        const messageId = global.state.reactionPickerTarget;
+        toggleReaction(messageId, emojiRef);
+        closeFM('reaction-picker');
+    } else if (target === 'currentInput') {
+        const input = document.querySelector("textarea.selected")
+        if (!input) return
+        const text = `:${emojiName}:`
+        if (!global.state.previousCursor) global.state.previousCursor = { start: 0, end: 0 }
+        input.value = input.value.slice(0, global.state.previousCursor.start) + text + input.value.slice(global.state.previousCursor.end)
+        global.state.previousCursor = { start: global.state.previousCursor.start + text.length, end: global.state.previousCursor.start + text.length }
+        input.dispatchEvent(new Event('input', { bubbles: true }))
+    }
+}
+window.insertCustomEmoji = insertCustomEmoji
+
+
+function insertCustomStandardEmoji(event, target, emoji) {
+    if (target === 'reaction') {
+        const messageId = global.state.reactionPickerTarget;
+        toggleReaction(messageId, `standard:${emoji}`);
+        closeFM('reaction-picker');
+    } else if (target === 'currentInput') {
+        const input = document.querySelector("textarea.selected")
+        if (!input) return
+        if (!global.state.previousCursor) global.state.previousCursor = { start: 0, end: 0 }
+        input.value = input.value.slice(0, global.state.previousCursor.start) + emoji + input.value.slice(global.state.previousCursor.end)
+        global.state.previousCursor = { start: global.state.previousCursor.start + emoji.length, end: global.state.previousCursor.start + emoji.length }
+        input.dispatchEvent(new Event('input', { bubbles: true }))
+    }
+}
+window.insertCustomStandardEmoji = insertCustomStandardEmoji
+
+
 function toggleReaction(messageId, emoji) {
     const convId = global.state.activeConv;
     if (!convId || !global.convs[convId] || !global.convs[convId].messages[messageId]) return;
-
-    // let msgReactions = global.convs[convId].messages[messageId].reactions;
-    // let hasReacted = msgReactions[emoji]?.includes(global.user.id)
-    // const newReactions = { ...msgReactions };
-    //
-    // if (hasReacted) {
-    //     if (newReactions[emoji].length <= 0) {
-    //         delete newReactions[emoji];
-    //     } else {
-    //         if(newReactions[emoji]) {
-    //              newReactions[emoji] = newReactions[emoji].filter(v => v !== global.user.id);
-    //         }
-    //     }
-    // } else {
-    //     if (!newReactions[emoji]) {
-    //         newReactions[emoji] = [];
-    //     }
-    //     if(newReactions[emoji] && !newReactions[emoji]?.includes(global.user.id)) {
-    //          newReactions[emoji].push(global.user.id);
-    //     }
-    // }
-
-    // setElement(`global.convs[${convId}].messages[${messageId}].reactions`, newReactions);
     
     xhr(`toggle_reaction?message_id=${messageId}&emoji=${encodeURIComponent(emoji)}`, (e) => {
         if (e.target.status === 200) {
@@ -310,8 +399,18 @@ function renderReactionTooltipText(place, messageId, emoji, voters) {
     if (othersCount > 0) {
         text += ` ${_t('et')} ${othersCount} ${_t('autres')}`;
     }
-    
-    return `<div class="emoji-big">${emoji}</div><div class="voters">${text}</div>`;
+
+    const is_custom = emoji.startsWith('custom:')
+    const is_standard = emoji.startsWith('standard:')
+    let emojiHtml
+    if (is_custom){
+        emojiHtml = (() => { const [,sid,eid] = emoji.split(':'); const serv = Object.values(global.servers||{}).find(s=>s.id==sid); const e = serv?.customEmojis?.find(x=>x.id==eid); return e ? `<img src="/static/attachments/${e.file}" style="width:2rem;height:2rem;object-fit:contain">` : ':emoji:' })()
+    }else if(is_standard){
+        emojiHtml = (() => { const name = emoji.split(':')[2]; const e = CUSTOM_EMOJIS[name]; return e ? `<img src="${e}" style="width:2rem;height:2rem;object-fit:contain">` : ':emoji:' })()
+    }else{
+        emojiHtml = emoji
+    }
+    return `<div class="emoji-big">${emojiHtml}</div><div class="voters">${text}</div>`;
 }
 window.renderReactionTooltipText = renderReactionTooltipText;
 

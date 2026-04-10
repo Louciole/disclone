@@ -387,3 +387,12 @@ create table if not exists poll_vote (
 
 create index if not exists idx_poll_vote_poll on poll_vote(poll);
 create index if not exists idx_poll_vote_option on poll_vote(option);
+
+create table if not exists server_emoji (
+    id bigserial NOT NULL PRIMARY KEY,
+    server integer NOT NULL references server(id) ON DELETE CASCADE,
+    name varchar(64) NOT NULL,
+    file text NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+create index if not exists idx_server_emoji_server on server_emoji(server);

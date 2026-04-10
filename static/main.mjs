@@ -23,6 +23,8 @@ import { hideSplash, registerPushNotifications } from "/static/capacitor-bridge.
 global.state.currentTab = document.getElementById("logo")
 const notifElt = document.getElementById("notif")
 global.state.pendingConvMembers = {}
+global.state.customEmojiCache = {} // keyed by emoji_id → {id, name, file}
+global.state._customEmojiLoading = new Set() // prevents duplicate in-flight requests
 global.users = {}
 global.convs = {}
 global.notes = {}
@@ -128,6 +130,20 @@ export function postWS(){
     });
 }
 
+const CUSTOM_EMOJIS = {
+    'bzh': '/static/images/bzh.png',
+    ':bzh:': '<img class="custom-emoji" src="/static/images/bzh.png" alt=":bzh:">'
+}
+window.CUSTOM_EMOJIS = CUSTOM_EMOJIS
+
+function renderEmoji(text) {
+    for (const [code, html] of Object.entries(CUSTOM_EMOJIS)) {
+        text = text.split(code).join(html)
+    }
+    return text
+}
+window.renderEmoji = renderEmoji
+
 function statusText(){
     if(global.user?.status?.text){
 
@@ -137,7 +153,7 @@ function statusText(){
         }
 
         if(global.user?.status?.emoji){
-            return global.user.status.emoji.concat(" ",global.user.status.text)
+            return renderEmoji(global.user.status.emoji).concat(" ",global.user.status.text)
         }else{
             return global.user.status.text
         }
@@ -175,13 +191,25 @@ function loadEmojis(){
     for (let category of emojis) {
         let cat = {name:category.name, icon:category.icon, content:"",status:""}
         for (let emoji of category.content) {
-            cat.content = cat.content.concat(`<div class="item" data-name="${emoji.name}" onclick="insertStandardEmoji(event,'currentInput')">${emoji.char}</div>`)
-            cat.status = cat.status.concat(`<div class="item" data-name="${emoji.name}" onclick="insertStandardEmoji(event,'status')">${emoji.char}</div>`)
+            const is_custom = !!emoji.img
+
+            let displayChar
+            if (is_custom){
+                displayChar = `<img class="custom-emoji-item" src="${emoji.img}" alt="${emoji.char}">`
+                cat.content = cat.content.concat(`<div class="item" data-char="${emoji.char}" data-name="${emoji.name}" onclick="insertCustomStandardEmoji(event,'currentInput', '${emoji.char}')">${displayChar}</div>`)
+                cat.status = cat.status.concat(`<div class="item" data-char="${emoji.char}" data-name="${emoji.name}" onclick="insertCustomStandardEmoji(event,'status', '${emoji.char}')">${displayChar}</div>`)
+            }else{
+                displayChar = emoji.char
+                cat.content = cat.content.concat(`<div class="item" data-name="${emoji.name}" onclick="insertStandardEmoji(event,'currentInput')">${displayChar}</div>`)
+                cat.status = cat.status.concat(`<div class="item" data-name="${emoji.name}" onclick="insertStandardEmoji(event,'status')">${displayChar}</div>`)
+            }
+
             // Store for search
             global.state.allEmojis.push({
                 char: emoji.char,
                 name: emoji.name,
-                category: category.name
+                category: category.name,
+                img: emoji.img
             })
         }
         global.state.emojis.push(cat)
@@ -225,7 +253,6 @@ function fuzzyScore(query, text) {
     // Only return score if all query characters were found
     return queryIndex === query.length ? score : 0
 }
-
 /**
  * Search emojis and update the emoji board
  * @param {Event} event - Input event
@@ -246,7 +273,7 @@ function searchEmojis(event) {
         return
     }
 
-    // Search and score all emojis
+    // Search and score standard emojis
     const results = global.state.allEmojis
         .map(emoji => ({
             ...emoji,
@@ -256,19 +283,91 @@ function searchEmojis(event) {
         .sort((a, b) => b.score - a.score)
         .slice(0, 50) // Limit results
 
-    if (results.length === 0) {
+    // Search and score custom emojis
+    const customResults = []
+    for (const server of Object.values(global.servers || {})) {
+        for (const e of (server.customEmojis || [])) {
+            const score = fuzzyScore(query, e.name)
+            if (score > 0) customResults.push({ ...e, score, serverId: server.id })
+        }
+    }
+    customResults.sort((a, b) => b.score - a.score)
+
+    if (results.length === 0 && customResults.length === 0) {
         scrollable.innerHTML = `<div class="no-results">${_t('Aucun émoji trouvé')}</div>`
         return
     }
 
     // Build results HTML
-    const resultsHtml = results.map(emoji =>
-        `<div class="item" data-name="${emoji.name}" onclick="insertStandardEmoji(event,'${insertTarget}')">${emoji.char}</div>`
+    const standardHtml = results.map(emoji => {
+        const is_custom = !!emoji.img
+
+        let res
+        let displayChar
+        if (is_custom){
+            displayChar = `<img class="custom-emoji-item" src="${emoji.img}" alt="${emoji.char}">`
+            res = `<div class="item" data-char="${emoji.char}" data-name="${emoji.name}" onclick="insertCustomStandardEmoji(event,'${insertTarget}', '${emoji.char}')">${displayChar}</div>`
+        }else{
+            res = `<div class="item" data-name="${emoji.name}" onclick="insertStandardEmoji(event,'${insertTarget}')">${emoji.char}</div>`
+        }
+        return res
+    }).join('')
+
+    const customHtml = customResults.map(e =>
+        `<div class="item custom-emoji-item" title=":${e.name}:" onclick="insertCustomEmoji('custom:${e.serverId}:${e.id}','${e.name}','${insertTarget}','${e.file}')">` +
+        `<img src="/static/attachments/${e.file}" style="width:1.5rem;height:1.5rem;object-fit:cover"></div>`
     ).join('')
 
-    scrollable.innerHTML = `<div class="search-results"><div class="cat">${resultsHtml}</div></div>`
+    scrollable.innerHTML = `<div class="search-results"><div class="cat">${standardHtml}${customHtml}</div></div>`
 }
 window.searchEmojis = searchEmojis
+
+/** Returns deduplicated servers that have at least one custom emoji. */
+function _uniqueServersWithEmojis() {
+    const seen = new Set()
+    return Object.values(global.servers || {}).filter(s => {
+        if (!s || !s.id || seen.has(s.id)) return false
+        seen.add(s.id)
+        return s.customEmojis && s.customEmojis.length > 0
+    })
+}
+
+/**
+ * Build HTML for custom emoji category groups (for use in emoji boards).
+ * @param {string} target - 'currentInput', 'reaction', or 'status'
+ */
+function getCustomEmojiCatHtml(target) {
+    const servers = _uniqueServersWithEmojis()
+    if (servers.length === 0) return ''
+
+    return servers.map(server => {
+        const items = server.customEmojis.map(e =>
+            `<div class="item custom-emoji-item" title=":${e.name}:" onclick="insertCustomEmoji('custom:${server.id}:${e.id}','${e.name}','${target}','${e.file}')">` +
+            `<img src="/static/attachments/${e.file}" style="width:2rem;height:2rem;object-fit:cover">` +
+            `</div>`
+        ).join('')
+        return `<div class="group" id="emoji-cat-server-${server.id}">` +
+            `<div class="title" onclick="toggleGroup()">` +
+            `<h3>${server.name}</h3><div class="icon">&gt;</div></div>` +
+            `<div class="cat">${items}</div></div>`
+    }).join('')
+}
+window.getCustomEmojiCatHtml = getCustomEmojiCatHtml
+
+/**
+ * Build HTML for custom emoji category scroll buttons.
+ */
+function getCustomEmojiScrollHtml() {
+    const serversWithEmojis = Object.values(global.servers || {}).filter(s => s.customEmojis && s.customEmojis.length > 0)
+    return serversWithEmojis.map(server => {
+        const icon = server.pfp
+            ? `<img src="/static/attachments/${server.pfp}" style="width:1.3rem;height:1.3rem;border-radius:50%;object-fit:cover">`
+            : `<div class="circle blue" style="width:1.3rem;height:1.3rem;font-size:0.6rem">${server.name.charAt(0)}</div>`
+        return `<a class="icon-wrapper" href="#emoji-cat-server-${server.id}">${icon}</a>`
+    }).join('')
+}
+window.getCustomEmojiScrollHtml = getCustomEmojiScrollHtml
+
 
 function repaintConv(sub, value){
     console.log("repainting conv", sub, value)

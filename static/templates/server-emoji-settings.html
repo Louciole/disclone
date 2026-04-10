@@ -1,0 +1,33 @@
+<h1>${_t("Émojis")}</h1>
+
+<div class="inline space-between" style="margin-bottom: 1rem; align-items: center">
+    ${Subscribe('global.state.currentServer.customEmojis', () => {
+    const count = (global.state.currentServer?.customEmojis || []).length;
+    return `<p style="color: var(--text2)">${count} / 20 ${_t("emojis")}</p>`;
+    })}
+    ${Subscribe('global.state.currentServer.customEmojis', () => {
+    const count = (global.state.currentServer?.customEmojis || []).length;
+    if (count >= 20) return `<div class="btn grey" style="cursor: not-allowed">${_t("Upload an emoji")}</div>`;
+    return `<div class="btn blue" onclick="openEmojiUploadMenu()">${_t("Upload an emoji")}</div>`;
+    })}
+</div>
+
+<input type="file" id="emojiFileInput" accept="image/*" style="display:none" onchange="handleEmojiImageUpload(event.currentTarget.files[0])">
+
+${Subscribe('global.state.currentServer.customEmojis', () => {
+const emojis = global.state.currentServer?.customEmojis || [];
+if (emojis.length === 0) {
+return `<p style="color: var(--text2); margin-top: 1rem">${_t("No custom emojis yet.")}</p>`;
+}
+return emojis.map(e => `
+<div class="inline space-between" style="padding: 0.6rem 0; border-bottom: 1px solid var(--bg4); align-items: center">
+    <div class="inline" style="gap: 0.8rem; align-items: center">
+        <img src="/static/attachments/${e.file}" style="width: 2.5rem; height: 2.5rem; object-fit: cover; border-radius: 6px">
+        <span style="font-family: monospace">:${e.name}:</span>
+    </div>
+    <div class="btn red" onclick="deleteServerEmoji(${e.id})">${_t("Delete")}</div>
+</div>
+`).join('');
+})}
+
+${getTemplate('emoji-upload')}

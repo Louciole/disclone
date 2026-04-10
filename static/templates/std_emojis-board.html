@@ -14,9 +14,11 @@
     <div class="selector">
         <div class="cat-selector">
             ${fillWith('scroll-emoji',global.state.emojis)}
+            ${getCustomEmojiScrollHtml()}
         </div>
         <div class="scrollable">
             ${fillWith('emoji-cat-input',global.state.emojis)}
+            ${getCustomEmojiCatHtml('currentInput')}
         </div>
     </div>
     <div class="descriptor">

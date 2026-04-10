@@ -52,21 +52,8 @@ export async function onMessage(event) {
                     const conversationId = reactionData.place;
                     const reactionsDict = reactionData.reactions;
 
-                    const conv = global.convs[conversationId];
-                    if (conv && conv.messages && conv.messages[msgId]) {
-                        // Backend sent a dict like {"👍": [userId1, userId2], ...}
-                        // We need to convert this to the client-side format
-                        const clientReactions = {};
-                        for (const e in reactionsDict) {
-                            console.log(reactionsDict[e])
-                            clientReactions[e] = {
-                                count: reactionsDict[e].length,
-                                reacted_by_me: reactionsDict[e].includes(global.user.id),
-                                voters: reactionsDict[e]
-                            };
-                        }
-                        
-                        setElement(`global.convs[${conversationId}].messages[${msgId}].reactions`, clientReactions);
+                    if (global.convs[conversationId]?.messages?.[msgId]) {
+                        setElement(`global.convs[${conversationId}].messages[${msgId}].reactions`, reactionsDict);
                     }
                     break;
                 case "friend_request":

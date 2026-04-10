@@ -1,12 +1,8 @@
-import urllib.parse
-from unicodedata import category
-
 import fastpysgi
 from vesta import Server, HTTPError, HTTPRedirect
 import json
 import re
 import os
-import mimetypes
 import string
 import random
 import datetime
@@ -104,6 +100,11 @@ class Mycelium(Server):
     @Server.expose
     def index(self):
         return self.file(PATH + "/static/home/home.html")
+
+    @Server.expose
+    def privacy(self):
+        return self.file(PATH + "/static/home/privacy.html")
+
 
     @Server.expose
     def channels(self, uid="me"):
@@ -455,7 +456,9 @@ class Mycelium(Server):
     def get_user_servers(self):
         uid = self.getUser()
         servers = self.db.getSomethingProxied("server", "accessserver", "account", uid)
-        return json.dumps(servers)
+        for server in servers:
+            server["customEmojis"] = self.db.getAll("server_emoji", server["id"], "server")
+        return json.dumps(servers, default=str)
 
     @Server.expose
     def get_discoverable_servers(self, search=None, tags=None, languages=None):
@@ -2112,6 +2115,43 @@ class Mycelium(Server):
             "channel_type", "=", channelType
         ])
         return json.dumps(perms or [], default=str)
+
+    @Server.expose
+    def create_server_emoji(self, server_id, name, value):
+        uid = self.getUser()
+        if not self.checkAccessRights(uid, server_id, "edit"):
+            raise HTTPError(self.response, 403)
+        existing = self.db.getAll("server_emoji", server_id, "server")
+        if len(existing) >= 20:
+            return json.dumps({"error": "max_emojis"})
+        filename = self.saveFile(value)
+        emoji_id = self.db.insertDict("server_emoji", {
+            "server": int(server_id),
+            "name": name,
+            "file": filename
+        }, getId=True)
+        emoji = self.db.getSomething("server_emoji", emoji_id)
+        return json.dumps(emoji, default=str)
+
+    @Server.expose
+    def delete_server_emoji(self, emoji_id):
+        uid = self.getUser()
+        emoji = self.db.getSomething("server_emoji", emoji_id)
+        if not emoji:
+            raise HTTPError(self.response, 404)
+        if not self.checkAccessRights(uid, emoji["server"], "edit"):
+            raise HTTPError(self.response, 403)
+        self.db.deleteSomething("server_emoji", emoji_id)
+        return json.dumps({"status": "ok"})
+
+    @Server.expose
+    def get_custom_emoji(self, emoji_id):
+        """Returns public emoji metadata so users outside the server can display it."""
+        uid = self.getUser()
+        emoji = self.db.getSomething("server_emoji", emoji_id)
+        if not emoji:
+            raise HTTPError(self.response, 404)
+        return json.dumps({"id": emoji["id"], "name": emoji["name"], "file": emoji["file"]}, default=str)
 
     @Server.expose
     def edit_server_property(self, server_id, property, value=None):
