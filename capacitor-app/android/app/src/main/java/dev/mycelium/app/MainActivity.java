@@ -1,4 +1,4 @@
-package dev.mycelium.app;
+package dev.carbonlab.mycelium.app;
 
 import com.getcapacitor.BridgeActivity;
 
