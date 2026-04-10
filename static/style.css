@@ -873,6 +873,9 @@ section{
 
 .profil-badges {
     height: 3rem;
+    padding-top: 0.4rem;
+    padding-left: calc(80px + 2rem);
+    box-sizing: border-box;
 }
 
 .flying-menu{
@@ -1797,6 +1800,11 @@ input[type="text"]{
     height: calc(3rem - 1.6rem);
     padding: 0.8rem;
     padding-left: calc(101px + 0.8rem);
+    padding-bottom: 1.5rem;
+}
+
+.badge{
+    height: 1.2rem;
 }
 
 .profil-badges .name{

@@ -5,7 +5,7 @@ create table if not exists mycelium_account(
     inscription TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     pronouns varchar(24),
     description varchar(250),
-    faction integer,
+    faction varchar(24),
     pfp text,
     banner text,
     current_room integer,

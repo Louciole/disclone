@@ -1,8 +1,8 @@
 <h1>${_t("Les Six Factions")}</h1>
 <p>${_t("Tu fais partie d'une faction !")}</p>
-<div class="faction-block ${global.user.faction.name}">
+<div class="faction-block ${global.user.faction}">
   <h2>${_t("Ta faction")} :</h2>
-  <h3>${_t(global.user.faction.name)}</h3>
-  <p>${_t(global.user.faction.description)}</p>
+  <h3>${_t(global.user.faction)}</h3>
+  <p>${_t(factionsDescriptions[global.user.faction])}</p>
   <div class="btn" onclick="openMenu('test-faction')">${_t("Refaire le test")}</div>
 </div>

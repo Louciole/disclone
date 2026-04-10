@@ -2,7 +2,7 @@
   <div class="banner">${Subscribe('global.state.profileInfo.banner',()=>{return global.state.profileInfo?.banner ? 'background-image:url(/static/attachments/'+global.state.profileInfo.banner+');' : '';},"banner",{"target":"style"})}</div>
   ${Subscribe('global.state.profileInfo',()=>{return 'background-image:url(/static/attachments/'+global.state.profileInfo?.pfp+');'},"profil-picture",{"target":"style"})}
   <div class="profil-wrapper">
-    <div class="profil-badges"></div>
+    <div class="profil-badges">${Subscribe('global.state.profileInfo.faction',()=>{return getFactionBadgeHtml(global.state.profileInfo?.faction)})}</div>
     <div class="profil-infos">
       ${Subscribe('global.state.profileInfo.display',()=>{return(global.state.profileInfo?.display)},"name")}
       ${Subscribe('global.state.profileInfo.username',()=>{return(global.state.profileInfo?.username)},"username")}
