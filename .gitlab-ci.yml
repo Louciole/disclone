@@ -125,9 +125,25 @@ build-aab:
     - echo "$FIREBASE_ADMIN_KEY_BASE64" | base64 -d > serviceAccountKey.json
     - npx cap sync android
     - cd android
+    - |
+      if [ -z "$AAB_VERSION_CODE" ]; then
+        echo "AAB_VERSION_CODE is not set. Define it in GitLab CI/CD variables before running build-aab."
+        exit 1
+      fi
+      case "$AAB_VERSION_CODE" in
+        ''|*[!0-9]*)
+          echo "AAB_VERSION_CODE must be a positive integer. Got: $AAB_VERSION_CODE"
+          exit 1
+          ;;
+      esac
+      export ANDROID_VERSION_CODE="$AAB_VERSION_CODE"
+      export ANDROID_VERSION_NAME="${AAB_VERSION_NAME:-$AAB_VERSION_CODE}"
+    - echo "Building AAB versionName=$ANDROID_VERSION_NAME versionCode=$ANDROID_VERSION_CODE"
     - chmod +x gradlew
     - |
       ./gradlew bundleRelease \
+        -PVERSION_CODE="$ANDROID_VERSION_CODE" \
+        -PVERSION_NAME="$ANDROID_VERSION_NAME" \
         -Pandroid.injected.signing.store.file="$CI_PROJECT_DIR/capacitor-app/android/app/mycelium.keystore" \
         -Pandroid.injected.signing.store.password="$ANDROID_KEYSTORE_PASSWORD" \
         -Pandroid.injected.signing.key.alias="$ANDROID_KEY_ALIAS" \
@@ -146,10 +162,11 @@ publish-play-store:
   stage: deploy
   image: mingc/android-build-box:latest
   rules:
-    - if: '$CI_COMMIT_BRANCH == "release"'
+    - if: '$CI_COMMIT_BRANCH == "app-release" && $CI_PIPELINE_SOURCE == "push"'
 
   variables:
     GRADLE_USER_HOME: "$CI_PROJECT_DIR/.gradle"
+    APP_VERSION_BASE: "1.0"
 
   before_script:
     - apt-get update -qq
@@ -158,17 +175,36 @@ publish-play-store:
 
   script:
     - cd capacitor-app
-    - npm install
+    - npm ci
+    - mkdir -p android/app
+    - echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/app/mycelium.keystore
     - echo "$FIREBASE_ADMIN_KEY_BASE64" | base64 -d > serviceAccountKey.json
     - npx cap sync android
     - cd android
+
+    - |
+      if [ -z "$APP_RELEASE_IID_START" ]; then
+        echo "APP_RELEASE_IID_START is not set. Configure it in GitLab CI/CD variables."
+        exit 1
+      fi
+      PATCH_VERSION=$((CI_PIPELINE_IID - APP_RELEASE_IID_START))
+      if [ "$PATCH_VERSION" -le 0 ]; then
+        echo "Computed patch version is invalid: $PATCH_VERSION"
+        echo "APP_RELEASE_IID_START must be lower than current CI_PIPELINE_IID ($CI_PIPELINE_IID)."
+        exit 1
+      fi
+      export ANDROID_VERSION_CODE="$PATCH_VERSION"
+      export ANDROID_VERSION_NAME="$APP_VERSION_BASE.$PATCH_VERSION"
+      echo "Building Android versionName=$ANDROID_VERSION_NAME versionCode=$ANDROID_VERSION_CODE"
 
     - echo "$SUPPLY_JSON_KEY_DATA" > play-store-key.json
 
     - chmod +x gradlew
     - ./gradlew bundleRelease \
+      -PVERSION_CODE="$ANDROID_VERSION_CODE" \
+      -PVERSION_NAME="$ANDROID_VERSION_NAME" \
       -Pandroid.injected.signing.store.file="$CI_PROJECT_DIR/capacitor-app/android/app/mycelium.keystore" \
-      -Pandroid.injected.signing.store.password="$ANDROID_KEY_PASSWORD" \
+      -Pandroid.injected.signing.store.password="$ANDROID_KEYSTORE_PASSWORD" \
       -Pandroid.injected.signing.key.alias="$ANDROID_KEY_ALIAS" \
       -Pandroid.injected.signing.key.password="$ANDROID_KEY_PASSWORD"
 
