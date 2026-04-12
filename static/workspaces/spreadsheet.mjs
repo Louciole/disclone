@@ -201,9 +201,10 @@ export function parseFormulaReferences(formula, currentBlockUuid = null) {
 }
 
 export class SpreadsheetView {
-    constructor(blockUuid, channelId, containerEl) {
+    constructor(blockUuid, channelId, containerEl, convId = null) {
         this.blockUuid = blockUuid
         this.channelId = channelId
+        this.convId = convId
         this.containerEl = containerEl
 
         this.rows = 3
@@ -234,10 +235,13 @@ export class SpreadsheetView {
     }
 
     load() {
+        const url = this.convId
+            ? "get_conv_spreadsheet_content?conv_id=" + this.convId + "&block_uuid=" + this.blockUuid
+            : "get_spreadsheet_content?channel=" + this.channelId + "&block_uuid=" + this.blockUuid
         const container = this.containerEl.querySelector('.spreadsheet-view') || this.containerEl
         container.innerHTML = '<div class="sheet-loading">Loading…</div>'
         xhr(
-            "get_spreadsheet_content?channel=" + this.channelId + "&block_uuid=" + this.blockUuid,
+            url,
             (event) => {
                 const req = event.target
                 if (req.status !== 200) {
@@ -553,8 +557,11 @@ export class SpreadsheetView {
 
     _persistColumnWidth(colIdx) {
         const width = this._getColWidth(colIdx)
+        const base = this.convId
+            ? "/save_conv_spreadsheet_col_width?conv_id=" + this.convId
+            : "/save_spreadsheet_col_width?channel=" + this.channelId
         xhr(
-            "/save_spreadsheet_col_width?channel=" + this.channelId
+            base
             + "&spreadsheet_id=" + this.id
             + "&col_idx=" + encodeURIComponent(String(colIdx))
             + "&width=" + encodeURIComponent(String(width)),
@@ -967,8 +974,11 @@ export class SpreadsheetView {
         const applied = this._applyStructureOperationLocal(op, ref)
         if (!applied) return
 
-        xhr(
-            "/save_spreadsheet_structure?channel=" + this.channelId
+        const structBase = this.convId
+            ? "/save_conv_spreadsheet_structure?conv_id=" + this.convId
+            : "/save_spreadsheet_structure?channel=" + this.channelId
+        const req = xhr(
+            structBase
             + "&spreadsheet_id=" + this.id
             + "&op=" + encodeURIComponent(op)
             + "&ref=" + encodeURIComponent(ref),
@@ -1111,7 +1121,10 @@ export class SpreadsheetView {
         this._notifyDependentViews()
 
         // Persist
-        xhr("/save_spreadsheet_cell?channel=" + this.channelId
+        const cellBase = this.convId
+            ? "/save_conv_spreadsheet_cell?conv_id=" + this.convId
+            : "/save_spreadsheet_cell?channel=" + this.channelId
+        xhr(cellBase
             + "&spreadsheet_id=" + this.id
             + "&cell_id=" + encodeURIComponent(ref)
             + "&value=" + encodeURIComponent(persistedValue), () => {}, "POST")
@@ -1178,8 +1191,8 @@ export class SpreadsheetView {
 
 }
 
-export function mountSpreadsheet(blockUuid, channelId, containerEl) {
-    const view = new SpreadsheetView(blockUuid, channelId, containerEl)
+export function mountSpreadsheet(blockUuid, channelId, containerEl, convId = null) {
+    const view = new SpreadsheetView(blockUuid, channelId, containerEl, convId)
     global.state.spreadsheetViews[blockUuid] = view
     return view
 }

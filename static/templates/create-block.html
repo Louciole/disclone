@@ -1,0 +1,32 @@
+<section class="menu-wrapper" id="create-block" style="display:none" onclick="closeMenu('#create-block')">
+    <div class="menu block-picker" onclick="event.stopPropagation()">
+        <div class="close" onclick="closeMenu('#create-block')">+</div>
+        <h2>${_t("Insert a block")}</h2>
+        <div class="block-picker-columns">
+            <div class="block-picker-categories">
+                <div class="block-cat-item selected" data-cat="featured" onclick="selectBlockCategory('featured')">${_t("Featured")}</div>
+                <div class="block-cat-item" data-cat="empty" onclick="selectBlockCategory('empty')">${_t("Empty blocks")}</div>
+            </div>
+            <div class="block-picker-options">
+                <div class="block-option-group" data-for="featured">
+                    <div class="block-option" onclick="insertConvBlock('spreadsheet','tricount')">
+                        <img class="icon" src="/static/icons/material/table.svg"/>
+                        <div>
+                            <p class="block-option-name">${_t("Tricount")}</p>
+                            <p class="block-option-desc">${_t("Track shared expenses")}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="block-option-group" data-for="empty" style="display:none">
+                    <div class="block-option" onclick="insertConvBlock('spreadsheet','empty')">
+                        <img class="icon" src="/static/icons/material/table.svg"/>
+                        <div>
+                            <p class="block-option-name">${_t("Sheet")}</p>
+                            <p class="block-option-desc">${_t("Empty spreadsheet")}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

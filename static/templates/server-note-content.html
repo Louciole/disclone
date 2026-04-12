@@ -12,3 +12,4 @@
         ${Subscribe('global.notes['+global.state.activeChan.id+'].blocks', () => fillWith('note-row', global.state.noteEditor.getRenderableRows()))}
     </div>
 </div>
+${Subscribe('global.state.slashMenu', () => getTemplate('slash-menu'))}

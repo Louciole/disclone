@@ -396,3 +396,13 @@ create table if not exists server_emoji (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 create index if not exists idx_server_emoji_server on server_emoji(server);
+
+-- Extend note_spreadsheet to support conversation-attached blocks
+ALTER TABLE note_spreadsheet ADD COLUMN IF NOT EXISTS conv_id integer;
+ALTER TABLE note_spreadsheet ADD COLUMN IF NOT EXISTS message_id integer REFERENCES message(id) ON DELETE CASCADE;
+ALTER TABLE note_spreadsheet ALTER COLUMN channel DROP NOT NULL;
+ALTER TABLE note_spreadsheet ALTER COLUMN block_uuid DROP NOT NULL;
+ALTER TABLE note_spreadsheet DROP CONSTRAINT IF EXISTS note_spreadsheet_block_uuid_fkey;
+
+create index if not exists idx_note_spreadsheet_conv    on note_spreadsheet(conv_id);
+create index if not exists idx_note_spreadsheet_message on note_spreadsheet(message_id);

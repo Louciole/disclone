@@ -360,7 +360,14 @@ class Editor {
     onInput(blockId, event) {
         const block = this.blocks[blockId];
         if (block.type === "text") {
-            const parser = new InitiatorParser(event.currentTarget.innerText)
+            const text = event.currentTarget.innerText
+            if (text.startsWith('/')) {
+                this._showSlashMenu(blockId, event.currentTarget, text.slice(1))
+            } else {
+                this._hideSlashMenu()
+            }
+
+            const parser = new InitiatorParser(text)
             const parsedInitiator = parser.parse()
             if (parsedInitiator.initiator) {
                 block.type = parsedInitiator.initiator.type
@@ -437,6 +444,30 @@ class Editor {
     onKeyDown(blockId, event) {
         const block = this.blocks[blockId];
 
+        const menu = global.state.slashMenu
+        if (menu?.visible && menu.blockId === blockId) {
+            if (event.key === 'ArrowDown') {
+                event.preventDefault()
+                setElement('global.state.slashMenu', {...menu, selectedIndex: (menu.selectedIndex + 1) % menu.items.length})
+                return
+            }
+            if (event.key === 'ArrowUp') {
+                event.preventDefault()
+                setElement('global.state.slashMenu', {...menu, selectedIndex: (menu.selectedIndex - 1 + menu.items.length) % menu.items.length})
+                return
+            }
+            if (event.key === 'Enter') {
+                event.preventDefault()
+                const item = menu.items[menu.selectedIndex]
+                if (item) this._selectSlashItem(item.type)
+                return
+            }
+            if (event.key === 'Escape') {
+                this._hideSlashMenu()
+                return
+            }
+        }
+
         if (block.type === "text") {
             if (event.key === "Backspace" && block.content === "" ) {
                 this.deleteBlock(blockId)
@@ -501,6 +532,7 @@ class Editor {
     }
 
     onBlur(blockId, event) {
+        this._hideSlashMenu()
         // switching from editor preview to rendered view
         const block = this.blocks[blockId];
         event.currentTarget.innerHTML = MDToRender(block.content)
@@ -565,6 +597,83 @@ class Editor {
 
         // If we couldn't find the exact position, put cursor at end
         this.putCursorToEnd(element);
+    }
+
+    _slashMenuItems() {
+        return [
+            { type: "text",        label: "Text",        description: "Plain paragraph" },
+            { type: "heading1",    label: "Heading 1",   description: "Large section heading" },
+            { type: "heading2",    label: "Heading 2",   description: "Medium section heading" },
+            { type: "heading3",    label: "Heading 3",   description: "Small section heading" },
+            { type: "small",       label: "Small Text",  description: "Smaller font size" },
+            { type: "showcase",    label: "Showcase",    description: "Display a metric value" },
+            { type: "synapse",     label: "Synapse",     description: "External component" },
+            { type: "database",    label: "Database",    description: "Inline database table" },
+            { type: "spreadsheet", label: "Spreadsheet", description: "Inline spreadsheet" },
+        ]
+    }
+
+    _showSlashMenu(blockId, anchorEl, query) {
+        const all = this._slashMenuItems()
+        const filtered = query === ""
+            ? all
+            : all.filter(item => item.label.toLowerCase().startsWith(query.toLowerCase()))
+
+        if (filtered.length === 0) { this._hideSlashMenu(); return }
+
+        const prev = global.state.slashMenu
+        const selectedIndex = prev?.visible ? Math.min(prev.selectedIndex, filtered.length - 1) : 0
+        const rect = anchorEl.getBoundingClientRect()
+
+        setElement('global.state.slashMenu', {
+            visible: true,
+            blockId,
+            query,
+            selectedIndex,
+            items: filtered.map((item, i) => ({...item, index: i})),
+            top: rect.bottom + 4,
+            left: rect.left,
+        })
+    }
+
+    _hideSlashMenu() {
+        setElement('global.state.slashMenu', { visible: false, items: [] })
+    }
+
+    _selectSlashItem(type) {
+        const blockId = global.state.slashMenu?.blockId
+        const block = this.blocks[blockId]
+        const el = document.querySelector(`[data-block-id="${blockId}"] .content`)
+        if (!block || !el) return
+
+        this._hideSlashMenu()
+
+        if (type === "text") {
+            block.content = ""
+            block.type = "text"
+            el.innerHTML = ""
+            el.setAttribute("data-placeholder", blockTypes["text"].placeholder)
+            el.focus()
+            return
+        }
+
+        if (blockTypes[type].template) {
+            block.type = type
+            block.content = ""
+            el.innerText = ""
+            this.convertBlock(el, blockId, "interactiveElement", true)
+            return
+        }
+
+        block.type = type
+        block.content = ""
+        el.classList.forEach(c => { if (c.startsWith('note-')) el.classList.remove(c) })
+        el.classList.add("note-" + type)
+        el.setAttribute("data-placeholder", blockTypes[type].placeholder)
+        el.innerText = ""
+        el.focus()
+        this.putCursorToEnd(el)
+        this.saveBlock(blockId)
     }
 
     saveBlock(blockId){

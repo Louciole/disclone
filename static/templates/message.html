@@ -21,7 +21,8 @@
                 ` : ''}
             </div>
 
-            ${isPollMessage(element) ? fillWith('poll-message', [element]) : `
+            ${isConvSpreadsheetMessage(element) ? fillWith('conv-spreadsheet-message', [element]) :
+              isPollMessage(element) ? fillWith('poll-message', [element]) : `
             <div class="global-convs🪟${element.place}🥹-messages🪟${element.id}🥹-body mdBlock" data-content="()=>{
             return renderMessageBody(global.convs['${element.place}']?.messages['${element.id}'].body)
             }">${renderMessageBody(element.body)}</div>

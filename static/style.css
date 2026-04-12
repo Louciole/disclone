@@ -5165,6 +5165,44 @@ input:checked + .slider:before {
     cursor: grabbing;
 }
 
+.slash-menu {
+    position: fixed;
+    background: var(--bg3);
+    border: 1px solid var(--bg2);
+    border-radius: 8px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+    z-index: 1000;
+    min-width: 220px;
+    max-height: 280px;
+    overflow-y: auto;
+    padding: 4px;
+}
+
+.slash-menu-item {
+    display: flex;
+    flex-direction: column;
+    padding: 6px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    gap: 2px;
+}
+
+.slash-menu-item:hover,
+.slash-menu-item.selected {
+    background: var(--bg4);
+}
+
+.slash-menu-label {
+    font-size: 0.9rem;
+    color: var(--text);
+    font-weight: 500;
+}
+
+.slash-menu-desc {
+    font-size: 0.75rem;
+    color: var(--text2bis);
+}
+
 .preview-will-be-hidden{
     color: var(--text2bis);
 }

@@ -35,6 +35,7 @@
                     <div id="chat-plus-menu" class="flying-menu">
                         <div class="item" onclick="triggerFileUpload()"><img class="icon" src="/static/icons/material/paperclip.svg"><p>${_t("Upload a file")}</p></div>
                         <div class="item" onclick="closeFM();openMenu('create-poll')"><img class="icon" src="/static/icons/material/poll.svg"><p>${_t("Create a poll")}</p></div>
+                        <div class="item" onclick="closeFM();openMenu('create-block')"><img class="icon" src="/static/icons/material/table.svg"><p>${_t("Insert a block")}</p></div>
                     </div>
                     <input type="file" id="chat-file-upload" multiple style="display:none" onchange="handleChatFileUpload(event)"/>
                     <label style="flex: 1;height: fit-content;">

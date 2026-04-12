@@ -1,0 +1,5 @@
+<div class="slash-menu-item ${global.state.slashMenu.selectedIndex === element.index ? 'selected' : ''}"
+     onmousedown="event.preventDefault(); global.state.noteEditor._selectSlashItem('${element.type}')">
+    <span class="slash-menu-label">${element.label}</span>
+    <span class="slash-menu-desc">${element.description}</span>
+</div>
