@@ -799,6 +799,7 @@ class Mycelium(Server):
         content["messages"] = self.db.getFilters("message", ["place", "=", channel_id, "order by timestamp"])
         self._enrichMessagesWithPolls(content["messages"], uid)
         self._enrichMessagesWithReactions(content["messages"])
+        self._enrichMessagesWithConvBlocks(content["messages"])
         return json.dumps(content, default=str)
 
     @Server.expose
@@ -1309,6 +1310,8 @@ class Mycelium(Server):
 
             channel = self.db.getSomething("textual_channel", conv["id"])
             if channel:
+                if channel.get("is_private") and not self.checkChannelAccess(uid, conv["id"], "textual", "send-messages"):
+                    raise HTTPError(self.response, 403, "no permission to send messages in this channel")
                 self.notifyChannelMesage(uid, channel, msg_body)
             else:
                 self.notifyConvMessage(uid, conv, msg_body)
@@ -2468,14 +2471,19 @@ class Mycelium(Server):
         return server_id
 
     def _checkConvAccess(self, uid, conv_id):
-        """Check that user is a member of the conversation. Returns conv_id as int or raises."""
+        """Check that user can access the place (DM conv or textual channel). Returns conv_id as int or raises."""
+        cid = int(conv_id)
+        # DM / group conversation
         access = self.db.getFilters(
             "accessconversation",
-            ["conversation", "=", int(conv_id), "and", "account", "=", uid]
+            ["conversation", "=", cid, "and", "account", "=", uid]
         )
-        if not access:
-            raise HTTPError(self.response, 403)
-        return int(conv_id)
+        if access:
+            return cid
+        # Server textual channel — any member of the server with view permission
+        if self.checkChannelAccess(uid, cid, "textual", "view"):
+            return cid
+        raise HTTPError(self.response, 403)
 
     @Server.expose
     def get_database_content(self, channel, block_uuid):
@@ -2513,17 +2521,24 @@ class Mycelium(Server):
         return json.dumps(result, default=str)
 
     @Server.expose
-    def get_spreadsheet_content(self, channel, block_uuid):
+    def get_spreadsheet_content(self, block_uuid, channel=None, conv_id=None):
         uid = self.getUser()
-        chan_info = self.db.getSomething("notes_channel", channel)
-        if not chan_info:
-            raise HTTPError(self.response, 404)
-        server_id = chan_info["server"]
-        if not self.db.getFilters("accessserver", ["account", "=", uid, "and", "server", "=", server_id]):
-            raise HTTPError(self.response, 403)
+        if conv_id is not None:
+            self._checkConvAccess(uid, conv_id)
+        elif channel is not None:
+            chan_info = self.db.getSomething("notes_channel", channel)
+            if not chan_info:
+                raise HTTPError(self.response, 404)
+            server_id = chan_info["server"]
+            if not self.db.getFilters("accessserver", ["account", "=", uid, "and", "server", "=", server_id]):
+                raise HTTPError(self.response, 403)
+        else:
+            raise HTTPError(self.response, 400)
 
         sheet_info = self.db.getSomething("note_spreadsheet", block_uuid, "block_uuid")
         if not sheet_info:
+            raise HTTPError(self.response, 404)
+        if conv_id is not None and str(sheet_info.get("conv_id")) != str(conv_id):
             raise HTTPError(self.response, 404)
 
         sheet_id = sheet_info["id"]
@@ -2567,18 +2582,14 @@ class Mycelium(Server):
         }, default=str)
 
     @Server.expose
-    def save_spreadsheet_cell(self, channel, spreadsheet_id, cell_id, value):
+    def save_spreadsheet_cell(self, spreadsheet_id, cell_id, value, channel=None, conv_id=None):
         uid = self.getUser()
-        self._checkDatabaseAccess(uid, channel)
+        sheet_info = self._get_sheet_info(uid, spreadsheet_id, channel=channel, conv_id=conv_id)
 
         if value is None:
             value = ""
         elif isinstance(value, str) and value.strip() == "":
             value = ""
-
-        sheet_info = self.db.getSomething("note_spreadsheet", spreadsheet_id)
-        if not sheet_info or int(sheet_info["channel"]) != int(channel):
-            raise HTTPError(self.response, 404)
 
         parsed = self._parse_sheet_ref(cell_id)
         if not parsed:
@@ -2608,9 +2619,8 @@ class Mycelium(Server):
                 })
 
     @Server.expose
-    def save_spreadsheet(self, channel, spreadsheet_id, data):
+    def save_spreadsheet(self, spreadsheet_id, data, channel=None, conv_id=None):
         uid = self.getUser()
-        self._checkDatabaseAccess(uid, channel)
 
         try:
             data = json.loads(data)
@@ -2620,9 +2630,7 @@ class Mycelium(Server):
         if not isinstance(data, dict):
             raise HTTPError(self.response, 400)
 
-        sheet_info = self.db.getSomething("note_spreadsheet", spreadsheet_id)
-        if not sheet_info or int(sheet_info["channel"]) != int(channel):
-            raise HTTPError(self.response, 404)
+        sheet_info = self._get_sheet_info(uid, spreadsheet_id, channel=channel, conv_id=conv_id)
 
         limits = {
             "rows": (1, 500),
@@ -2648,14 +2656,26 @@ class Mycelium(Server):
         rows = self.db.getFilters("note_spreadsheet_col", ["spreadsheet_id", "=", spreadsheet_id]) or []
         return {str(r["col_idx"]): int(r["width_px"]) for r in rows}
 
-    @Server.expose
-    def save_spreadsheet_col_width(self, channel, spreadsheet_id, col_idx, width):
-        uid = self.getUser()
-        self._checkDatabaseAccess(uid, channel)
+    def _get_sheet_info(self, uid, spreadsheet_id, channel=None, conv_id=None):
+        """Auth-check and load note_spreadsheet row by ID. Raises on bad access or ownership mismatch."""
+        if conv_id is not None:
+            self._checkConvAccess(uid, conv_id)
+            sheet_info = self.db.getSomething("note_spreadsheet", spreadsheet_id)
+            if not sheet_info or str(sheet_info.get("conv_id")) != str(conv_id):
+                raise HTTPError(self.response, 404)
+        elif channel is not None:
+            self._checkDatabaseAccess(uid, channel)
+            sheet_info = self.db.getSomething("note_spreadsheet", spreadsheet_id)
+            if not sheet_info or int(sheet_info.get("channel", -1)) != int(channel):
+                raise HTTPError(self.response, 404)
+        else:
+            raise HTTPError(self.response, 400)
+        return sheet_info
 
-        sheet_info = self.db.getSomething("note_spreadsheet", spreadsheet_id)
-        if not sheet_info or int(sheet_info["channel"]) != int(channel):
-            raise HTTPError(self.response, 404)
+    @Server.expose
+    def save_spreadsheet_col_width(self, spreadsheet_id, col_idx, width, channel=None, conv_id=None):
+        uid = self.getUser()
+        sheet_info = self._get_sheet_info(uid, spreadsheet_id, channel=channel, conv_id=conv_id)
 
         col_idx = int(col_idx)
         width = int(width)
@@ -2701,13 +2721,9 @@ class Mycelium(Server):
         return f"{letters}{int(row_num)}"
 
     @Server.expose
-    def save_spreadsheet_structure(self, channel, spreadsheet_id, op, ref):
+    def save_spreadsheet_structure(self, spreadsheet_id, op, ref, channel=None, conv_id=None):
         uid = self.getUser()
-        self._checkDatabaseAccess(uid, channel)
-
-        sheet_info = self.db.getSomething("note_spreadsheet", spreadsheet_id)
-        if not sheet_info or int(sheet_info["channel"]) != int(channel):
-            raise HTTPError(self.response, 404)
+        sheet_info = self._get_sheet_info(uid, spreadsheet_id, channel=channel, conv_id=conv_id)
 
         parsed = self._parse_sheet_ref(ref)
         if not parsed:
@@ -2828,257 +2844,6 @@ class Mycelium(Server):
         self.db.edit("note_spreadsheet", spreadsheet_id, "cols", cols)
         return json.dumps({"rows": rows, "cols": cols, "col_widths": self._get_sheet_col_widths(spreadsheet_id)})
 
-    # ── Conversation spreadsheet endpoints ────────────────────────────────────
-
-    @Server.expose
-    def get_conv_spreadsheet_content(self, conv_id, block_uuid):
-        uid = self.getUser()
-        self._checkConvAccess(uid, conv_id)
-
-        sheet_info = self.db.getSomething("note_spreadsheet", block_uuid, "block_uuid")
-        if not sheet_info or str(sheet_info.get("conv_id")) != str(conv_id):
-            raise HTTPError(self.response, 404)
-
-        sheet_id = sheet_info["id"]
-        cells_data = self.db.getFilters("note_spreadsheet_cell", ["spreadsheet_id", "=", sheet_id]) or []
-        cells = {self._sheet_ref(c["col_idx"], c["row_idx"]): c["value"] for c in cells_data}
-        col_widths = self._get_sheet_col_widths(sheet_id)
-
-        return json.dumps({
-            "id": sheet_id,
-            "block_uuid": sheet_info["block_uuid"],
-            "rows": sheet_info["rows"],
-            "cols": sheet_info["cols"],
-            "cells": cells,
-            "col_widths": col_widths,
-        }, default=str)
-
-    @Server.expose
-    def save_conv_spreadsheet_cell(self, conv_id, spreadsheet_id, cell_id, value):
-        uid = self.getUser()
-        self._checkConvAccess(uid, conv_id)
-
-        if value is None:
-            value = ""
-        elif isinstance(value, str) and value.strip() == "":
-            value = ""
-
-        sheet_info = self.db.getSomething("note_spreadsheet", spreadsheet_id)
-        if not sheet_info or str(sheet_info.get("conv_id")) != str(conv_id):
-            raise HTTPError(self.response, 404)
-
-        parsed = self._parse_sheet_ref(cell_id)
-        if not parsed:
-            raise HTTPError(self.response, 400)
-
-        row_idx = parsed["row"]
-        col_idx = parsed["col"]
-        if row_idx < 1 or row_idx > int(sheet_info["rows"]) or col_idx < 0 or col_idx >= int(sheet_info["cols"]):
-            raise HTTPError(self.response, 400)
-
-        existing = self.db.getFilters(
-            "note_spreadsheet_cell",
-            ["spreadsheet_id", "=", spreadsheet_id, "and", "row_idx", "=", row_idx, "and", "col_idx", "=", col_idx]
-        )
-        if existing:
-            if value == "":
-                self.db.deleteSomething("note_spreadsheet_cell", existing[0]["id"])
-            else:
-                self.db.edit("note_spreadsheet_cell", existing[0]["id"], "value", value)
-        else:
-            if value != "":
-                self.db.insertDict("note_spreadsheet_cell", {
-                    "spreadsheet_id": spreadsheet_id,
-                    "row_idx": row_idx,
-                    "col_idx": col_idx,
-                    "value": value
-                })
-
-    @Server.expose
-    def save_conv_spreadsheet_col_width(self, conv_id, spreadsheet_id, col_idx, width):
-        uid = self.getUser()
-        self._checkConvAccess(uid, conv_id)
-
-        sheet_info = self.db.getSomething("note_spreadsheet", spreadsheet_id)
-        if not sheet_info or str(sheet_info.get("conv_id")) != str(conv_id):
-            raise HTTPError(self.response, 404)
-
-        col_idx = int(col_idx)
-        width = int(width)
-        if col_idx < 0 or col_idx >= int(sheet_info["cols"]):
-            raise HTTPError(self.response, 400)
-        if width < 40 or width > 1200:
-            raise HTTPError(self.response, 400)
-
-        existing = self.db.getFilters(
-            "note_spreadsheet_col",
-            ["spreadsheet_id", "=", spreadsheet_id, "and", "col_idx", "=", col_idx]
-        )
-        if existing:
-            self.db.edit("note_spreadsheet_col", existing[0]["id"], "width_px", width)
-        else:
-            self.db.insertDict("note_spreadsheet_col", {
-                "spreadsheet_id": spreadsheet_id,
-                "col_idx": col_idx,
-                "width_px": width,
-            })
-        return json.dumps({"ok": True})
-
-    @Server.expose
-    def save_conv_spreadsheet_structure(self, conv_id, spreadsheet_id, op, ref):
-        uid = self.getUser()
-        self._checkConvAccess(uid, conv_id)
-
-        sheet_info = self.db.getSomething("note_spreadsheet", spreadsheet_id)
-        if not sheet_info or str(sheet_info.get("conv_id")) != str(conv_id):
-            raise HTTPError(self.response, 404)
-
-        parsed = self._parse_sheet_ref(ref)
-        if not parsed:
-            raise HTTPError(self.response, 400)
-
-        rows = int(sheet_info["rows"])
-        cols = int(sheet_info["cols"])
-        if parsed["row"] < 1 or parsed["row"] > rows or parsed["col"] < 0 or parsed["col"] >= cols:
-            raise HTTPError(self.response, 400)
-
-        insert_col = None
-        insert_row = None
-        delete_col = None
-        delete_row = None
-
-        if op == "add-col-left":
-            insert_col = parsed["col"]
-            cols += 1
-        elif op == "add-col-right":
-            insert_col = parsed["col"] + 1
-            cols += 1
-        elif op == "add-row-top":
-            insert_row = parsed["row"]
-            rows += 1
-        elif op == "add-row-bottom":
-            insert_row = parsed["row"] + 1
-            rows += 1
-        elif op == "delete-col":
-            if cols <= 1:
-                raise HTTPError(self.response, 400)
-            delete_col = parsed["col"]
-            cols -= 1
-        elif op == "delete-row":
-            if rows <= 1:
-                raise HTTPError(self.response, 400)
-            delete_row = parsed["row"]
-            rows -= 1
-        else:
-            raise HTTPError(self.response, 400)
-
-        existing = self.db.getFilters("note_spreadsheet_cell", ["spreadsheet_id", "=", spreadsheet_id]) or []
-        shifted = []
-        col_width_rows = self.db.getFilters("note_spreadsheet_col", ["spreadsheet_id", "=", spreadsheet_id]) or []
-
-        for cell in existing:
-            c = int(cell.get("col_idx"))
-            r = int(cell.get("row_idx"))
-
-            if insert_col is not None and c >= insert_col:
-                c += 1
-            if insert_row is not None and r >= insert_row:
-                r += 1
-
-            if delete_col is not None:
-                if c == delete_col:
-                    continue
-                if c > delete_col:
-                    c -= 1
-
-            if delete_row is not None:
-                if r == delete_row:
-                    continue
-                if r > delete_row:
-                    r -= 1
-
-            shifted.append({"col_idx": c, "row_idx": r, "value": cell.get("value", "")})
-
-        for cell in existing:
-            self.db.deleteSomething("note_spreadsheet_cell", cell["id"])
-
-        for cell in shifted:
-            value = cell.get("value", "")
-            if value == "":
-                continue
-            self.db.insertDict("note_spreadsheet_cell", {
-                "spreadsheet_id": spreadsheet_id,
-                "row_idx": cell["row_idx"],
-                "col_idx": cell["col_idx"],
-                "value": value
-            })
-
-        if insert_col is not None or delete_col is not None:
-            width_map = {}
-            for row in col_width_rows:
-                idx = int(row["col_idx"])
-                width_map[idx] = int(row["width_px"])
-
-            shifted_widths = {}
-            for idx, width in width_map.items():
-                next_idx = idx
-                if insert_col is not None and next_idx >= insert_col:
-                    next_idx += 1
-                if delete_col is not None:
-                    if next_idx == delete_col:
-                        continue
-                    if next_idx > delete_col:
-                        next_idx -= 1
-                if 0 <= next_idx < cols:
-                    shifted_widths[next_idx] = width
-
-            if insert_col is not None and 0 <= insert_col < cols and insert_col not in shifted_widths:
-                fallback = width_map.get(insert_col, width_map.get(insert_col - 1, 120))
-                shifted_widths[insert_col] = fallback
-
-            for row in col_width_rows:
-                self.db.deleteSomething("note_spreadsheet_col", row["id"])
-
-            for idx, width in shifted_widths.items():
-                self.db.insertDict("note_spreadsheet_col", {
-                    "spreadsheet_id": spreadsheet_id,
-                    "col_idx": idx,
-                    "width_px": width,
-                })
-
-        self.db.edit("note_spreadsheet", spreadsheet_id, "rows", rows)
-        self.db.edit("note_spreadsheet", spreadsheet_id, "cols", cols)
-        return json.dumps({"rows": rows, "cols": cols, "col_widths": self._get_sheet_col_widths(spreadsheet_id)})
-
-    @Server.expose
-    def save_conv_spreadsheet(self, conv_id, spreadsheet_id, data):
-        uid = self.getUser()
-        self._checkConvAccess(uid, conv_id)
-
-        try:
-            data = json.loads(data)
-        except Exception:
-            raise HTTPError(self.response, 400)
-
-        if not isinstance(data, dict):
-            raise HTTPError(self.response, 400)
-
-        sheet_info = self.db.getSomething("note_spreadsheet", spreadsheet_id)
-        if not sheet_info or str(sheet_info.get("conv_id")) != str(conv_id):
-            raise HTTPError(self.response, 404)
-
-        limits = {"rows": (1, 500), "cols": (1, 200)}
-        for key, (min_val, max_val) in limits.items():
-            if key not in data:
-                continue
-            try:
-                value = int(data[key])
-            except Exception:
-                raise HTTPError(self.response, 400)
-            if value < min_val or value > max_val:
-                raise HTTPError(self.response, 400)
-            if value != int(sheet_info.get(key)):
-                self.db.edit("note_spreadsheet", spreadsheet_id, key, value)
 
     @Server.expose
     def save_database(self, channel, database, op="create"):

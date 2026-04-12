@@ -6,7 +6,7 @@
                 <div class="icon-wrapper" onclick="openReactionPicker(event, ${element.id})">
                     <img class="icon" src="/static/icons/material/emoji.svg" height="1.2rem"/>
                 </div>
-                ${element.sender === global.user.id ? `
+                ${element.sender === global.user.id && !isConvSpreadsheetMessage(element) ? `
                 <div class="icon-wrapper" onclick="editMsg(${element.id})">
                     <img class="icon" src="/static/icons/material/edit.svg"  height="1.2rem"/>
                 </div>

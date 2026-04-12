@@ -234,10 +234,12 @@ export class SpreadsheetView {
         this.load()
     }
 
+    get placeParam() {
+        return this.convId ? "conv_id=" + this.convId : "channel=" + this.channelId
+    }
+
     load() {
-        const url = this.convId
-            ? "get_conv_spreadsheet_content?conv_id=" + this.convId + "&block_uuid=" + this.blockUuid
-            : "get_spreadsheet_content?channel=" + this.channelId + "&block_uuid=" + this.blockUuid
+        const url = "get_spreadsheet_content?" + this.placeParam + "&block_uuid=" + this.blockUuid
         const container = this.containerEl.querySelector('.spreadsheet-view') || this.containerEl
         container.innerHTML = '<div class="sheet-loading">Loading…</div>'
         xhr(
@@ -557,11 +559,8 @@ export class SpreadsheetView {
 
     _persistColumnWidth(colIdx) {
         const width = this._getColWidth(colIdx)
-        const base = this.convId
-            ? "/save_conv_spreadsheet_col_width?conv_id=" + this.convId
-            : "/save_spreadsheet_col_width?channel=" + this.channelId
         xhr(
-            base
+            "/save_spreadsheet_col_width?" + this.placeParam
             + "&spreadsheet_id=" + this.id
             + "&col_idx=" + encodeURIComponent(String(colIdx))
             + "&width=" + encodeURIComponent(String(width)),
@@ -974,11 +973,8 @@ export class SpreadsheetView {
         const applied = this._applyStructureOperationLocal(op, ref)
         if (!applied) return
 
-        const structBase = this.convId
-            ? "/save_conv_spreadsheet_structure?conv_id=" + this.convId
-            : "/save_spreadsheet_structure?channel=" + this.channelId
         const req = xhr(
-            structBase
+            "/save_spreadsheet_structure?" + this.placeParam
             + "&spreadsheet_id=" + this.id
             + "&op=" + encodeURIComponent(op)
             + "&ref=" + encodeURIComponent(ref),
@@ -1121,10 +1117,7 @@ export class SpreadsheetView {
         this._notifyDependentViews()
 
         // Persist
-        const cellBase = this.convId
-            ? "/save_conv_spreadsheet_cell?conv_id=" + this.convId
-            : "/save_spreadsheet_cell?channel=" + this.channelId
-        xhr(cellBase
+        xhr("/save_spreadsheet_cell?" + this.placeParam
             + "&spreadsheet_id=" + this.id
             + "&cell_id=" + encodeURIComponent(ref)
             + "&value=" + encodeURIComponent(persistedValue), () => {}, "POST")
