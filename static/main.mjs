@@ -16,6 +16,7 @@ import CallManager from "/static/webrtc.mjs";
 import {} from "/static/constants.mjs"; // Expose and parseJsonArray globally
 import {} from "/static/mentions.mjs"; // Mention autocomplete system
 import {} from "/static/poll.mjs"; // Poll creation and voting
+import {} from "/static/conv-blocks.mjs"; // Conversation block insertion
 // Capacitor bridge — only activates when running inside a native shell
 import { hideSplash, registerPushNotifications } from "/static/capacitor-bridge.mjs";
 
@@ -379,6 +380,7 @@ function repaintConv(sub, value){
         }
     }
     sub.insertAdjacentHTML("beforeend", fillWith('messageGroup',[global.convs[global.state.activeConv].messageGroups[global.convs[global.state.activeConv].messageGroups.length-1]]))
+    requestAnimationFrame(() => mountAllConvSpreadsheets(sub))
 
 
     // au lieu de fillWith on prends l'élément modifié et on l'handle
@@ -647,6 +649,7 @@ await initTranslations()
 goTo('content',"friends",undefined,true,()=>{goTo('friends-block','main-friend')})
 loadTemplate("profile-info.html")
 loadTemplate("create-poll.html")
+loadTemplate("create-block.html")
 loadTemplate("poll-voters.html")
 loadUser()
 xhr("get_blocked", onBlockedLoaded)
