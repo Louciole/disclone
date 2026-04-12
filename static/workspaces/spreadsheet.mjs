@@ -1,3 +1,4 @@
+import global from "../framework/global.mjs";
 import {xhr} from "../framework/templating.mjs";
 import {
     evaluateFormula,
