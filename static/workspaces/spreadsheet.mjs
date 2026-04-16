@@ -212,7 +212,6 @@ export class SpreadsheetView {
         this.evaluatedCells = {} // { "A1": "computed_value" }
 
         this.editingCell = null // e.g., "A1"
-        this.evaluating = new Set() // for cycle detection
         this.suppressBlurSave = false
         this.liveEditValue = ''
         this.blurIgnoreRef = null
@@ -229,33 +228,36 @@ export class SpreadsheetView {
         this.resizeStartX = 0
         this.resizeStartWidth = this.defaultColWidth
         this.externalEvalCache = {}
+        this._viewEl = null
 
         this.load()
     }
 
     load() {
-        const request = xhr(
-            "get_spreadsheet_content?channel=" + this.channelId + "&block_uuid=" + this.blockUuid,
-            () => {}, "GET", false
-        )
-
-        if (request.status !== 200) {
-            this.containerEl.innerHTML = '<div class="sheet-error">Failed to load spreadsheet</div>'
-            return
-        }
-
-        const data = JSON.parse(request.responseText)
-        this.id = data.id
-        this.rows = data.rows || 3
-        this.cols = data.cols || 2
-        this.cells = data.cells || {}
-        this.colWidths = data.col_widths || {}
-        this._normalizeColumnWidths()
-        this._updateOwnSnapshotCache()
-
-        this.evaluateAll()
         const container = this.containerEl.querySelector('.spreadsheet-view') || this.containerEl
-        container.innerHTML = this.render()
+        container.innerHTML = '<div class="sheet-loading">Loading…</div>'
+        xhr(
+            "get_spreadsheet_content?channel=" + this.channelId + "&block_uuid=" + this.blockUuid,
+            (event) => {
+                const req = event.target
+                if (req.status !== 200) {
+                    container.innerHTML = '<div class="sheet-error">Failed to load spreadsheet</div>'
+                    return
+                }
+                const data = JSON.parse(req.responseText)
+                this.id = data.id
+                this.rows = data.rows || 3
+                this.cols = data.cols || 2
+                this.cells = data.cells || {}
+                this.colWidths = data.col_widths || {}
+                this._normalizeColumnWidths()
+                this._updateOwnSnapshotCache()
+                this.evaluateAll()
+                container.innerHTML = this.render()
+                this._viewEl = container
+            },
+            "GET"
+        )
     }
 
     _normalizeRef(ref) {
@@ -429,7 +431,6 @@ export class SpreadsheetView {
 
     evaluateAll() {
         this.evaluatedCells = {}
-        this.evaluating.clear()
         this.externalEvalCache = {}
 
         const evalState = {
@@ -445,6 +446,10 @@ export class SpreadsheetView {
     // ─── Rendering ────────────────────────────────────────────────────
 
     render() {
+        const activeView = this._getActiveFormulaEditorView()
+        const parsedRefs = activeView ? parseFormulaReferences(activeView.liveEditValue, activeView.blockUuid) : null
+        const highlighted = this._highlightedRefsFor(activeView, parsedRefs)
+
         let html = '<div class="spreadsheet-wrapper"><table class="sheet-table">'
         html += '<colgroup>'
         html += '<col style="width:40px; min-width:40px;" />'
@@ -470,7 +475,8 @@ export class SpreadsheetView {
             html += '<td class="sheet-row-header">' + r + '</td>'
             for (let c = 0; c < this.cols; c++) {
                 const ref = colIndexToLetter(c) + r
-                const classes = 'sheet-cell' + (this.editingCell === ref ? ' editing' : '') + (this._isRefHighlighted(ref) ? ' sheet-ref-highlight' : '')
+                const isHighlighted = !!(highlighted && highlighted.has(ref))
+                const classes = 'sheet-cell' + (this.editingCell === ref ? ' editing' : '') + (isHighlighted ? ' sheet-ref-highlight' : '')
                 html += '<td class="' + classes + '" data-ref="' + ref + '" '
                 html += 'onmousedown="global.state.spreadsheetViews[\'' + this.blockUuid + '\'].onCellMouseDown(event, \'' + ref + '\')" '
                 html += 'oncontextmenu="global.state.spreadsheetViews[\'' + this.blockUuid + '\'].onCellContextMenu(event, \'' + ref + '\')" '
@@ -538,7 +544,7 @@ export class SpreadsheetView {
     }
 
     _applyColWidthToDom(colIdx, width) {
-        const container = document.querySelector(`[data-block-id="${this.blockUuid}"] .spreadsheet-view`)
+        const container = this._viewEl
         if (!container) return
         const col = container.querySelector(`.sheet-table col[data-col-index="${colIdx}"]`)
         if (!col) return
@@ -648,44 +654,25 @@ export class SpreadsheetView {
         return null
     }
 
-    _isRefHighlighted(ref) {
-        // Find which view is currently acting as the formula editor
-        const activeView = this._getActiveFormulaEditorView()
-        
-        // If there's no active editor, nothing is highlighted anywhere
-        if (!activeView) return false
-
-        // Parse the formula of the active editor, passing its blockUuid to correctly categorize refs
-        const refs = parseFormulaReferences(activeView.liveEditValue, activeView.blockUuid)
-        
-        // If WE are the active editor, only highlight our local refs
-        if (activeView.blockUuid === this.blockUuid) {
-            return refs.local.has(ref)
-        }
-        
-        // If WE are NOT the active editor, highlight refs targeting us specifically
-        if (refs.external[this.blockUuid]) {
-             return refs.external[this.blockUuid].has(ref)
-        }
-        
-        return false
+    _highlightedRefsFor(activeView, refs) {
+        if (!activeView || !refs) return null
+        if (activeView.blockUuid === this.blockUuid) return refs.local
+        return refs.external[this.blockUuid] || null
     }
 
     updateReferenceHighlights() {
-        // Need to update highlights across ALL mounted views because editing a 
-        // formula in one sheet might highlight/unhighlight cells in another.
         const views = global.state.spreadsheetViews || {}
+        const activeView = this._getActiveFormulaEditorView()
+        const refs = activeView ? parseFormulaReferences(activeView.liveEditValue, activeView.blockUuid) : null
+
         for (const blockUuid in views) {
             const view = views[blockUuid]
-            const container = document.querySelector(`[data-block-id="${view.blockUuid}"] .spreadsheet-view`)
+            const container = view._viewEl
             if (!container) continue
 
+            const highlighted = view._highlightedRefsFor(activeView, refs)
             container.querySelectorAll('.sheet-cell[data-ref]').forEach(cell => {
-                if (view._isRefHighlighted(cell.dataset.ref)) {
-                    cell.classList.add('sheet-ref-highlight')
-                } else {
-                    cell.classList.remove('sheet-ref-highlight')
-                }
+                cell.classList.toggle('sheet-ref-highlight', !!(highlighted && highlighted.has(cell.dataset.ref)))
             })
         }
     }
@@ -930,8 +917,7 @@ export class SpreadsheetView {
         this._updateOwnSnapshotCache()
         this.evaluateAll()
 
-        const container = document.querySelector(`[data-block-id="${this.blockUuid}"] .spreadsheet-view`)
-        if (container) container.innerHTML = this.render()
+        if (this._viewEl) this._viewEl.innerHTML = this.render()
         return true
     }
 
@@ -939,30 +925,28 @@ export class SpreadsheetView {
         const applied = this._applyStructureOperationLocal(op, ref)
         if (!applied) return
 
-        const req = xhr(
+        xhr(
             "/save_spreadsheet_structure?channel=" + this.channelId
             + "&spreadsheet_id=" + this.id
             + "&op=" + encodeURIComponent(op)
             + "&ref=" + encodeURIComponent(ref),
-            () => {},
-            "POST",
-            false
+            (event) => {
+                const req = event.target
+                if (req.status !== 200) {
+                    this.load()
+                    return
+                }
+                try {
+                    const payload = JSON.parse(req.responseText || '{}')
+                    if (payload.col_widths && typeof payload.col_widths === 'object') {
+                        this.colWidths = payload.col_widths
+                        this._normalizeColumnWidths()
+                        if (this._viewEl) this._viewEl.innerHTML = this.render()
+                    }
+                } catch (_) {}
+            },
+            "POST"
         )
-
-        if (req.status !== 200) {
-            this.load()
-            return
-        }
-
-        try {
-            const payload = JSON.parse(req.responseText || '{}')
-            if (payload.col_widths && typeof payload.col_widths === 'object') {
-                this.colWidths = payload.col_widths
-                this._normalizeColumnWidths()
-                const container = document.querySelector(`[data-block-id="${this.blockUuid}"] .spreadsheet-view`)
-                if (container) container.innerHTML = this.render()
-            }
-        } catch (_) {}
     }
 
     insertCellReference(ref, sourceBlockUuid = this.blockUuid) {
@@ -1048,15 +1032,11 @@ export class SpreadsheetView {
         this.editingCell = ref
         this.liveEditValue = String(this.cells[ref] || '')
         this._syncGlobalFormulaEditorState(this.liveEditValue)
-        // trigger render update through the framework or manually update DOM if needed
-        // since we are within a data-content attribute, re-rendering might need to trigger the parent
-        const container = document.querySelector(`[data-block-id="${this.blockUuid}"] .spreadsheet-view`)
-        if (container) {
-            container.innerHTML = this.render()
+        if (this._viewEl) {
+            this._viewEl.innerHTML = this.render()
             const input = document.getElementById('sheet-input-' + this.blockUuid)
             if (input) {
                 input.focus()
-                // Move cursor to end
                 input.selectionStart = input.selectionEnd = input.value.length
             }
             this.updateReferenceHighlights()
@@ -1068,8 +1048,7 @@ export class SpreadsheetView {
             this.editingCell = null
             this.liveEditValue = ''
             this._clearFormulaEditorIfOwned()
-            const container = document.querySelector(`[data-block-id="${this.blockUuid}"] .spreadsheet-view`)
-            if(container) container.innerHTML = this.render()
+            if (this._viewEl) this._viewEl.innerHTML = this.render()
             return
         }
 
@@ -1086,8 +1065,7 @@ export class SpreadsheetView {
         this._clearFormulaEditorIfOwned()
         this._updateOwnSnapshotCache()
         this.evaluateAll()
-        const container = document.querySelector(`[data-block-id="${this.blockUuid}"] .spreadsheet-view`)
-        if(container) container.innerHTML = this.render()
+        if (this._viewEl) this._viewEl.innerHTML = this.render()
 
         // Persist
         xhr("/save_spreadsheet_cell?channel=" + this.channelId
@@ -1097,6 +1075,15 @@ export class SpreadsheetView {
     }
 
     handleKeyDown(event, ref) {
+        if (event.key === 'Escape') {
+            event.preventDefault()
+            this.editingCell = null
+            this.liveEditValue = ''
+            this._clearFormulaEditorIfOwned()
+            this.updateReferenceHighlights()
+            if (this._viewEl) this._viewEl.innerHTML = this.render()
+            return
+        }
         if (event.key === 'Enter') {
             event.preventDefault()
             const match = ref.match(/^([A-Z]+)(\d+)$/)
