@@ -255,6 +255,8 @@ export class SpreadsheetView {
                 this.evaluateAll()
                 container.innerHTML = this.render()
                 this._viewEl = container
+                // Let sibling sheets that cross-reference this one refresh now that we're loaded.
+                this._notifyDependentViews()
             },
             "GET"
         )
@@ -276,7 +278,9 @@ export class SpreadsheetView {
 
     _readMountedSnapshot(sheetBlockUuid) {
         const view = global.state.spreadsheetViews?.[sheetBlockUuid]
-        if (!view) return null
+        // Guard: view must be fully loaded (id is set by load() callback).
+        // An in-progress view would return stale empty cells and poison the snapshot cache.
+        if (!view || view.id === undefined) return null
         return {
             block_uuid: view.blockUuid,
             cells: view.cells || {},
@@ -362,8 +366,12 @@ export class SpreadsheetView {
             if (targetSheet === this.blockUuid) {
                 result = this._resolveLocalCell(normalizedRef, state)
             } else {
+                // Only use a live view if it has fully loaded (id set by load() callback).
+                // A half-initialized view has empty cells and would give worse results than
+                // the snapshot/server fallback. When B finishes loading it calls
+                // _notifyDependentViews() so this sheet will re-evaluate with live data.
                 const mounted = global.state.spreadsheetViews?.[targetSheet]
-                if (mounted) {
+                if (mounted && mounted.id !== undefined) {
                     result = mounted._resolveLocalCell(normalizedRef, state)
                 } else {
                     result = this._resolveSnapshotCell(targetSheet, normalizedRef, state)
@@ -406,7 +414,8 @@ export class SpreadsheetView {
 
         const snapshot = this._getSnapshot(sheetBlockUuid)
         if (!snapshot || !snapshot.cells) {
-            this.externalEvalCache[cacheKey] = '#REF!'
+            // Do NOT cache this: the target sheet may simply not be loaded yet.
+            // The next evaluateAll() (triggered by _notifyDependentViews) will retry.
             return '#REF!'
         }
 
@@ -427,6 +436,38 @@ export class SpreadsheetView {
         const primitive = this._toPrimitive(raw)
         this.externalEvalCache[cacheKey] = primitive
         return primitive
+    }
+
+    /**
+     * Re-evaluate this view if it holds any reference to `changedUuid`.
+     * Called by `_notifyDependentViews` whenever another sheet's data changes.
+     */
+    _reevaluateIfReferencing(changedUuid) {
+        // Fast path: we already evaluated at least one cell from that sheet.
+        const hasCachedRef = Object.keys(this.externalEvalCache)
+            .some(k => k.startsWith(changedUuid + ':'))
+        if (!hasCachedRef) {
+            // Slower path: scan formula strings for the UUID token.
+            const hasFormulaRef = Object.values(this.cells)
+                .some(cell => typeof cell === 'string' && cell.includes(changedUuid))
+            if (!hasFormulaRef) return
+        }
+        this.evaluateAll()
+        if (this._viewEl && !this.editingCell) this._viewEl.innerHTML = this.render()
+    }
+
+    /**
+     * Notify all other mounted spreadsheet views that this sheet's data changed.
+     * Any view that references this sheet's UUID will re-evaluate and re-render.
+     */
+    _notifyDependentViews() {
+        const views = global.state.spreadsheetViews || {}
+        for (const uuid in views) {
+            if (uuid === this.blockUuid) continue
+            const view = views[uuid]
+            // Only notify fully-loaded views (id is set after load() completes).
+            if (view && view.id !== undefined) view._reevaluateIfReferencing(this.blockUuid)
+        }
     }
 
     evaluateAll() {
@@ -918,6 +959,7 @@ export class SpreadsheetView {
         this.evaluateAll()
 
         if (this._viewEl) this._viewEl.innerHTML = this.render()
+        this._notifyDependentViews()
         return true
     }
 
@@ -1066,6 +1108,7 @@ export class SpreadsheetView {
         this._updateOwnSnapshotCache()
         this.evaluateAll()
         if (this._viewEl) this._viewEl.innerHTML = this.render()
+        this._notifyDependentViews()
 
         // Persist
         xhr("/save_spreadsheet_cell?channel=" + this.channelId
