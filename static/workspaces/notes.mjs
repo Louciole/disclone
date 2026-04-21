@@ -437,6 +437,9 @@ class Editor {
                 if (containerEl) {
                     mountSpreadsheet(block.uuid, channelId, containerEl)
                 }
+            } else if (block.type === "checklist") {
+                const containerEl = target.querySelector('.note-checklist')
+                if (containerEl) mountChecklist(block.uuid, containerEl)
             }
         }
     }
@@ -607,6 +610,7 @@ class Editor {
             { type: "heading3",    label: "Heading 3",   description: "Small section heading" },
             { type: "small",       label: "Small Text",  description: "Smaller font size" },
             { type: "showcase",    label: "Showcase",    description: "Display a metric value" },
+            { type: "checklist",   label: "Checklist",   description: "To-do list with checkboxes" },
             { type: "synapse",     label: "Synapse",     description: "External component" },
             { type: "database",    label: "Database",    description: "Inline database table" },
             { type: "spreadsheet", label: "Spreadsheet", description: "Inline spreadsheet" },
@@ -689,6 +693,97 @@ class Editor {
 }
 window.NoteEditor = Editor;
 
+function mountChecklist(blockUuid, containerEl) {
+    const editor = global.state.noteEditor
+    const block = editor?.blocks[blockUuid]
+    if (!block || !containerEl) return
+
+    if (!block.content || block.content.trim() === '') block.content = '[ ] '
+    const lines = block.content.split('\n').filter(l => l !== '')
+
+    containerEl.innerHTML = ''
+
+    const ul = document.createElement('ul')
+    ul.className = 'checklist-list'
+
+    lines.forEach((line, i) => {
+        const checked = line.startsWith('[x]')
+        const text = line.replace(/^\[.\] ?/, '')
+
+        const li = document.createElement('li')
+        li.className = 'checklist-item' + (checked ? ' checked' : '')
+
+        const checkbox = document.createElement('div')
+        checkbox.className = 'checklist-checkbox' + (checked ? ' checked' : '')
+        checkbox.onclick = () => {
+            const isNowChecked = !checkbox.classList.contains('checked')
+            const currentLines = block.content.split('\n').filter(l => l !== '')
+            if (i >= currentLines.length) return
+            const itemText = currentLines[i].replace(/^\[.\] ?/, '')
+            currentLines[i] = (isNowChecked ? '[x] ' : '[ ] ') + itemText
+            block.content = currentLines.join('\n')
+            checkbox.classList.toggle('checked', isNowChecked)
+            li.classList.toggle('checked', isNowChecked)
+            editor.saveBlock(blockUuid)
+        }
+
+        const span = document.createElement('span')
+        span.contentEditable = 'true'
+        span.className = 'checklist-item-text'
+        span.innerText = text
+        span.onblur = () => {
+            const currentLines = block.content.split('\n').filter(l => l !== '')
+            if (i >= currentLines.length) return
+            const isChecked = currentLines[i].startsWith('[x]')
+            currentLines[i] = (isChecked ? '[x] ' : '[ ] ') + span.innerText.trim()
+            block.content = currentLines.join('\n')
+            editor.saveBlock(blockUuid)
+        }
+        span.onkeydown = (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault()
+                const currentLines = block.content.split('\n').filter(l => l !== '')
+                currentLines.splice(i + 1, 0, '[ ] ')
+                block.content = currentLines.join('\n')
+                mountChecklist(blockUuid, containerEl)
+                const items = containerEl.querySelectorAll('.checklist-item-text')
+                if (items[i + 1]) items[i + 1].focus()
+            } else if (event.key === 'Backspace' && span.innerText.trim() === '') {
+                event.preventDefault()
+                const currentLines = block.content.split('\n').filter(l => l !== '')
+                if (currentLines.length <= 1) return
+                currentLines.splice(i, 1)
+                block.content = currentLines.join('\n')
+                mountChecklist(blockUuid, containerEl)
+                const items = containerEl.querySelectorAll('.checklist-item-text')
+                const focusIndex = Math.max(0, i - 1)
+                if (items[focusIndex]) items[focusIndex].focus()
+                editor.saveBlock(blockUuid)
+            }
+        }
+
+        li.appendChild(checkbox)
+        li.appendChild(span)
+        ul.appendChild(li)
+    })
+
+    const addBtn = document.createElement('button')
+    addBtn.className = 'checklist-add-btn'
+    addBtn.textContent = '+ Add item'
+    addBtn.onclick = () => {
+        const currentLines = block.content.split('\n').filter(l => l !== '')
+        currentLines.push('[ ] ')
+        block.content = currentLines.join('\n')
+        mountChecklist(blockUuid, containerEl)
+        const items = containerEl.querySelectorAll('.checklist-item-text')
+        if (items.length > 0) items[items.length - 1].focus()
+        editor.saveBlock(blockUuid)
+    }
+
+    containerEl.appendChild(ul)
+    containerEl.appendChild(addBtn)
+}
+
 const blockTypes = {
     "text": {placeholder: "Press '/' for commands"},
     "heading1": {placeholder: "Heading 1", initiator: "#"},
@@ -696,6 +791,7 @@ const blockTypes = {
     "heading3": {placeholder: "Heading 3", initiator: "###"},
     "small": {placeholder: "small text", initiator: "-#"},
     "showcase": {placeholder: "insert metric", initiator: "/showcase"},
+    "checklist": {template: () => '<div class="note-checklist"></div>', initiator: "/todo"},
     "synapse": {template: (block)=>{return getTemplate("synapse-root")}, initiator: "/synapse"},
     "database": {template: (block)=>{return fillWith("database-root", [block])}, initiator: "/database", placeholder: "database"},
     "spreadsheet": {template: (block)=>{return fillWith("spreadsheet-root", [block])}, initiator: "/sheet", placeholder: "spreadsheet"},
@@ -707,6 +803,7 @@ const initiators = [
     {"type":"heading3", "initiator":"###"},
     {"type":"small", "initiator":"-#"},
     {"type":"showcase", "initiator":"/showcase"},
+    {"type":"checklist", "initiator":"/todo"},
     {"type":"synapse", "initiator":"/synapse"},
     {"type":"database", "initiator":"/database"},
     {"type":"spreadsheet", "initiator":"/sheet"},

@@ -5123,6 +5123,19 @@ input:checked + .slider:before {
     height: 1.2rem;
 }
 
+.editor .block .delete img{
+    filter: invert(85%) sepia(5%) saturate(15%) hue-rotate(315deg) brightness(81%) contrast(81%);
+    height: 1.1rem;
+}
+
+.editor .block .delete:hover{
+    background: var(--red) !important;
+}
+
+.editor .block .delete:hover img{
+    filter: invert(100%);
+}
+
 .editor .block .controls{
     opacity: 0;
     transition: opacity 0.2s;
@@ -5214,6 +5227,87 @@ input:checked + .slider:before {
     border-radius: 0.6rem;
     font-size: 1.8rem;
     width: fit-content !important;
+}
+
+/* ─── Checklist Block ─────────────────────────────────────────────── */
+
+.editor .editable-block:has(.note-checklist) {
+    white-space: normal;
+}
+
+.note-checklist {
+    padding: 0.2rem 0;
+    width: 100%;
+}
+
+.checklist-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.checklist-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.checklist-checkbox {
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+    cursor: pointer;
+    border: 2px solid var(--text2bis);
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.1s, border-color 0.1s;
+}
+
+.checklist-checkbox.checked {
+    background: var(--primary);
+    border-color: var(--primary);
+}
+
+.checklist-checkbox.checked::after {
+    content: '';
+    width: 0.35rem;
+    height: 0.6rem;
+    border: 2px solid white;
+    border-top: none;
+    border-left: none;
+    transform: rotate(45deg) translateY(-1px);
+}
+
+.checklist-item-text {
+    flex: 1;
+    outline: none;
+    min-width: 0;
+    line-height: 1.5;
+}
+
+.checklist-item.checked .checklist-item-text {
+    text-decoration: line-through;
+    color: var(--text2bis);
+}
+
+.checklist-add-btn {
+    background: none;
+    border: none;
+    color: var(--text2bis);
+    cursor: pointer;
+    font-size: 0.85rem;
+    padding: 0.2rem 0;
+    margin-top: 0.1rem;
+    font-family: inherit;
+}
+
+.checklist-add-btn:hover {
+    color: var(--text1);
 }
 
 /* ─── Notion-like Database Block ───────────────────────────────────── */
