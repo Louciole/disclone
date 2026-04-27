@@ -640,6 +640,9 @@ class Mycelium(Server):
     @Server.expose
     def edit_conv(self, element, value, conv_id):
         uid = self.getUser()
+        if element in ["id"]:
+            raise HTTPError(self.response, 400, "Invalid element")
+
         members = self.db.getAll("accessconversation", conv_id, "conversation")
         for j in range(0, len(members)):
             if members[j]["account"] == uid:
@@ -684,6 +687,8 @@ class Mycelium(Server):
 
     @Server.expose
     def test(self):
+        if not self.config.getboolean("server", "DEBUG"):
+            raise HTTPError(self.response, 404)
         return self.file(PATH + "/.idea/test.html")
 
     @Server.expose
@@ -1937,7 +1942,7 @@ class Mycelium(Server):
     @Server.expose
     def change_profile(self, element, value):
         uid = self.getUser()
-        if element == "id":
+        if element in ["id", "inscription", "storage_usage"]:
             return json.dumps({"error": "forbidden"})
         self.db.edit("mycelium_account", uid, element, value)
         return json.dumps({"status": "ok"})
