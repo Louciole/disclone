@@ -171,6 +171,11 @@ export async function onMessage(event) {
                     // Show notification if we're not the initiator
                     if (callData.participants[0] !== global.user.id) {
                         showIncomingCallNotification(callData);
+                        // Show call section as banner in the conversation
+                        const callMgrBanner = global.state.callManager;
+                        if (callMgrBanner && callMgrBanner.callState === 'none') {
+                            callMgrBanner.setBannerState(callData);
+                        }
                         // Native full-screen incoming call notification
                         if (isNative) {
                             const caller = global.users?.[callData.participants[0]];

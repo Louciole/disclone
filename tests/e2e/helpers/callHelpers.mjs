@@ -170,3 +170,140 @@ export async function waitForMultipleUsersReady(pages, timeout = 10000) {
     await Promise.all(pages.map(page => waitForAppReady(page, timeout)));
     console.log(`   ✅ ${pages.length} users ready`);
 }
+
+// ─── UI / reactive helpers ───────────────────────────────────────────────────
+
+/**
+ * Doit être appelé via page.addInitScript AVANT page.goto.
+ * Remplace navigator.mediaDevices.getUserMedia par un faux stream audio-only
+ * pour que startCall/joinCall ne bloquent pas sur une vraie caméra/micro.
+ * @param {Page} page
+ */
+export async function mockGetUserMedia(page) {
+    await page.addInitScript(() => {
+        const makeFakeTrack = (kind) => ({
+            kind,
+            enabled: true,
+            muted: false,
+            readyState: 'live',
+            stop: () => {},
+            addEventListener: () => {},
+            removeEventListener: () => {},
+        });
+
+        const fakeAudioTrack = makeFakeTrack('audio');
+        const fakeVideoTrack = makeFakeTrack('video');
+
+        const makeFakeStream = (withVideo = false) => ({
+            active: true,
+            getTracks: () => withVideo ? [fakeAudioTrack, fakeVideoTrack] : [fakeAudioTrack],
+            getAudioTracks: () => [fakeAudioTrack],
+            getVideoTracks: () => withVideo ? [fakeVideoTrack] : [],
+        });
+
+        Object.defineProperty(navigator, 'mediaDevices', {
+            writable: true,
+            value: {
+                getUserMedia: async ({ video }) => makeFakeStream(!!video),
+            },
+        });
+    });
+}
+
+/**
+ * Attend que le composant call-component soit rendu dans le DOM.
+ * @param {Page} page
+ * @param {number} timeout
+ */
+export async function waitForCallComponent(page, timeout = 8000) {
+    await page.locator('.call-component').waitFor({ state: 'visible', timeout });
+    console.log('   ✅ call-component visible');
+}
+
+/**
+ * Attend que le composant call-component soit absent du DOM.
+ * @param {Page} page
+ * @param {number} timeout
+ */
+export async function waitForNoCallComponent(page, timeout = 8000) {
+    await page.locator('.call-component').waitFor({ state: 'hidden', timeout });
+    console.log('   ✅ call-component masqué');
+}
+
+/**
+ * Lit l'état courant de callViewState depuis le store réactif.
+ * @param {Page} page
+ * @returns {Promise<{callState: string, hasAnyVideo: boolean}>}
+ */
+export async function readCallViewState(page) {
+    return page.evaluate(() => ({
+        callState: window.global?.state?.callManager?.callState ?? 'none',
+        hasAnyVideo: window.global?.state?.callManager?.hasAnyVideo ?? false,
+        participants: window.global?.state?.callManager?.remoteParticipants ?? [],
+    }));
+}
+
+/**
+ * Injecte un état "banner" dans le callManager côté client
+ * (simule la réception d'un appel WS call_started sans passer par un vrai second user).
+ * @param {Page} page
+ * @param {number} convId
+ * @param {Object} opts
+ * @param {string} [opts.callType='audio']
+ * @param {number[]} [opts.participantIds=[]] IDs des participants déjà dans l'appel
+ */
+export async function injectBannerState(page, convId, { callType = 'audio', participantIds = [] } = {}) {
+    await page.evaluate(({ convId, callType, participantIds }) => {
+        const cm = window.global.state.callManager;
+        const fakeCallData = {
+            id: 99999,
+            conversation_id: convId,
+            call_type: callType,
+            participants: participantIds,
+            active: true,
+        };
+        // Met également à jour ongoingCall pour que updateAvailableActions trouve callId
+        window.global.convs[convId] = window.global.convs[convId] || {};
+        window.global.convs[convId].ongoingCall = fakeCallData;
+        cm.setBannerState(fakeCallData);
+    }, { convId, callType, participantIds });
+
+    console.log(`   ✅ Banner state injecté (conv=${convId}, type=${callType})`);
+}
+
+/**
+ * Injecte un état "calling" dans le callManager côté client
+ * (simule le fait que le user local a démarré l'appel).
+ * @param {Page} page
+ * @param {number[]} participantIds IDs des membres en train de sonner
+ */
+export async function injectCallingState(page, participantIds = []) {
+    await page.evaluate((participantIds) => {
+        const cm = window.global.state.callManager;
+        cm.callState = 'calling';
+        cm.remoteParticipants = participantIds.map(id => ({ userId: id, status: 'calling' }));
+
+        // Déclencher les mises à jour réactives
+        const { setElement } = window.__vestaInternals__ || {};
+        if (setElement) {
+            setElement('global.state.callManager.remoteParticipants', cm.remoteParticipants);
+            setElement('global.state.callManager.availableActions', [{ type: 'controls' }]);
+        }
+        cm.availableActions = [{ type: 'controls' }];
+        cm._updateCallViewState();
+    }, participantIds);
+
+    console.log(`   ✅ Calling state injecté (${participantIds.length} participants en sonnerie)`);
+}
+
+/**
+ * Ouvre une conversation dans l'interface (clic sur #conv{id} dans la sidebar).
+ * @param {Page} page
+ * @param {number} convId
+ */
+export async function openConversation(page, convId) {
+    await page.locator(`#conv${convId}`).click();
+    await page.waitForFunction((id) => window.global?.state?.activeConv === id, convId, { timeout: 8000 });
+    await page.locator('.chat-input textarea.selected').waitFor({ state: 'visible', timeout: 8000 });
+    console.log(`   ✅ Conversation ${convId} ouverte`);
+}

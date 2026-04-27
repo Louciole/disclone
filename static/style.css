@@ -4054,234 +4054,125 @@ input:checked + .slider:before {
 }
 
 
-/* Base call component */
+/* ==================== CONVERSATION CALL SECTION ==================== */
+
 .call-component {
+    position: relative;
     width: 100%;
+    box-sizing: border-box;
     display: flex;
     flex-direction: column;
-    align-items: center;
-}
-
-/* State: Banner - Compact horizontal layout */
-.call-banner {
-    background: var(--accent);
-    color: white;
-    padding: 0.75rem 1rem;
-    border-radius: 0.5rem;
-    margin: 0.5rem;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-    animation: slideDown 0.3s ease-out;
-    max-height: 80px;
-}
-
-.call-banner .call-content {
-    flex: 1;
-}
-
-.call-banner .remote-videos-grid {
-    display: flex;
-    gap: 0.5rem;
-    overflow-x: auto;
-    padding: 0.25rem 0;
-}
-
-.call-banner .remote-videos-grid::-webkit-scrollbar {
-    height: 4px;
-}
-
-.call-banner .remote-videos-grid::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 2px;
-}
-
-.call-banner .remote-videos-grid::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.3);
-    border-radius: 2px;
-}
-
-.call-banner .call-participant {
-    width: 48px;
-    height: 48px;
-    min-width: 48px;
-    min-height: 48px;
-    border-radius: 50%;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-}
-
-.call-banner .call-participant video,
-.call-banner .participant-status-ring,
-.call-banner .participant-status-text,
-.call-banner .participant-name-label {
-    display: none;
-}
-
-.call-banner .participant-avatar img {
-    width: 44px;
-    height: 44px;
-    border: none;
-    box-shadow: none;
-}
-
-.call-banner .local-video-container {
-    display: none;
-}
-
-.call-banner .call-actions {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    margin-left: auto;
-}
-
-.call-info-action {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.call-info-action .icon {
-    width: 20px;
-    height: 20px;
-    filter: invert(1);
-}
-
-.action-label {
-    font-weight: 600;
-    font-size: 0.95rem;
-    white-space: nowrap;
-}
-
-.btn-join {
-    background: white;
-    color: var(--accent);
-    border: none;
-    padding: 0.5rem 1.25rem;
-    border-radius: 0.375rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-    white-space: nowrap;
-}
-
-.btn-join:hover {
-    transform: scale(1.05);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    gap: 10px;
+    background: var(--bg4);
+    border-radius: 10px;
+    padding: 12px 16px 12px 16px;
+    animation: slideDown 0.25s ease-out;
 }
 
 @keyframes slideDown {
-    from {
-        transform: translateY(-20px);
-        opacity: 0;
-    }
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
+    from { transform: translateY(-12px); opacity: 0; }
+    to   { transform: translateY(0);     opacity: 1; }
 }
 
-/* State: Waiting - Centered layout while calling */
-.call-waiting {
-    background: var(--bg5);
-    max-height: 50svh;
-    min-height: 400px;
-    padding: 2rem;
+/* Participants row */
+.call-participants {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    align-items: center;
+    overflow-x: auto;
+    padding: 4px 2px;
 }
 
-.call-waiting .call-subtitle {
-    font-size: 1rem;
+.call-participants::-webkit-scrollbar { height: 3px; }
+.call-participants::-webkit-scrollbar-thumb { background: var(--bg2); border-radius: 2px; }
+
+/* Controls row */
+.call-actions {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Call info label */
+.call-info-action {
+    display: flex;
+    align-items: center;
+    gap: 6px;
     color: var(--text2);
-    animation: blink 1.5s ease-in-out infinite;
+    font-size: 0.85rem;
 }
 
-.call-waiting .call-content {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+.call-info-action .icon {
+    width: 16px;
+    height: 16px;
+    filter: invert(1);
+    opacity: 0.6;
 }
 
-.call-waiting .remote-videos-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 2rem;
-    justify-content: center;
-}
-
-/* State: Active - Normal call layout */
-.call-active {
-    background: var(--bg5);
-    max-height: 50svh;
-}
-
-.call-header {
-    background: var(--bg4);
-    padding: 1rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid var(--bg3);
-}
-
-.call-title {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: var(--text);
-}
-
-.call-title h3 {
-    margin: 0;
-    font-size: 1.1rem;
-    font-weight: 600;
-}
-
-.call-controls {
-    display: flex;
-    align-items: center;
-    gap: 2rem;
-}
-
-.call-info {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
+.action-label {
+    font-size: 0.85rem;
     color: var(--text2);
-    font-size: 0.9rem;
+    white-space: nowrap;
 }
 
-.mode-indicator {
-    padding: 0.25rem 0.5rem;
-    border-radius: 0.25rem;
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
+/* Join controls */
+.call-join-controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
 }
 
-.mode-indicator.p2p {
+.call-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.15s, filter 0.15s;
+    padding: 0;
+}
+
+.call-btn:hover { transform: scale(1.1); }
+
+.call-btn .icon {
+    width: 18px;
+    height: 18px;
+    filter: invert(1);
+}
+
+.call-btn-decline {
+    background: var(--red);
+    /* rotate icon to show a "hang up" phone */
+    transform-origin: center;
+}
+
+.call-btn-decline .icon { transform: rotate(135deg); }
+
+.call-btn-accept {
     background: var(--green);
-    color: white;
 }
 
-.mode-indicator.sfu {
-    background: var(--accent);
-    color: white;
-}
-
+/* In-call control buttons */
 .controls-buttons {
     display: flex;
-    gap: 0.5rem;
+    gap: 8px;
 }
 
 .controls-buttons .icon-wrapper {
-    width: 50px;
-    height: 50px;
+    width: 38px;
+    height: 38px;
     border-radius: 50%;
     background: var(--bg3);
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: background 0.15s, transform 0.15s;
     position: relative;
 }
 
@@ -4290,244 +4181,208 @@ input:checked + .slider:before {
     transform: scale(1.1);
 }
 
-.controls-buttons .icon-wrapper.active {
-    background: var(--red);
-}
+.controls-buttons .icon-wrapper.active { background: var(--red); }
+.controls-buttons .icon-wrapper.hangup { background: var(--red); }
+.controls-buttons .icon-wrapper.hangup:hover { background: #c23636; }
 
-.controls-buttons .icon-wrapper.hangup {
-    background: var(--red);
-}
-
-.controls-buttons .icon-wrapper.hangup:hover {
-    background: #c23636;
-}
-
-.call-content {
-    flex: 1;
-    position: relative;
-    display: flex;
-    height: 100%;
-    width: 100%;
-    align-items: center;
-    justify-content: center;
-    padding: 1rem;
-}
-
-.remote-videos-grid {
-    display: grid;
-    gap: 1rem;
-    width: 100%;
-    height: 100%;
-    grid-auto-rows: 1fr;
-}
-
-.remote-videos-grid:has(.call-participant:nth-child(1):last-child) {
-    grid-template-columns: 1fr;
-}
-
-.remote-videos-grid:has(.call-participant:nth-child(2)) {
-    grid-template-columns: repeat(2, 1fr);
-}
-
-.remote-videos-grid:has(.call-participant:nth-child(3)),
-.remote-videos-grid:has(.call-participant:nth-child(4)) {
-    grid-template-columns: repeat(2, 1fr);
-    grid-template-rows: repeat(2, 1fr);
-}
-
-.remote-videos-grid:has(.call-participant:nth-child(5)),
-.remote-videos-grid:has(.call-participant:nth-child(6)) {
-    grid-template-columns: repeat(3, 1fr);
-}
-
-/* ==================== UNIFIED CALL PARTICIPANT ==================== */
-
-.call-participant {
-    position: relative;
-    background: var(--bg4);
-    border-radius: 0.5rem;
-    overflow: hidden;
-    max-height: 41svh;
-    aspect-ratio: 16 / 9;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-/* Avatar (fallback, always visible) */
-.participant-avatar {
+/* Fullscreen button (bottom-right, hover-only) */
+.call-fullscreen-btn {
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    bottom: 8px;
+    right: 8px;
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.45);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s;
+    padding: 0;
+}
+
+.call-component:hover .call-fullscreen-btn { opacity: 1; }
+
+.call-fullscreen-btn .icon {
+    width: 16px;
+    height: 16px;
+    filter: invert(1);
+}
+
+/* ==================== AUDIO MODE — circles ==================== */
+
+.call-audiomode .call-participant {
+    position: relative;
+    width: 52px;
+    height: 52px;
+    min-width: 52px;
+    border-radius: 50%;
+    background: var(--bg3);
+    overflow: visible;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.call-audiomode .participant-avatar {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    overflow: hidden;
+    position: relative;
+    flex-shrink: 0;
+    z-index: 1;
+}
+
+.call-audiomode .participant-avatar img {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: none;
+    box-shadow: none;
+    display: block;
+}
+
+/* Hide video and name in audio mode */
+.call-audiomode .call-participant video,
+.call-audiomode .participant-name-label,
+.call-audiomode .participant-status-text,
+.call-audiomode .participant-status-ring {
+    display: none;
+}
+
+/* Ringing in audio mode — less vivid + blue expanding rings */
+.call-audiomode .call-participant.status-calling {
+    opacity: 0.65;
+}
+
+.call-audiomode .call-participant.status-calling .participant-avatar img {
+    filter: grayscale(25%);
+}
+
+.call-audiomode .call-participant.status-calling::before,
+.call-audiomode .call-participant.status-calling::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    border: 2px solid var(--accent);
+    pointer-events: none;
+    animation: ring-expand-conv 2s ease-out infinite;
+}
+
+.call-audiomode .call-participant.status-calling::after {
+    animation-delay: 0.75s;
+}
+
+@keyframes ring-expand-conv {
+    0%   { transform: translate(-50%, -50%) scale(1);   opacity: 0.85; }
+    100% { transform: translate(-50%, -50%) scale(2.4); opacity: 0; }
+}
+
+/* ==================== VIDEO MODE — coloured rectangles ==================== */
+
+.call-videomode .call-participant {
+    position: relative;
+    width: 88px;
+    height: 60px;
+    min-width: 88px;
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    /* background set inline via hsl() */
+}
+
+.call-videomode .participant-avatar {
+    position: absolute;
+    inset: 0;
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 1;
-    transition: opacity 0.3s ease;
+    transition: opacity 0.3s;
 }
 
-.participant-avatar img {
-    width: 200px;
-    height: 200px;
-    object-fit: cover;
+.call-videomode .participant-avatar img {
+    width: 34px;
+    height: 34px;
     border-radius: 50%;
-    border: 3px solid rgba(255, 255, 255, 0.3);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    object-fit: cover;
+    border: none;
+    box-shadow: none;
 }
 
-/* Video element (hidden by default, shown when has stream and status is 'active') */
-.call-participant video {
+.call-videomode .call-participant video {
     position: absolute;
-    top: 0;
-    left: 0;
+    inset: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
     z-index: 2;
     opacity: 0;
-    transition: opacity 0.3s ease;
+    transition: opacity 0.3s;
 }
 
-.call-participant.has-stream.status-active video {
-    opacity: 1;
-}
+.call-videomode .call-participant.has-stream.status-active video { opacity: 1; }
+.call-videomode .call-participant.has-stream.status-active .participant-avatar { opacity: 0; }
 
-.call-participant.has-stream.status-active .participant-avatar {
-    opacity: 0;
-}
-
-/* Status ring (only visible for 'calling' status) */
-.participant-status-ring {
-    display: none;
-}
-
-/* Status text (only visible for 'calling' status) */
-.participant-status-text {
-    display: none;
-}
-
-/* Name label (always at bottom) */
-.participant-name-label {
+.call-videomode .participant-name-label {
     position: absolute;
-    bottom: 0.5rem;
-    left: 0.5rem;
-    background: rgba(0, 0, 0, 0.7);
+    bottom: 3px;
+    left: 5px;
+    background: rgba(0, 0, 0, 0.6);
     color: white;
-    padding: 0.25rem 0.5rem;
-    border-radius: 0.25rem;
-    font-size: 0.85rem;
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-size: 0.6rem;
     font-weight: 500;
     z-index: 3;
+    white-space: nowrap;
 }
 
-/* ==================== STATUS: CALLING ==================== */
-
-.call-participant.status-calling {
-    /* Greyscale effect */
+/* Ringing in video mode — black rectangle + phone icon */
+.call-videomode .call-participant.status-calling {
+    background: #111 !important;
 }
 
-.call-participant.status-calling .participant-avatar {
-    opacity: 0.7;
-    animation: pulse 2s ease-in-out infinite;
+.call-videomode .call-participant.status-calling .participant-avatar img {
+    display: none;
 }
 
-.call-participant.status-calling .participant-avatar img {
-    filter: grayscale(50%);
-}
-
-.call-participant.status-calling .participant-status-ring {
+.call-videomode .call-participant.status-calling .participant-status-ring {
     display: block;
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 220px;
-    height: 220px;
-    border: 3px solid var(--accent);
-    border-radius: 50%;
-    animation: ring-pulse 1.5s ease-out infinite;
+    width: 22px;
+    height: 22px;
+    background: url('/static/icons/material/call.svg') center / contain no-repeat;
+    filter: invert(1);
     z-index: 2;
-    pointer-events: none;
+    animation: ring-icon-pulse 1.4s ease-in-out infinite;
 }
 
-.call-participant.status-calling .participant-status-text {
-    display: block;
-    position: absolute;
-    bottom: 3rem;
-    left: 50%;
-    transform: translateX(-50%);
-    color: var(--text2);
-    font-size: 0.9rem;
-    z-index: 3;
-    animation: blink 1.5s ease-in-out infinite;
+@keyframes ring-icon-pulse {
+    0%, 100% { opacity: 1;   transform: translate(-50%, -50%) scale(1); }
+    50%       { opacity: 0.6; transform: translate(-50%, -50%) scale(1.15); }
 }
 
-/* ==================== STATUS: CONNECTED (no video yet) ==================== */
+.call-videomode .participant-status-text { display: none; }
 
-.call-participant.status-connected .participant-avatar {
-    opacity: 1;
-}
+/* ==================== INCOMING CALL NOTIFICATION ==================== */
 
-/* Video is hidden until status becomes 'active' */
-
-/* ==================== STATUS: ACTIVE (with video) ==================== */
-
-/* Video becomes visible when has-stream class is added and status is active */
-
-/* ==================== ANIMATIONS ==================== */
-
-@keyframes pulse {
-    0%, 100% {
-        opacity: 0.5;
-    }
-    50% {
-        opacity: 0.9;
-    }
-}
-
-@keyframes ring-pulse {
-    0% {
-        transform: translate(-50%, -50%) scale(1);
-        opacity: 1;
-    }
-    100% {
-        transform: translate(-50%, -50%) scale(1.2);
-        opacity: 0;
-    }
-}
-
-@keyframes blink {
-    0%, 100% {
-        opacity: 1;
-    }
-    50% {
-        opacity: 0.4;
-    }
-}
-
-/* Local video container */
-.local-video-container {
-    position: absolute;
-    bottom: 2rem;
-    right: 2rem;
-    width: 240px;
-    height: 180px;
-    background: var(--bg4);
-    border-radius: 0.5rem;
-    overflow: hidden;
-    border: 2px solid var(--bg3);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-.local-video-container video {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-/* Incoming call notification */
 .incoming-call-notification {
     position: fixed;
     top: 50%;
@@ -4590,18 +4445,14 @@ input:checked + .slider:before {
     color: white;
 }
 
-.btn-accept:hover {
-    background: #20873d;
-}
+.btn-accept:hover { background: #20873d; }
 
 .btn-decline {
     background: var(--red);
     color: white;
 }
 
-.btn-decline:hover {
-    background: #c23636;
-}
+.btn-decline:hover { background: #c23636; }
 
 .incoming-call-actions .icon {
     width: 20px;
@@ -4609,28 +4460,18 @@ input:checked + .slider:before {
     filter: invert(1);
 }
 
-.call-actions {
-    display: flex;
-    gap: 0.5rem;
-    padding-bottom: 1rem;
-}
-
 @keyframes slideIn {
-    from {
-        transform: translateX(100%);
-        opacity: 0;
-    }
-    to {
-        transform: translateX(0);
-        opacity: 1;
-    }
+    from { transform: translateX(100%); opacity: 0; }
+    to   { transform: translateX(0);    opacity: 1; }
 }
 
 @keyframes fadeOut {
-    to {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
+    to { opacity: 0; transform: translateY(-10px); }
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.4; }
 }
 
 .hidden{
@@ -5761,27 +5602,6 @@ input:checked + .slider:before {
     text-overflow: ellipsis;
     white-space: nowrap;
 }
-
-.global-state-callManager-callState{
-    width: 100%;
-    background: var(--bg5);
-    max-height: 34svh;
-    display: flex;
-}
-
-.call-banner-small .call-participant{
-    background: none !important;
-    height: 120px;
-}
-.call-banner-small .local-video-container{
-    display: none;
-}
-
-.call-banner-small .participant-status-ring{
-    width: 80px;
-    height: 80px;
-}
-
 
 /* ─── Mentions ───────────────────────────────────────────────────────────── */
 

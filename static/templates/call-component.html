@@ -1,50 +1,28 @@
-${Subscribe('global.state.callManager.callState', () => {
+${Subscribe('global.state.callManager.callViewState', () => {
     const callManager = global.state.callManager;
-    const callState = callManager?.callState || 'none';
+    const viewState = callManager?.callViewState || { callState: 'none', hasAnyVideo: false };
+    const { callState, hasAnyVideo } = viewState;
 
-    console.log('call-component rendering, callState:', callState);
+    if (!callState || callState === 'none') return '';
 
-    if (callState === 'none') {
-        console.log(' callState is none, not rendering');
-        return '';
-    }
-
-    console.log(' Rendering call-component with state:', callState);
-    console.log('   - participants:', callManager?.remoteParticipants);
-    console.log('   - actions:', callManager?.availableActions);
-
-
+    const modeClass = hasAnyVideo ? 'call-videomode' : 'call-audiomode';
 
     return `
-        <div class="call-component call-${callState} call-${callManager.displayMode}">
-<!--            ${callState === 'calling' ? `-->
-<!--                <div class="call-header">-->
-<!--                    <div class="call-title">${_t("Appel en cours")}</div>-->
-<!--                    <div class="call-subtitle">${_t("En attente de réponse")}...</div>-->
-<!--                </div>-->
-<!--            ` : ''}-->
-
-            <div class="call-content">
-                <div id="remote-videos" class="remote-videos-grid">
-                    ${Subscribe('global.state.callManager.remoteParticipants', () =>
-                        fillWith('call-participant', global.state.callManager?.remoteParticipants || [])
-                    )}
-                </div>
+        <div class="call-component call-${callState} ${modeClass}">
+            <div class="call-participants">
                 <div id="remote-audio-container"></div>
-
-                ${callState === 'active' || callState === 'calling' ? `
-                    <div class="local-video-container">
-                        <video id="local-video" autoplay playsinline muted></video>
-                        <div class="video-name-label">${_t("Vous")}</div>
-                    </div>
-                ` : ''}
+                ${Subscribe('global.state.callManager.remoteParticipants', () =>
+                    fillWith('call-participant', global.state.callManager?.remoteParticipants || [])
+                )}
             </div>
-
             <div class="call-actions">
                 ${Subscribe('global.state.callManager.availableActions', () =>
                     fillWith('call-action', global.state.callManager?.availableActions || [])
                 )}
             </div>
+            <button class="call-fullscreen-btn" onclick="enterCallFullscreen()" title="${_t('Plein écran')}">
+                <img class="icon" src="/static/icons/material/switch.svg"/>
+            </button>
         </div>
     `;
 })}

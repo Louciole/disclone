@@ -27,7 +27,8 @@ export class CallManager {
         this.mode = 'p2p'; // 'p2p' or 'sfu'
         this.callType = 'audio'; // 'audio' or 'video'
         this.callState = 'none'; // 'none', 'banner', 'calling', 'active'
-        this.displayMode = 'banner-small'; // 'banner-small (in banner only audio flux)', 'banner-big (in banner, mixed media or only video)' //TODO add full screen mode and room mode
+        this.hasAnyVideo = false; // true when any participant (local or remote) has active video
+        this.callViewState = { callState: 'none', hasAnyVideo: false }; // combined reactive state for template
 
         // Media streams
         this.localStream = null;
@@ -55,6 +56,41 @@ export class CallManager {
         setElement('global.state.callManager.callState', this.callState);
         setElement('global.state.callManager.remoteParticipants', this.remoteParticipants);
         setElement('global.state.callManager.availableActions', this.availableActions);
+        setElement('global.state.callManager.callViewState', this.callViewState);
+    }
+
+    _updateCallViewState() {
+        this.callViewState = { callState: this.callState, hasAnyVideo: this.hasAnyVideo };
+        setElement('global.state.callManager.callViewState', this.callViewState);
+    }
+
+    _updateHasAnyVideo() {
+        const anyRemoteVideo = Object.values(this.remoteStreams).some(stream =>
+            stream.getVideoTracks().some(t => t.enabled && !t.muted)
+        );
+        const localHasVideo = !!(this.localStream &&
+            this.localStream.getVideoTracks().some(t => t.enabled) &&
+            !this.isVideoOff);
+        const newHasAnyVideo = anyRemoteVideo || localHasVideo;
+        if (newHasAnyVideo !== this.hasAnyVideo) {
+            this.hasAnyVideo = newHasAnyVideo;
+            this._updateCallViewState();
+        }
+    }
+
+    setBannerState(callData) {
+        this.callState = 'banner';
+        this.currentCall = callData;
+        setElement('global.state.callManager.callState', 'banner');
+        if (callData.participants) {
+            this.remoteParticipants = callData.participants
+                .filter(userId => userId !== global.user.id)
+                .map(userId => ({ userId, status: 'active' }));
+            setElement('global.state.callManager.remoteParticipants', this.remoteParticipants);
+        }
+        // Compute actions first so the single render below sees them already set
+        this.updateAvailableActions();
+        this._updateCallViewState();
     }
 
     /**
@@ -66,7 +102,7 @@ export class CallManager {
         switch (this.callState) {
             case 'banner':
                 // Banner: show info + join button
-                const call = global.convs[global.state.activeConv]?.ongoingCall;
+                const call = global.convs[global.state.activeConv]?.ongoingCall || this.currentCall;
                 console.log('📋 Banner mode, call data:', call);
 
                 this.availableActions = [
@@ -187,6 +223,7 @@ export class CallManager {
             setElement('global.state.callManager.currentCall', response);
             setElement('global.state.callManager.mode', response.mode);
             setElement('global.state.callManager.callState', 'calling');
+            this._updateCallViewState();
 
             // Get conversation members and add them as 'calling' participants
             const conv = global.convs[conversationId];
@@ -240,6 +277,7 @@ export class CallManager {
             setElement('global.state.callManager.currentCall', response.call);
             setElement('global.state.callManager.mode', response.call.mode);
             setElement('global.state.callManager.callState', 'active');
+            this._updateCallViewState();
 
             // Initialize remote participants with 'connected' status
             this.remoteParticipants = response.call.participants
@@ -615,6 +653,7 @@ export class CallManager {
         if (this.callState === 'calling' && newUserId !== global.user.id) {
             this.callState = 'active';
             setElement('global.state.callManager.callState', 'active');
+            this._updateCallViewState();
 
             // Stop outgoing ringtone
             this.stopOutgoingRingtone();
@@ -689,6 +728,7 @@ export class CallManager {
         if (this.remoteStreams[userId]) {
             this.removeRemoteStreamDisplay(userId);
             delete this.remoteStreams[userId];
+            this._updateHasAnyVideo();
         }
 
         // Clear ICE candidate queue
@@ -755,6 +795,7 @@ export class CallManager {
                 }
 
                 console.log(`✅ Attached stream to user ${userId}, hasVideo: ${hasVideo}`);
+                this._updateHasAnyVideo();
             }
         });
     }
@@ -815,6 +856,7 @@ export class CallManager {
             videoTrack.enabled = !videoTrack.enabled;
             this.isVideoOff = !videoTrack.enabled;
             this.updateCallControls();
+            this._updateHasAnyVideo();
             console.log(`📹 Video off: ${this.isVideoOff}`);
         }
     }
@@ -892,6 +934,7 @@ export class CallManager {
         this.isDeafened = false;
 
         // Update reactive state
+        this.hasAnyVideo = false;
         setElement('global.state.callManager.currentCall', null);
         setElement('global.state.callManager.mode', 'p2p');
         setElement('global.state.callManager.callType', 'audio');
@@ -901,6 +944,7 @@ export class CallManager {
         setElement('global.state.callManager.isDeafened', false);
         setElement('global.state.callManager.remoteParticipants', []);
         setElement('global.state.callManager.availableActions', []);
+        this._updateCallViewState();
 
         // Clear local video element
         const localVideo = document.getElementById('local-video');
@@ -1020,6 +1064,7 @@ window.loadCallState = async function(conversationId) {
 
                 // Update available actions
                 callManager.updateAvailableActions();
+                callManager._updateCallViewState();
 
                 console.log('✅ Banner state set:', {
                     callState: callManager.callState,
@@ -1040,6 +1085,7 @@ window.loadCallState = async function(conversationId) {
                 setElement('global.state.callManager.callState', 'none');
                 setElement('global.state.callManager.remoteParticipants', []);
                 setElement('global.state.callManager.availableActions', []);
+                callManager._updateCallViewState();
             }
         }
     } catch (error) {
@@ -1134,6 +1180,24 @@ window.leaveCall = async function() {
     if (callManager) {
         await callManager.leaveCall();
     }
+};
+
+window.declineCallSection = function(callId) {
+    const notification = document.querySelector('.incoming-call-notification');
+    if (notification) notification.remove();
+
+    const ringtone = document.getElementById('call-ringtone');
+    if (ringtone) { ringtone.pause(); ringtone.currentTime = 0; }
+
+    const callManager = global.state.callManager;
+    if (callManager && callManager.callState === 'banner') {
+        callManager.cleanup();
+    }
+};
+
+window.enterCallFullscreen = function() {
+    // TODO: implement fullscreen call mode (context 2)
+    console.log('Enter fullscreen call');
 };
 
 export default CallManager;

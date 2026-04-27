@@ -1,6 +1,12 @@
-<!-- Call action template - renders different actions based on type -->
 ${element.type === 'join' ? `
-    <button class="btn-join" data-haptic="medium" onclick="joinExistingCall(${element.callId}, ${element.isVideo})">${_t("Rejoindre")}</button>
+    <div class="call-join-controls">
+        <button class="call-btn call-btn-decline" data-haptic="heavy" onclick="declineCallSection(${parseInt(element.callId, 10)})" title="${_t('Refuser')}">
+            <img class="icon" src="/static/icons/material/call.svg"/>
+        </button>
+        <button class="call-btn call-btn-accept" data-haptic="medium" onclick="joinExistingCall(${parseInt(element.callId, 10)}, ${!!element.isVideo})" title="${_t('Rejoindre')}">
+            <img class="icon" src="/static/icons/material/call.svg"/>
+        </button>
+    </div>
 ` : element.type === 'controls' ?
     getTemplate('call-controls')
 : element.type === 'info' ? `
