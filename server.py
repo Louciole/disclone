@@ -283,7 +283,10 @@ class Mycelium(Server):
                                 for member in members:
                                     await self.sendNotificationAsync(member["account"], {
                                         "type": "call_ended",
-                                        "content": {"call_id": call_id}
+                                        "content": {
+                                            "call_id": call_id,
+                                            "conversation_id": call.conversation_id
+                                        }
                                     })
                             else:
                                 call = result['call']

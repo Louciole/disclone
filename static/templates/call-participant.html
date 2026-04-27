@@ -14,5 +14,5 @@
 
     <div class="participant-name-label">${global.users[element.userId]?.display || 'User'}</div>
 
-    <div class="participant-status-text">${_t("Appel en cours")}...</div>
+    <div class="participant-status-text">${element.status === 'calling' ? _t("Appel en cours") + '...' : element.status === 'connected' ? _t("Connexion") + '...' : ''}</div>
 </div>

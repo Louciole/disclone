@@ -76,7 +76,7 @@ export class CallManager {
 
     _updateHasAnyVideo() {
         const anyRemoteVideo = Object.values(this.remoteStreams).some(stream =>
-            stream.getVideoTracks().some(t => t.enabled && !t.muted)
+            stream.getVideoTracks().some(t => t.enabled)
         );
         const localHasVideo = !!(this.localStream &&
             this.localStream.getVideoTracks().some(t => t.enabled) &&
@@ -235,6 +235,13 @@ export class CallManager {
             localVideo.srcObject = this.localStream;
             localVideo.muted = true; // Prevent echo
         }
+        const localTile = document.getElementById('participant-local');
+        if (localTile) {
+            const hasVideo = !!(this.localStream &&
+                this.localStream.getVideoTracks().some(t => t.enabled) &&
+                !this.isVideoOff);
+            localTile.classList.toggle('has-stream', hasVideo);
+        }
     }
 
     /**
@@ -265,6 +272,7 @@ export class CallManager {
      * Start a new call
      */
     async startCall(conversationId, video = false) {
+        if (this.callState !== 'none') return;
         try {
             await this.getLocalStream(video);
 
@@ -327,6 +335,7 @@ export class CallManager {
      * Join an existing call
      */
     async joinCall(callId, video = false) {
+        if (this.callState !== 'none') return;
         try {
             await this.getLocalStream(video);
 
@@ -446,8 +455,9 @@ export class CallManager {
 
         // Remote track handler
         pc.ontrack = (event) => {
-            console.log(`📥 Received remote track from user ${userId}`);
             const stream = event.streams[0];
+            if (!stream) return;
+            console.log(`📥 Received remote track from user ${userId}`);
             this.remoteStreams[userId] = stream;
             this.displayRemoteStream(userId, stream);
 
@@ -457,25 +467,6 @@ export class CallManager {
                 participant.status = 'active';
                 setElement('global.state.callManager.remoteParticipants', this.remoteParticipants);
             }
-
-            // Listen for track enable/disable to update avatar display
-            stream.getTracks().forEach(track => {
-                track.addEventListener('enabled', () => {
-                    if (track.kind === 'video') {
-                        this._updateVideoDisplay(userId, stream);
-                    }
-                });
-                track.addEventListener('mute', () => {
-                    if (track.kind === 'video') {
-                        this._updateVideoDisplay(userId, stream);
-                    }
-                });
-                track.addEventListener('unmute', () => {
-                    if (track.kind === 'video') {
-                        this._updateVideoDisplay(userId, stream);
-                    }
-                });
-            });
         };
 
         // Connection state monitoring
@@ -797,23 +788,18 @@ export class CallManager {
     handlePeerDisconnection(userId) {
         console.log(`🔌 Disconnecting from user ${userId}`);
 
-        // Close and remove peer connection
         if (this.peerConnections[userId]) {
             this.peerConnections[userId].close();
             delete this.peerConnections[userId];
         }
 
-        // Remove remote stream and UI element
         if (this.remoteStreams[userId]) {
-            this.removeRemoteStreamDisplay(userId);
             delete this.remoteStreams[userId];
             this._updateHasAnyVideo();
         }
 
-        // Clear ICE candidate queue
-        if (this.iceCandidateQueues[userId]) {
-            delete this.iceCandidateQueues[userId];
-        }
+        delete this._audioAnalysers[String(userId)];
+        delete this.iceCandidateQueues[userId];
     }
 
     /**
@@ -836,10 +822,11 @@ export class CallManager {
         if (newMode === 'sfu') {
             await this.createSFUConnection();
         } else if (newMode === 'p2p') {
-            // Create connections to all participants
+            // Deterministic offer direction: higher ID sends the offer in each pair,
+            // avoiding glare without any coordination.
             for (const participantId of this.currentCall.participants) {
                 if (participantId !== global.user.id) {
-                    await this.createPeerConnection(participantId, true);
+                    await this.createPeerConnection(participantId, global.user.id > participantId);
                 }
             }
         }
@@ -881,35 +868,10 @@ export class CallManager {
     }
 
     /**
-     * Remove remote user's video display
+     * Remove remote user's audio analyser (stream and participant list managed by caller)
      */
     removeRemoteStreamDisplay(userId) {
-        // Remove from reactive participants array (DOM update follows automatically)
-        this.remoteParticipants = this.remoteParticipants.filter(p => p.userId !== userId);
-        setElement('global.state.callManager.remoteParticipants', this.remoteParticipants);
-        // Remove the audio analyser for this participant
-        delete this._audioAnalysers[userId];
-    }
-
-    /**
-     * Update video display based on whether stream has active video tracks
-     * @private
-     */
-    _updateVideoDisplay(userId, stream) {
-        const wrapper = document.getElementById(`remote-wrapper-${userId}`);
-        if (!wrapper) return;
-
-        // Check if stream has active video tracks
-        const videoTracks = stream.getVideoTracks();
-        const hasVideo = videoTracks.length > 0 && videoTracks[0].enabled && !videoTracks[0].muted;
-
-        if (hasVideo) {
-            wrapper.classList.add('has-stream');
-        } else {
-            wrapper.classList.remove('has-stream');
-        }
-
-        console.log(`🎥 Video display updated for user ${userId}: hasVideo=${hasVideo}`);
+        delete this._audioAnalysers[String(userId)];
     }
 
     // ==================== AUDIO/VIDEO CONTROLS ====================
@@ -1003,10 +965,7 @@ export class CallManager {
         // Clear ICE candidate queues
         this.iceCandidateQueues = {};
 
-        // Remove all remote streams and UI
-        for (const userId in this.remoteStreams) {
-            this.removeRemoteStreamDisplay(userId);
-        }
+        // Remove all remote streams
         this.remoteStreams = {};
         this.remoteParticipants = [];
         this.availableActions = [];
@@ -1142,11 +1101,10 @@ window.loadCallState = async function(conversationId) {
                 callManager.callState = 'banner';
                 setElement('global.state.callManager.callState', 'banner');
 
-                // Populate remote participants for banner display
-                callManager.remoteParticipants = callState.participants.map(userId => ({
-                    userId: userId,
-                    status: 'connected'
-                }));
+                // Populate remote participants for banner display (exclude self)
+                callManager.remoteParticipants = callState.participants
+                    .filter(userId => userId !== global.user.id)
+                    .map(userId => ({ userId, status: 'connected' }));
                 setElement('global.state.callManager.remoteParticipants', callManager.remoteParticipants);
 
                 // Update available actions
@@ -1270,12 +1228,6 @@ window.leaveCall = async function() {
 };
 
 window.declineCallSection = function(callId) {
-    const notification = document.querySelector('.incoming-call-notification');
-    if (notification) notification.remove();
-
-    const ringtone = document.getElementById('call-ringtone');
-    if (ringtone) { ringtone.pause(); ringtone.currentTime = 0; }
-
     const callManager = global.state.callManager;
     if (callManager && callManager.callState === 'banner') {
         callManager.cleanup();

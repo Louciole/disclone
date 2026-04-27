@@ -9,14 +9,23 @@
         </div>
     `)}
 
-    ${Subscribe('global.state.callManager.isVideoOff', () => `
+    ${Subscribe('global.state.callManager.isDeafened', () => `
+        <div class="icon-wrapper ${global.state.callManager?.isDeafened ? 'active' : ''}"
+             id="call-deafen-btn" data-haptic="light" onclick="deafen()"
+             title="${_t('Activer/Désactiver le son')}">
+            <img class="icon" src="/static/icons/material/headset.svg"/>
+            <span class="tooltip bottom">${_t("Son")}</span>
+        </div>
+    `)}
+
+    ${global.state.callManager?.callType === 'video' ? Subscribe('global.state.callManager.isVideoOff', () => `
         <div class="icon-wrapper ${global.state.callManager?.isVideoOff ? 'active' : ''}"
              id="call-video-btn" data-haptic="light" onclick="toggleVideo()"
              title="${_t('Activer/Désactiver la caméra')}">
             <img class="icon" src="/static/icons/material/videocam.svg"/>
             <span class="tooltip bottom">${_t("Caméra")}</span>
         </div>
-    `)}
+    `) : ''}
 
     <div class="icon-wrapper hangup" data-haptic="heavy" onclick="leaveCall()" title="${_t('Raccrocher')}">
         <img class="icon" src="/static/icons/material/call.svg"/>

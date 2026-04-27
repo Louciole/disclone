@@ -231,12 +231,11 @@ export async function onMessage(event) {
                         setElement(`global.convs[${endData.conversation_id}].ongoingCall`, null);
                     }
 
-                    // Clean up if we're in this call
-                    if (callMgr) {
+                    // Only clean up if we're in *this* call (not a different one)
+                    if (callMgr && (!callMgr.currentCall || callMgr.currentCall.id === endData.call_id)) {
                         callMgr.cleanup();
+                        if (isNative) callEnded();
                     }
-                    // Dismiss native call notification
-                    if (isNative) callEnded();
                     break;
 
                 case "call_mode_switch":

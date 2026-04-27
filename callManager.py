@@ -9,8 +9,8 @@ from datetime import datetime
 
 class CallManager:
 
-    # P2P -> SFU switch threshold (number of participants)
-    SFU_THRESHOLD = 4
+    # SFU not yet implemented — keep P2P for all call sizes for now
+    SFU_THRESHOLD = 999
 
     def __init__(self, db):
         self.db = db
@@ -225,6 +225,7 @@ class CallSession:
             'participant_count': len(self.participants),
             'call_type': self.call_type,
             'mode': self.mode,
+            'active': True,
             'started_at': self.started_at.isoformat()
         }
 
