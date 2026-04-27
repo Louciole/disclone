@@ -45,6 +45,14 @@ export class CallManager {
         this.isVideoOff = false;
         this.isDeafened = false;
 
+        // Timers
+        this._callingTimeout = null; // Cleared when first participant joins
+
+        // Audio level monitoring (speaking indicator)
+        this._audioContext = null;
+        this._audioAnalysers = {}; // key -> { analyser, dataArray }
+        this._audioMonitorInterval = null;
+
         this.setupWebSocketHandlers();
     }
 
@@ -79,6 +87,61 @@ export class CallManager {
             this._updateCallViewState();
         }
     }
+
+    // ==================== AUDIO LEVEL MONITORING ====================
+
+    /** Start polling audio levels for the speaking indicator. */
+    _startAudioMonitor() {
+        if (this._audioMonitorInterval) return;
+        try {
+            this._audioContext = new AudioContext();
+        } catch (e) {
+            return; // Browser may block without user gesture; not critical
+        }
+        // Connect local stream immediately if available
+        if (this.localStream) this._connectStreamToAnalyser('local', this.localStream);
+        this._audioMonitorInterval = setInterval(() => this._updateSpeakingIndicators(), 100);
+    }
+
+    /** Connect a MediaStream to an AnalyserNode for level detection. */
+    _connectStreamToAnalyser(key, stream) {
+        if (!this._audioContext || this._audioAnalysers[key]) return;
+        const audioTracks = stream.getAudioTracks();
+        if (!audioTracks.length) return;
+        try {
+            const source = this._audioContext.createMediaStreamSource(stream);
+            const analyser = this._audioContext.createAnalyser();
+            analyser.fftSize = 256;
+            analyser.smoothingTimeConstant = 0.8;
+            source.connect(analyser);
+            this._audioAnalysers[key] = { analyser, dataArray: new Uint8Array(analyser.frequencyBinCount) };
+        } catch (e) { /* ignore */ }
+    }
+
+    /** Poll all analysers and toggle .speaking on participant tiles. */
+    _updateSpeakingIndicators() {
+        for (const [key, { analyser, dataArray }] of Object.entries(this._audioAnalysers)) {
+            analyser.getByteFrequencyData(dataArray);
+            const avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
+            const elemId = key === 'local' ? 'participant-local' : `participant-${key}`;
+            document.getElementById(elemId)?.classList.toggle('speaking', avg > 8);
+        }
+    }
+
+    /** Stop audio monitoring and release resources. */
+    _stopAudioMonitor() {
+        if (this._audioMonitorInterval) {
+            clearInterval(this._audioMonitorInterval);
+            this._audioMonitorInterval = null;
+        }
+        this._audioAnalysers = {};
+        if (this._audioContext) {
+            this._audioContext.close().catch(() => {});
+            this._audioContext = null;
+        }
+    }
+
+    // ==================== CALL LIFECYCLE ====================
 
     setBannerState(callData) {
         this.callState = 'banner';
@@ -232,6 +295,17 @@ export class CallManager {
             // Play outgoing call ringtone
             this.playOutgoingRingtone();
 
+            // Auto-cancel call if nobody joins within 30 seconds
+            this._callingTimeout = setTimeout(() => {
+                if (this.callState === 'calling') {
+                    console.log('⏰ Calling timeout — no one joined after 30s');
+                    this.cleanup();
+                }
+            }, 30000);
+
+            // Start audio level monitoring for the speaking indicator
+            this._startAudioMonitor();
+
             // Notify server via WebSocket
             this._sendWebSocketMessage({
                 type: "callStart",
@@ -279,6 +353,9 @@ export class CallManager {
 
             // Update available actions
             this.updateAvailableActions();
+
+            // Start audio level monitoring for the speaking indicator
+            this._startAudioMonitor();
 
             // Notify server via WebSocket
             this._sendWebSocketMessage({
@@ -643,6 +720,12 @@ export class CallManager {
 
         // If we were in 'calling' state and someone joined, transition to 'active'
         if (this.callState === 'calling' && newUserId !== global.user.id) {
+            // Cancel the 30s unanswered-call timeout
+            if (this._callingTimeout) {
+                clearTimeout(this._callingTimeout);
+                this._callingTimeout = null;
+            }
+
             this.callState = 'active';
             setElement('global.state.callManager.callState', 'active');
             this._updateCallViewState();
@@ -694,12 +777,16 @@ export class CallManager {
         this.currentCall = callData;
         setElement('global.state.callManager.currentCall', callData);
 
-        // Clean up their connection and streams
+        // Always remove from the reactive participant list (handles audio-only participants
+        // who never had a remoteStreams entry)
+        this.remoteParticipants = this.remoteParticipants.filter(p => p.userId !== leftUserId);
+        setElement('global.state.callManager.remoteParticipants', this.remoteParticipants);
+
+        // Clean up their WebRTC connection and any streams
         this.handlePeerDisconnection(leftUserId);
 
         // Handle mode change if needed
         if (callData.mode && this.mode !== callData.mode) {
-            console.log(`🔄 Mode changed after participant left: ${this.mode} → ${callData.mode}`);
             this.handleModeSwitch(callData.mode);
         }
     }
@@ -786,8 +873,9 @@ export class CallManager {
                     }
                 }
 
-                console.log(`✅ Attached stream to user ${userId}, hasVideo: ${hasVideo}`);
                 this._updateHasAnyVideo();
+                // Hook into the audio monitor so this participant gets a speaking indicator
+                this._connectStreamToAnalyser(String(userId), stream);
             }
         });
     }
@@ -796,13 +884,11 @@ export class CallManager {
      * Remove remote user's video display
      */
     removeRemoteStreamDisplay(userId) {
-        console.log(`🗑️ Removing video element for user ${userId}`);
-
-        // Remove from participants array - framework will remove DOM element
-        const participant = this.remoteParticipants.find(p => p.userId === userId);
-        if (participant) {
-            deleteVal('global.state.callManager.remoteParticipants', participant);
-        }
+        // Remove from reactive participants array (DOM update follows automatically)
+        this.remoteParticipants = this.remoteParticipants.filter(p => p.userId !== userId);
+        setElement('global.state.callManager.remoteParticipants', this.remoteParticipants);
+        // Remove the audio analyser for this participant
+        delete this._audioAnalysers[userId];
     }
 
     /**
@@ -885,6 +971,15 @@ export class CallManager {
 
     cleanup() {
         console.log('🧹 Cleaning up call manager');
+
+        // Cancel pending timers
+        if (this._callingTimeout) {
+            clearTimeout(this._callingTimeout);
+            this._callingTimeout = null;
+        }
+
+        // Stop audio level monitoring
+        this._stopAudioMonitor();
 
         // Stop ringtones
         this.stopOutgoingRingtone();

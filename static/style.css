@@ -4217,6 +4217,45 @@ input:checked + .slider:before {
     filter: invert(1);
 }
 
+/* Active (muted / video-off) control button — strikethrough diagonal line */
+.controls-buttons .icon-wrapper.active {
+    position: relative; /* already set, but ensure it */
+}
+.controls-buttons .icon-wrapper.active::after {
+    content: '';
+    position: absolute;
+    width: 2px;
+    height: 26px;
+    background: white;
+    opacity: 0.85;
+    border-radius: 1px;
+    transform: rotate(45deg);
+    top: 6px;
+    left: 50%;
+    margin-left: -1px;
+    pointer-events: none;
+}
+
+/* ==================== SPEAKING INDICATOR ==================== */
+
+/* Audio mode — green ring around the avatar */
+.call-audiomode .call-participant.speaking .participant-avatar {
+    box-shadow: 0 0 0 3px #43b581;
+    transition: box-shadow 0.1s;
+}
+.call-audiomode .call-participant:not(.speaking) .participant-avatar {
+    transition: box-shadow 0.15s;
+}
+
+/* Video mode — green border on the tile */
+.call-videomode .call-participant.speaking {
+    box-shadow: 0 0 0 3px #43b581;
+    transition: box-shadow 0.1s;
+}
+.call-videomode .call-participant:not(.speaking) {
+    transition: box-shadow 0.15s;
+}
+
 /* ==================== AUDIO MODE — circles ==================== */
 
 .call-audiomode .call-participant {
