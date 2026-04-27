@@ -4074,12 +4074,17 @@ input:checked + .slider:before {
     to   { transform: translateY(0);     opacity: 1; }
 }
 
+/* Hidden audio element container — takes no visual space */
+#remote-audio-container { display: none; }
+
 /* Participants row */
 .call-participants {
     display: flex;
     flex-direction: row;
+    flex-wrap: wrap;
     gap: 10px;
     align-items: center;
+    justify-content: center;
     overflow-x: auto;
     padding: 4px 2px;
 }
@@ -4241,7 +4246,10 @@ input:checked + .slider:before {
 .call-audiomode .participant-avatar img {
     width: 52px;
     height: 52px;
+    max-width: 52px;
+    max-height: 52px;
     border-radius: 50%;
+    object-fit: cover;
     object-fit: cover;
     border: none;
     box-shadow: none;
@@ -4317,7 +4325,10 @@ input:checked + .slider:before {
 .call-videomode .participant-avatar img {
     width: 34px;
     height: 34px;
+    max-width: 34px;
+    max-height: 34px;
     border-radius: 50%;
+    object-fit: cover;
     object-fit: cover;
     border: none;
     box-shadow: none;

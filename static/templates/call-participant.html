@@ -3,7 +3,9 @@
      title="${global.users[element.userId]?.display || 'User'}"
      style="background: hsl(${(element.userId * 137.508) % 360}, 45%, 25%);">
     <div class="participant-avatar" id="avatar-${element.userId}">
-        <img src="/static/attachments/${global.users[element.userId]?.pfp}" alt="${global.users[element.userId]?.display || 'User'}">
+        <img src="/static/attachments/${global.users[element.userId]?.pfp}"
+             alt="${global.users[element.userId]?.display || 'User'}"
+             onerror="this.style.display='none'; this.closest('.call-participant').style.background='#c0392b'">
     </div>
 
     <div class="participant-status-ring"></div>

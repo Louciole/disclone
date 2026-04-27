@@ -168,10 +168,8 @@ export async function onMessage(event) {
                         setElement(`global.convs[${callData.conversation_id}].ongoingCall`, callData);
                     }
 
-                    // Show notification if we're not the initiator
+                    // Show call section as banner when we're not the initiator
                     if (callData.participants[0] !== global.user.id) {
-                        showIncomingCallNotification(callData);
-                        // Show call section as banner in the conversation
                         const callMgrBanner = global.state.callManager;
                         if (callMgrBanner && callMgrBanner.callState === 'none') {
                             callMgrBanner.setBannerState(callData);

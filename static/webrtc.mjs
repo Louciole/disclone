@@ -62,6 +62,8 @@ export class CallManager {
     _updateCallViewState() {
         this.callViewState = { callState: this.callState, hasAnyVideo: this.hasAnyVideo };
         setElement('global.state.callManager.callViewState', this.callViewState);
+        // Re-attach local stream after DOM update (the #local-video element is recreated on each render)
+        requestAnimationFrame(() => this.displayLocalStream());
     }
 
     _updateHasAnyVideo() {
@@ -97,20 +99,11 @@ export class CallManager {
      * Update available actions based on current call state
      */
     updateAvailableActions() {
-        console.log('🔄 updateAvailableActions called, callState:', this.callState);
-
         switch (this.callState) {
             case 'banner':
-                // Banner: show info + join button
+                // Banner: show only the join/decline buttons (same UI as in-call, different actions)
                 const call = global.convs[global.state.activeConv]?.ongoingCall || this.currentCall;
-                console.log('📋 Banner mode, call data:', call);
-
                 this.availableActions = [
-                    {
-                        type: 'info',
-                        icon: call?.call_type === 'video' ? 'videocam' : 'call',
-                        label: 'Appel en cours'
-                    },
                     {
                         type: 'join',
                         callId: call?.id,
@@ -129,7 +122,6 @@ export class CallManager {
                 this.availableActions = [];
         }
 
-        console.log('✅ availableActions set to:', this.availableActions);
         setElement('global.state.callManager.availableActions', this.availableActions);
     }
 

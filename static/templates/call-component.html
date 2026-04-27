@@ -7,10 +7,27 @@ ${Subscribe('global.state.callManager.callViewState', () => {
 
     const modeClass = hasAnyVideo ? 'call-videomode' : 'call-audiomode';
 
+    // Local user tile — only shown when we are actually in the call (not just viewing the banner)
+    const localTile = callState !== 'banner' ? `
+        <div class="call-participant call-participant-local status-active"
+             id="participant-local"
+             title="${global.user?.display || ''}"
+             style="background: hsl(${(global.user?.id * 137.508) % 360}, 45%, 25%);">
+            <div class="participant-avatar" id="avatar-local">
+                <img src="/static/attachments/${global.user?.pfp}"
+                     alt="${global.user?.display || ''}"
+                     onerror="this.style.display='none'; this.closest('.call-participant').style.background='#c0392b'">
+            </div>
+            <video id="local-video" autoplay playsinline muted></video>
+            <div class="participant-name-label">${global.user?.display || ''}</div>
+        </div>
+    ` : '';
+
     return `
         <div class="call-component call-${callState} ${modeClass}">
             <div class="call-participants">
                 <div id="remote-audio-container"></div>
+                ${localTile}
                 ${Subscribe('global.state.callManager.remoteParticipants', () =>
                     fillWith('call-participant', global.state.callManager?.remoteParticipants || [])
                 )}
