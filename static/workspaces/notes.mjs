@@ -9,6 +9,7 @@ import {
 } from "./formulaEngine.mjs";
 import {mountDatabase} from "./database.mjs";
 import {mountSpreadsheet} from "./spreadsheet.mjs";
+import {mountTransportBlock} from "./transport.mjs";
 
 class Editor {
     constructor() {
@@ -157,11 +158,22 @@ class Editor {
     }
 
     checkAndNormalizePositions() {
-         // TODO: Normalize sub_positions too
         const blocks = Object.values(this.blocks)
         normalizeIfNeeded(blocks, 'position', (item) => {
             this.saveBlock(item.uuid)
         })
+
+        const rowGroups = {}
+        for (const block of blocks) {
+            const rowId = block.row_group || block.uuid
+            if (!rowGroups[rowId]) rowGroups[rowId] = []
+            rowGroups[rowId].push(block)
+        }
+        for (const groupBlocks of Object.values(rowGroups)) {
+            normalizeIfNeeded(groupBlocks, 'sub_position', (item) => {
+                this.saveBlock(item.uuid)
+            })
+        }
     }
 
     deleteBlock(blockId) {
@@ -440,6 +452,9 @@ class Editor {
             } else if (block.type === "checklist") {
                 const containerEl = target.querySelector('.note-checklist')
                 if (containerEl) mountChecklist(block.uuid, containerEl)
+            } else if (block.type === "transport") {
+                const containerEl = target.querySelector('.note-transport')
+                if (containerEl) mountTransportBlock(block.uuid, containerEl)
             }
         }
     }
@@ -611,6 +626,7 @@ class Editor {
             { type: "small",       label: "Small Text",  description: "Smaller font size" },
             { type: "showcase",    label: "Showcase",    description: "Display a metric value" },
             { type: "checklist",   label: "Checklist",   description: "To-do list with checkboxes" },
+            { type: "transport",   label: "Transport",   description: "Next arrivals for a stop" },
             { type: "synapse",     label: "Synapse",     description: "External component" },
             { type: "database",    label: "Database",    description: "Inline database table" },
             { type: "spreadsheet", label: "Spreadsheet", description: "Inline spreadsheet" },
@@ -792,6 +808,7 @@ const blockTypes = {
     "small": {placeholder: "small text", initiator: "-#"},
     "showcase": {placeholder: "insert metric", initiator: "/showcase"},
     "checklist": {template: () => '<div class="note-checklist"></div>', initiator: "/todo"},
+    "transport": {template: (block)=>{return fillWith("transport-root", [block])}, initiator: "/transport", placeholder: "transport"},
     "synapse": {template: (block)=>{return getTemplate("synapse-root")}, initiator: "/synapse"},
     "database": {template: (block)=>{return fillWith("database-root", [block])}, initiator: "/database", placeholder: "database"},
     "spreadsheet": {template: (block)=>{return fillWith("spreadsheet-root", [block])}, initiator: "/sheet", placeholder: "spreadsheet"},
@@ -804,6 +821,7 @@ const initiators = [
     {"type":"small", "initiator":"-#"},
     {"type":"showcase", "initiator":"/showcase"},
     {"type":"checklist", "initiator":"/todo"},
+    {"type":"transport", "initiator":"/transport"},
     {"type":"synapse", "initiator":"/synapse"},
     {"type":"database", "initiator":"/database"},
     {"type":"spreadsheet", "initiator":"/sheet"},

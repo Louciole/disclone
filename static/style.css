@@ -5201,6 +5201,88 @@ input:checked + .slider:before {
     color: var(--text1);
 }
 
+/* ─── Transport Block ─────────────────────────────────────────────── */
+
+.editor .editable-block:has(.note-transport) {
+    white-space: normal;
+}
+
+.note-transport {
+    width: 100%;
+    padding: 0.2rem 0;
+}
+
+.note-transport-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.note-transport-controls select,
+.note-transport-controls button {
+    background: var(--bg3);
+    border: 1px solid var(--bg2);
+    border-radius: 6px;
+    color: var(--text);
+    padding: 0.35rem 0.5rem;
+}
+
+.note-transport-controls button {
+    cursor: pointer;
+}
+
+.note-transport-controls button:disabled,
+.note-transport-controls select:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+.note-transport-status {
+    font-size: 0.75rem;
+    color: var(--text2bis);
+}
+
+.note-transport-results {
+    margin-top: 0.4rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.note-transport-empty {
+    color: var(--text2bis);
+    font-size: 0.85rem;
+}
+
+.note-transport-arrivals {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.note-transport-arrival {
+    display: grid;
+    grid-template-columns: minmax(50px, 90px) 1fr auto;
+    gap: 0.5rem;
+    align-items: center;
+    background: var(--bg3);
+    border: 1px solid var(--bg2);
+    border-radius: 8px;
+    padding: 0.35rem 0.6rem;
+}
+
+.note-transport-arrival-line {
+    font-weight: 600;
+}
+
+.note-transport-arrival-time {
+    color: var(--text2bis);
+}
+
 /* ─── Notion-like Database Block ───────────────────────────────────── */
 
 .note-database{

@@ -1,0 +1,20 @@
+<div class="note-transport" data-transport-block="${element.uuid}">
+    <div class="note-transport-controls">
+        <select class="note-transport-operator" data-transport-operator>
+            <option value="">Transporteur</option>
+        </select>
+        <select class="note-transport-line" data-transport-line disabled>
+            <option value="">Ligne</option>
+        </select>
+        <select class="note-transport-stop" data-transport-stop disabled>
+            <option value="">Arret</option>
+        </select>
+        <button class="note-transport-refresh" data-transport-refresh type="button">Rafraichir</button>
+        <span class="note-transport-status" data-transport-status></span>
+    </div>
+    <div class="note-transport-results">
+        <div class="note-transport-empty" data-transport-empty>Choisissez une ligne et un arret.</div>
+        <ul class="note-transport-arrivals" data-transport-arrivals></ul>
+    </div>
+</div>
+
