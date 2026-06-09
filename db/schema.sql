@@ -93,7 +93,8 @@ create table if not exists forum_channel (
     available_tags jsonb DEFAULT '[]',
     default_layout varchar(10) DEFAULT 'list',
     default_sort varchar(12) DEFAULT 'activity',
-    guidelines text
+    guidelines text,
+    PRIMARY KEY (id)
 ) inherits (conversationElement);
 
 create table if not exists forum_post (
