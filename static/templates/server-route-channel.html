@@ -6,5 +6,7 @@ ${element.type === 'dashboard' ?
             fillWith('server-drive-channel', [element]) :
             element.type === 'note' ?
                 fillWith('server-note-channel', [element]) :
-                fillWith('server-textual-channel', [element])}
+                element.type === 'forum' ?
+                    fillWith('server-forum-channel', [element]) :
+                    fillWith('server-textual-channel', [element])}
 

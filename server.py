@@ -6,6 +6,7 @@ import os
 import string
 import random
 import datetime
+import uuid
 import requests
 
 # Firebase imports for FCM push notifications
@@ -18,6 +19,7 @@ import websockets
 from os.path import abspath, dirname
 from callManager import CallManager
 from driveManager import DriveManager
+from forumManager import ForumMixin
 
 B62 = string.digits + string.ascii_letters
 PATH = dirname(abspath(__file__))
@@ -28,7 +30,7 @@ SERVER_STORAGE_QUOTA = 5 * 1024 * 1024 * 1024  # 5 GB
 fastpysgi.server.max_content_length = 100 * 1024 * 1024  # 100 MB
 
 
-class Mycelium(Server):
+class Mycelium(ForumMixin, Server):
     features = {"websockets": True, "errors": {404: "/static/404.html"}}
     clients = []
     _admin_cache = None  # Cache for admin user IDs
@@ -437,7 +439,9 @@ class Mycelium(Server):
         textCatID = self.db.insertDict('server_cat', {'name': "salons textuels", 'server': server_id},getId=True)
         self.db.insertDict('server_cat', {'name': "salons vocaux", 'server': server_id})
         self.db.insertDict('textual_channel', {'name': "général", 'server': server_id, "category": textCatID})
-        return json.dumps({"id": server_id})
+        server = self.db.getSomething('server', server_id)
+        server["customEmojis"] = []
+        return json.dumps(server, default=str)
 
     @Server.expose
     def delete_server(self, server_id):
@@ -834,6 +838,7 @@ class Mycelium(Server):
                 content["vocals"] = self.db.getAll("vocal_channel", server_id,"server")
                 content["drives"] = self.db.getAll("drive_channel", server_id,"server")
                 content["notes"] = self.db.getAll("notes_channel", server_id,"server")
+                content["forums"] = self.db.getAll("forum_channel", server_id,"server")
                 # content["whiteboard"] = self.db.getAll("drive_channel", server_id,"server")
                 op = self.db.getSomething("op_servs", server_id, "server")
                 if op:
@@ -865,6 +870,7 @@ class Mycelium(Server):
                 content["vocals"] = [ch for ch in content["vocals"] if not ch.get("is_private") or self.checkChannelAccess(uid, ch["id"], "vocal", "view")]
                 content["drives"] = [ch for ch in content["drives"] if not ch.get("is_private") or self.checkChannelAccess(uid, ch["id"], "drive", "view")]
                 content["notes"] = [ch for ch in content["notes"] if not ch.get("is_private") or self.checkChannelAccess(uid, ch["id"], "note", "view")]
+                content["forums"] = [ch for ch in content["forums"] if not ch.get("is_private") or self.checkChannelAccess(uid, ch["id"], "forum", "view")]
 
                 # Include channel_permissions for this server
                 content["channel_permissions"] = self.db.getAll("channel_permission", server_id, "server") or []
@@ -1184,6 +1190,30 @@ class Mycelium(Server):
     def onWSAuth(self,uid):
         self.sendStatusUpdates(uid)
 
+    def _resolveMessagePlace(self, uid, conv):
+        """Resolve a message 'place' id to a server channel for permission checks and notification.
+        Returns (channel, channel_type): channel is a textual_channel or forum_channel dict suitable
+        for notifyChannelMesage; channel_type is None for plain conversations (DMs/groups).
+        Raises 403 if the user cannot post. Bumps a forum post's last_activity on success."""
+        place_id = conv.get("id")
+        channel = self.db.getSomething("textual_channel", place_id) if place_id else None
+        if channel:
+            if channel.get("is_private") and not self.checkChannelAccess(uid, place_id, "textual", "send-messages"):
+                raise HTTPError(self.response, 403, "no permission to send messages in this channel")
+            return channel, "textual"
+
+        post = self.db.getSomething("forum_post", place_id) if place_id else None
+        if post:
+            if post.get("locked"):
+                raise HTTPError(self.response, 403, "post is locked")
+            if not self.checkChannelAccess(uid, post["forum"], "forum", "send-messages"):
+                raise HTTPError(self.response, 403, "no permission to send messages in this forum")
+            self.db.edit("forum_post", post["id"], "last_activity", datetime.datetime.now())
+            forum = self.db.getSomething("forum_channel", post["forum"])
+            return forum, "forum"
+
+        return None, None
+
     @Server.expose
     def send_message(self, conv, content, reply=False, attachments = [], poll=None, conv_block=None):
         uid = self.getUser()
@@ -1195,10 +1225,14 @@ class Mycelium(Server):
 
         # Determine channel/server and check quota before saving
         conv_parsed = json.loads(conv)
-        channel = self.db.getSomething("textual_channel", conv_parsed.get("id")) if conv_parsed.get("id") else None
+        place_id = conv_parsed.get("id")
+        channel = self.db.getSomething("textual_channel", place_id) if place_id else None
+        forum_post = self.db.getSomething("forum_post", place_id) if (place_id and not channel) else None
         if total_attachment_size > 0:
             if channel:
                 self._checkQuota(channel["server"], total_attachment_size)
+            elif forum_post:
+                self._checkQuota(forum_post["server"], total_attachment_size)
             else:
                 self._checkUserQuota(uid, total_attachment_size)
 
@@ -1262,11 +1296,9 @@ class Mycelium(Server):
                 "votes": {}
             }
 
-            channel = self.db.getSomething("textual_channel", conv["id"])
-            if channel:
-                if channel.get("is_private") and not self.checkChannelAccess(uid, conv["id"], "textual", "send-messages"):
-                    raise HTTPError(self.response, 403, "no permission to send messages in this channel")
-                self.notifyChannelMesage(uid, channel, message)
+            channel, channel_type = self._resolveMessagePlace(uid, conv)
+            if channel_type:
+                self.notifyChannelMesage(uid, channel, message, channel_type)
             else:
                 self.notifyConvMessage(uid, conv, message)
 
@@ -1315,11 +1347,9 @@ class Mycelium(Server):
                 "rows": rows, "cols": cols, "cells": cells, "col_widths": {}
             }
 
-            channel = self.db.getSomething("textual_channel", conv["id"])
-            if channel:
-                if channel.get("is_private") and not self.checkChannelAccess(uid, conv["id"], "textual", "send-messages"):
-                    raise HTTPError(self.response, 403, "no permission to send messages in this channel")
-                self.notifyChannelMesage(uid, channel, msg_body)
+            channel, channel_type = self._resolveMessagePlace(uid, conv)
+            if channel_type:
+                self.notifyChannelMesage(uid, channel, msg_body, channel_type)
             else:
                 self.notifyConvMessage(uid, conv, msg_body)
 
@@ -1332,11 +1362,9 @@ class Mycelium(Server):
         msgId = self.db.insertDict("message", message, getId=True)
         message["id"] = msgId
 
-        channel = self.db.getSomething("textual_channel", conv["id"])
-        if channel:
-            if channel.get("is_private") and not self.checkChannelAccess(uid, conv["id"], "textual", "send-messages"):
-                raise HTTPError(self.response, 403, "no permission to send messages in this channel")
-            self.notifyChannelMesage(uid, channel, message)
+        channel, channel_type = self._resolveMessagePlace(uid, conv)
+        if channel_type:
+            self.notifyChannelMesage(uid, channel, message, channel_type)
             if total_attachment_size > 0:
                 self._adjustStorage(channel["server"], total_attachment_size)
         else:
@@ -1367,7 +1395,7 @@ class Mycelium(Server):
                 else :
                     self.db.insertDict("offline_notifs", {"account": user['account'] , "conversation": conv["id"]})
 
-    def notifyChannelMesage(self, uid, channel, message):
+    def notifyChannelMesage(self, uid, channel, message, channel_type="textual"):
         if channel:
             server_id = channel["server"]
             mention_targets = set()
@@ -1402,7 +1430,7 @@ class Mycelium(Server):
 
             # For private channels, filter targets to only those who can view the channel
             if channel.get("is_private"):
-                mention_targets = {t for t in mention_targets if self.checkChannelAccess(t, channel["id"], "textual", "view")}
+                mention_targets = {t for t in mention_targets if self.checkChannelAccess(t, channel["id"], channel_type, "view")}
 
             # Broadcast the message to ALL server members (for live display in active channel views)
             # Mention targets additionally get offline notifications
@@ -1412,7 +1440,7 @@ class Mycelium(Server):
                 if member_uid == uid:
                     continue
                 # Skip private channel members without access
-                if channel.get("is_private") and not self.checkChannelAccess(member_uid, channel["id"], "textual", "view"):
+                if channel.get("is_private") and not self.checkChannelAccess(member_uid, channel["id"], channel_type, "view"):
                     continue
                 self.sendNotification(member_uid, {"type": "message", "content": message})
 
@@ -2027,7 +2055,8 @@ class Mycelium(Server):
             "conv": "textual_channel",
             "vocal": "vocal_channel",
             "drive": "drive_channel",
-            "note": "notes_channel"
+            "note": "notes_channel",
+            "forum": "forum_channel"
         }
         return tables.get(channelType)
 
@@ -2083,7 +2112,7 @@ class Mycelium(Server):
 
     def _getChannelType(self, channelId):
         """Detect channel type from its ID by checking all channel tables."""
-        for ctype, table in [("textual", "textual_channel"), ("drive", "drive_channel"), ("vocal", "vocal_channel"), ("note", "notes_channel")]:
+        for ctype, table in [("textual", "textual_channel"), ("drive", "drive_channel"), ("vocal", "vocal_channel"), ("note", "notes_channel"), ("forum", "forum_channel")]:
             chan = self.db.getSomething(table, channelId)
             if chan:
                 return ctype, chan
@@ -2281,6 +2310,8 @@ class Mycelium(Server):
                 defaults["name"] = "new storage"
             elif channel_type == "note":
                 defaults["name"] = "new note"
+            elif channel_type == "forum":
+                defaults["name"] = "new forum"
             else:
                 defaults["name"] = "new channel"
 
@@ -2292,6 +2323,11 @@ class Mycelium(Server):
         chan = self.db.getSomething(table_name, targetId)
         if chan and chan["server"] == int(server_id):
             if action == "delete":
+                if channel_type == "forum":
+                    for post in self.db.getFilters("forum_post", ["forum", "=", int(targetId)]):
+                        for msg in self.db.getFilters("message", ["place", "=", post["id"]]):
+                            self.db.deleteSomething("message", msg["id"])
+                        self.db.deleteSomething("forum_post", post["id"])
                 self.db.deleteSomething(table_name, targetId)
                 return json.dumps({"status": "ok"})
             allowed_channel_fields = ("name", "place", "category")
@@ -2322,7 +2358,7 @@ class Mycelium(Server):
             raise HTTPError(self.response, 403, "forbidden")
 
         if action == "delete":
-            for table in ["textual_channel", "vocal_channel", "drive_channel", "notes_channel"]:
+            for table in ["textual_channel", "vocal_channel", "drive_channel", "notes_channel", "forum_channel"]:
                 channels = self.db.getFilters(table, ["category", "=", targetId])
                 for ch in channels:
                     self.db.edit(table, ch["id"], "category", None)

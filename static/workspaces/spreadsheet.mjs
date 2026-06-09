@@ -1127,6 +1127,9 @@ export class SpreadsheetView {
     handleKeyDown(event, ref) {
         if (event.key === 'Escape') {
             event.preventDefault()
+            // Re-rendering removes the focused input, which fires its onblur and would
+            // otherwise persist the discarded value. Ignore that blur as in _commitEdit.
+            this.blurIgnoreRef = ref
             this.editingCell = null
             this.liveEditValue = ''
             this._clearFormulaEditorIfOwned()

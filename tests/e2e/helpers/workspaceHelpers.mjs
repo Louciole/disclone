@@ -123,6 +123,14 @@ export async function getFirstBlockOfType(page, channelId, type) {
 export async function createSpreadsheetBlock(page, channelId) {
     await waitForNoteChannelLoaded(page, channelId);
 
+    // A freshly created note channel starts empty; the Editor mounts a default text
+    // block asynchronously. Wait for it to land in global state before grabbing it.
+    await page.waitForFunction(
+        (id) => Object.values(window.global?.notes?.[id]?.blocks || {}).some((b) => b.type === 'text'),
+        channelId,
+        { timeout: 10000 }
+    );
+
     const blockUuid = await getFirstBlockOfType(page, channelId, 'text');
     expect(blockUuid).toBeTruthy();
 
@@ -162,7 +170,11 @@ export async function waitForSpreadsheetLoaded(page, blockUuid) {
 
 /**
  * Clicks a spreadsheet cell to open the inline editor, fills it with `value`,
- * then presses Enter to commit. Waits for the input to disappear.
+ * then commits by blurring the input. Waits for the editor to disappear.
+ *
+ * Note: pressing Enter commits but immediately re-opens the editor on the cell
+ * below (Excel-style rapid entry), so it never hides the input. Blur is the
+ * app's commit-and-close path (handleInputBlur -> saveEdit), independent of row.
  */
 export async function editSpreadsheetCell(page, blockUuid, ref, value) {
     const cellSel = `#sheet-${blockUuid} .sheet-cell[data-ref="${ref}"]`;
@@ -172,7 +184,7 @@ export async function editSpreadsheetCell(page, blockUuid, ref, value) {
     const inputSel = `#sheet-input-${blockUuid}`;
     await page.locator(inputSel).waitFor({ state: 'visible', timeout: 5000 });
     await page.locator(inputSel).fill(value);
-    await page.keyboard.press('Enter');
+    await page.locator(inputSel).blur();
     await page.locator(inputSel).waitFor({ state: 'hidden', timeout: 5000 });
     console.log(`✅ Set cell ${ref} = "${value}"`);
 }
@@ -248,7 +260,9 @@ export async function waitForSpreadsheetCellValue(page, blockUuid, ref, expected
  */
 export async function reloadAndNavigateToNoteChannel(page, serverId, channelId, blockUuid) {
     await page.reload();
-    await page.waitForURL('**/channels', { timeout: 10000 });
+    // After channel navigation the URL carries a hash route (/channels#<server>/<chan>),
+    // which the reload preserves — match /channels with an optional trailing hash.
+    await page.waitForURL(/\/channels(#.*)?$/, { timeout: 10000 });
     await waitForAppReady(page);
 
     await openServerFromSidebarById(page, serverId);

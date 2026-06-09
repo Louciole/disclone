@@ -88,14 +88,14 @@ test.describe('Spreadsheet - E2E', () => {
         expect(b2Raw).toBe('=A1*B1');
 
         // 8) Test Escape cancels an edit without saving
-        const cellSel = `#sheet-${blockUuid} .sheet-cell[data-ref="C1"]`;
+        const cellSel = `#sheet-${blockUuid} .sheet-cell[data-ref="B3"]`;
         await pageA.locator(cellSel).click();
         await pageA.locator(`#sheet-input-${blockUuid}`).waitFor({ state: 'visible', timeout: 5000 });
         await pageA.locator(`#sheet-input-${blockUuid}`).fill('SHOULD NOT SAVE');
         await cancelSpreadsheetCellEdit(pageA, blockUuid);
 
-        const c1Raw = await getSpreadsheetCellRawValue(pageA, blockUuid, 'C1');
-        expect(c1Raw).toBeNull(); // Escape should have discarded the value
+        const b3Raw = await getSpreadsheetCellRawValue(pageA, blockUuid, 'B3');
+        expect(b3Raw).toBeNull(); // Escape should have discarded the value
 
         // ─── Phase 3: Persistence after full page reload ──────────────────────────
 
@@ -112,8 +112,8 @@ test.describe('Spreadsheet - E2E', () => {
         expect(a2RawAfterReload).toBe('=A1+B1');
 
         // Escaped value must still be absent
-        const c1RawAfterReload = await getSpreadsheetCellRawValue(pageA, blockUuid, 'C1');
-        expect(c1RawAfterReload).toBeNull();
+        const b3RawAfterReload = await getSpreadsheetCellRawValue(pageA, blockUuid, 'B3');
+        expect(b3RawAfterReload).toBeNull();
 
         // ─── Phase 4: Live-update — second context sees data and new edits ─────────
 
@@ -139,14 +139,14 @@ test.describe('Spreadsheet - E2E', () => {
         expect(String(a2DisplayOnB).trim()).toBe('15');
 
         // 12) Context A edits a new cell; context B reloads and must see the change
-        await editSpreadsheetCell(pageA, blockUuid, 'C1', 'LIVE');
+        await editSpreadsheetCell(pageA, blockUuid, 'B3', 'LIVE');
 
         // Context B reloads; after navigation the new value should be present
         await reloadAndNavigateToNoteChannel(pageB, serverId, channelId, blockUuid);
-        await waitForSpreadsheetCellValue(pageB, blockUuid, 'C1', 'LIVE');
+        await waitForSpreadsheetCellValue(pageB, blockUuid, 'B3', 'LIVE');
 
-        const c1DisplayOnB = await getSpreadsheetCellDisplayValue(pageB, blockUuid, 'C1');
-        expect(String(c1DisplayOnB).trim()).toBe('LIVE');
+        const b3DisplayOnB = await getSpreadsheetCellDisplayValue(pageB, blockUuid, 'B3');
+        expect(String(b3DisplayOnB).trim()).toBe('LIVE');
 
         // ─── Cleanup ──────────────────────────────────────────────────────────────
         await contextA.close();

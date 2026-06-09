@@ -1,0 +1,150 @@
+<div class="neutral" ondragover="event.preventDefault();event.currentTarget.classList.add('dragging')">
+    <div class="selected-info">
+        <div class="title forum-post-titlebar">
+            <img class="icon" src="/static/icons/material/back.svg" onclick="backToForum()" style="margin-right: 0.6rem"/>
+            <span class="forum-open-title">${Subscribe("global.convs["+global.state.activeConv+"].title", ()=>{return escHtml(global.convs[global.state.activeConv].title)})}</span>
+            ${renderPostTags(global.convs[global.state.activeConv].forum, global.convs[global.state.activeConv].tags) ? '<span class="forum-open-tags">'+renderPostTags(global.convs[global.state.activeConv].forum, global.convs[global.state.activeConv].tags)+'</span>' : ''}
+            ${global.convs[global.state.activeConv].locked ? '<span class="forum-lock-badge">🔒</span>' : ''}
+        </div>
+        <div>
+            ${checkServRights('edit') ? '<img class="icon" src="/static/icons/material/flag.svg" title="Pin/Unpin" onclick="togglePinPost('+global.state.activeConv+')" style="margin-right: 0.8rem;">' : ''}
+            ${checkServRights('edit') ? '<img class="icon" src="/static/icons/material/closeFilled.svg" title="Lock/Unlock" onclick="toggleLockPost('+global.state.activeConv+')" style="margin-right: 0.8rem;">' : ''}
+            ${(checkServRights('edit') || global.convs[global.state.activeConv].author === global.user.id) ? '<img class="icon" src="/static/icons/material/trash.svg" title="Delete post" onclick="deleteForumPost('+global.state.activeConv+')" style="margin-right: 0.8rem;">' : ''}
+            <img class="icon" src="/static/icons/material/help.svg">
+        </div>
+    </div>
+
+    <div class="inline" style="width: 100%;height: calc(100svh - 3rem);">
+        <div style="display: flex;flex-direction: column;align-items: center;width:100%;height: 100%">
+            <div class="scrollable bottom-margin">
+                ${Subscribe('global.convs['.concat(global.state.activeConv,'].messages'),()=>fillWith('messageGroup',global.convs[global.state.activeConv].messageGroups||[]), undefined, {"repaint":()=>(repaintConv(sub, value))})}
+            </div>
+            ${global.convs[global.state.activeConv].locked ? '<div class="forum-locked-notice">'+_t("This post is locked. You can no longer reply.")+'</div>' : `
+            <div class="chat-wrapper">
+                <div id="replyBox">
+                    <p>${_t("Répondre à")} <b id="replyName"></b></p>
+                    <div class="icon-wrapper" onclick="cancelReply()">
+                        <img class="icon" src="/static/icons/material/closeFilled.svg"/>
+                    </div>
+                </div>
+                <div id="imageBox">
+                    <div class="attachments-container"></div>
+                </div>
+                <div class="chat-input">
+                    <div class="icon-wrapper" onclick="toggleFM('chat-plus-menu')">
+                        <img class="icon" src="/static/icons/material/add.svg"/>
+                    </div>
+                    <div id="chat-plus-menu" class="flying-menu">
+                        <div class="item" onclick="triggerFileUpload()"><img class="icon" src="/static/icons/material/paperclip.svg"><p>${_t("Upload a file")}</p></div>
+                        <div class="item" onclick="closeFM();openMenu('create-poll')"><img class="icon" src="/static/icons/material/poll.svg"><p>${_t("Create a poll")}</p></div>
+                    </div>
+                    <input type="file" id="chat-file-upload" multiple style="display:none" onchange="handleChatFileUpload(event)"/>
+                    <label style="flex: 1;height: fit-content;">
+                        <textarea class="selected" rows="1" placeholder="${_t('Envoyer un message à')} ${global.convs[global.state.activeConv].name}" onkeydown="if(!mentionOnKeyDown(event))sendMessage(event)" oninput="resizeHeight(event);mentionOnInput(event)" onblur="saveCursorPosition(event);mentionOnBlur()" onpaste="pasteFileMessage(event)"></textarea>
+                    </label>
+                    <div class="icon-wrapper" onclick="silent_typing()">
+                        <img class="icon" src="/static/icons/material/keyboard.svg"/>
+                        <span class="tooltip bottom">${_t("Enable silent typing")}</span>
+                        <div class="line red medium"></div>
+                    </div>
+                    <div class="icon-wrapper" onclick="toggleFM('conv-emoji-board')">
+                        <img class="icon" src="/static/icons/material/emoji.svg"/>
+                    </div>
+                </div>
+            </div>
+            `}
+
+            <div id=typing-box>
+                <div class="inline">
+                    <div class="circle first"></div>
+                    <div class="circle second"></div>
+                    <div class="circle third"></div>
+                    <div id="typing-name"></div>
+                    ${_t("is typing")}...
+                </div>
+            </div>
+
+            <div id="reaction-picker" class="emoji-board flying-menu">
+                <div class="menu">
+                    <div class="inline gap">
+                        <div class="cat selected">Émoji</div>
+                    </div>
+                    <div class="inline">
+                        <div class="search">
+                            <label style="width: 100%;">
+                                <input type="text" placeholder="${_t('Trouve l\'émoji parfait')}" oninput="searchEmojis(event)">
+                            </label>
+                            <div class="icon-wrapper">
+                                <img class="icon" src="/static/icons/material/search.svg"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="selector">
+                    <div class="cat-selector">
+                        ${fillWith('scroll-emoji',global.state.emojis)}
+                        ${getCustomEmojiScrollHtml()}
+                    </div>
+                    <div class="scrollable">
+                        ${fillWith('emoji-cat-input',global.state.emojis.map(c => ({...c, content: c.content.replace(/currentInput/g, 'reaction')} )))}
+                        ${getCustomEmojiCatHtml('reaction')}
+                    </div>
+                </div>
+                <div class="descriptor">
+                    <div class="inline">
+                        <div id="hovered-emoji"></div>
+                        <p></p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="conv-emoji-board" class="emoji-board">
+                <div class="menu">
+                    <div class="inline gap">
+                        <div class="cat">GIF</div>
+                        <div class="cat selected">Émoji</div>
+                    </div>
+                    <div class="inline">
+                        <div class="search">
+                            <label style="width: 100%;">
+                                <input type="text" placeholder="${_t('Trouve l\'émoji parfait')}" oninput="searchEmojis(event)">
+                            </label>
+                            <div class="icon-wrapper">
+                                <img class="icon" src="/static/icons/material/search.svg"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="selector">
+                    <div class="cat-selector">
+                        ${fillWith('scroll-emoji',global.state.emojis)}
+                        ${getCustomEmojiScrollHtml()}
+                    </div>
+                    <div class="scrollable">
+                        ${fillWith('emoji-cat-input',global.state.emojis)}
+                        ${getCustomEmojiCatHtml('currentInput')}
+                    </div>
+                </div>
+                <div class="descriptor">
+                    <div class="tp-button">
+                        <div class="pfp grey"></div>
+                    </div>
+                    <div class="inline">
+                        <div id="hovered-emoji"></div>
+                        <p></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="member-list-wrapper"></div>
+
+        <div id="upload-wrapper" ondragleave="event.preventDefault(); event.currentTarget.parentElement.classList.remove('dragging')" ondrop="dropFileMessage(event)">
+            <div>
+                <div>
+                    <h2>${_t("Uploader vers")} ${global.convs[global.state.activeConv].name}</h2>
+                    <p>${_t("Tu peux ajouter des commentaires avant d'envoyer tes fichiers")}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

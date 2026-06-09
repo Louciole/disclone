@@ -2,6 +2,7 @@ import {getRelevantUser} from "./main.mjs"
 import {
     addElement,
     deleteElement,
+    deleteElementDict,
     setElement,
     difference,
     pushElement,
@@ -11,7 +12,7 @@ import {
 import {initWebSockets} from "./framework/websockets.mjs"
 import global from "./framework/global.mjs"
 import {xhr} from "./framework/templating.mjs";
-import {goTo, initNavigation} from "./framework/navigation.mjs";
+import {goTo, initNavigation, closeFM} from "./framework/navigation.mjs";
 import imageEditor, { emojiImageEditor } from "/static/imageEditor.mjs"
 
 function changeUsername(){
@@ -38,9 +39,12 @@ function newServer(){
     let request = new XMLHttpRequest();
     request.open('POST', "create_server", true);
     request.onload = function() {
-        const serv = {name:"New Server",id:JSON.parse(request.responseText).id}
-        setElement(`global.servers[${serv.id}]`, serv)
-        updateElement("global.servers")
+        // Refresh the whole list from get_user_servers so the new server
+        // arrives fully populated (name, owner, customEmojis, …). Building a
+        // partial object client-side leaves `owner` unset, which makes
+        // checkServRights() deny every admin action, and a missing `name`
+        // crashes the icon renderer (getSlug).
+        loadServers()
     };
 
     request.onerror = function() {
@@ -54,8 +58,14 @@ window.newServer = newServer
 export function loadServers(){
     const onload = function() {
         const response = JSON.parse(this.responseText)
-        global.servers = response
-        setElement(`global.servers`, response)
+        // global.servers is a dict keyed by server id (every writer uses
+        // global.servers[id] = ...). get_user_servers returns an array, so
+        // re-key it here — keeping it as an array makes id-indexed writes
+        // create phantom duplicate entries.
+        const servers = {}
+        for (const s of response) servers[s.id] = s
+        global.servers = servers
+        setElement(`global.servers`, servers)
     };
     xhr("get_user_servers",onload)
 }
@@ -199,6 +209,111 @@ export function loadNote(key){
         global.notes[key].blocks[block.uuid] = block
 
     }
+}
+
+export function loadForum(key){
+    const request = xhr("get_forum_content?channel_id="+JSON.stringify(key), function(){}, "GET", false)
+    const elements = JSON.parse(request.responseText)
+
+    if (!global.forums) global.forums = {}
+    const prev = global.forums[key] || {}
+    global.forums[key] = {
+        id: key,
+        name: elements.name,
+        available_tags: elements.available_tags || [],
+        guidelines: elements.guidelines,
+        is_private: elements.is_private,
+        posts: elements.posts || [],
+        layout: prev.layout || elements.default_layout || "list",
+        sort: prev.sort || elements.default_sort || "activity",
+        tagFilter: prev.tagFilter || null,
+    }
+
+    setElement("global.forums["+key+"]", global.forums[key])
+    goTo('content','server-forum-content',undefined,false)
+}
+
+export function loadForumPost(postId){
+    const request = xhr("get_forum_post?post_id="+JSON.stringify(postId), function(){}, "GET", false)
+    const elements = JSON.parse(request.responseText)
+
+    global.state.activeConv = postId
+    global.convs[postId] = {
+        id: postId,
+        name: elements.title,
+        forum: elements.forum,
+        title: elements.title,
+        tags: elements.tags || [],
+        author: elements.author,
+        pinned: elements.pinned,
+        locked: elements.locked,
+        created_at: elements.created_at,
+    }
+
+    let lastSender = undefined
+    let lastTimestamp = undefined
+    global.convs[postId].messageGroups = []
+
+    const messagesArray = elements.messages || []
+    global.convs[postId].messages = {}  // Source of truth: all messages by ID
+
+    for(let message of messagesArray){
+        message.body = message.body.replace(/</g, "&lt;")
+        if (typeof message.attachments === 'string') {
+            try { message.attachments = JSON.parse(message.attachments) } catch(e) { message.attachments = [] }
+        }
+        if (!message.attachments) message.attachments = []
+
+        global.convs[postId].messages[message.id] = message
+
+        if(message.sender === lastSender && (new Date(message.timestamp)-new Date(lastTimestamp))/60000<3 && getTimeStr(message.timestamp, { locale: "fr-FR",hour: undefined, minute: undefined}) === getTimeStr(lastTimestamp, { locale: "fr-FR",hour: undefined, minute: undefined}) && !message.reply){
+            global.convs[postId].messageGroups[global.convs[postId].messageGroups.length-1].messages.push(message)
+        }else{
+            lastSender = message.sender
+            newMessageGroup(postId, message)
+        }
+        lastTimestamp = message.timestamp
+    }
+
+    goTo('content','server-forum-post',undefined,false)
+}
+
+export function createForumPost(forumId, title, content, tags=[], attachments=[]){
+    const body = {title, content, tags, attachments}
+    const request = xhr("create_forum_post?forum_id="+JSON.stringify(forumId), function(){}, "POST", false, body)
+    const resp = JSON.parse(request.responseText)
+    const post = resp.post
+    if (global.forums && global.forums[forumId]) {
+        global.forums[forumId].posts.unshift(post)
+        setElement("global.forums["+forumId+"].posts", global.forums[forumId].posts)
+    }
+    return post
+}
+
+export function editForumPost(postId, action, value){
+    let url = "edit_forum_post?post_id="+JSON.stringify(postId)+"&action="+action
+    if (value !== undefined) url += "&value="+encodeURIComponent(typeof value === "string" ? value : JSON.stringify(value))
+    const request = xhr(url, function(){}, "POST", false)
+    return JSON.parse(request.responseText)
+}
+
+export function editForumTags(forumId, action, tag=null, tagId=null){
+    let url = "edit_forum_tags?forum_id="+JSON.stringify(forumId)+"&action="+action
+    if (tag !== null) url += "&tag="+encodeURIComponent(JSON.stringify(tag))
+    if (tagId !== null) url += "&tagId="+JSON.stringify(tagId)
+    const request = xhr(url, function(){}, "POST", false)
+    const resp = JSON.parse(request.responseText)
+    if (global.forums && global.forums[forumId]) {
+        global.forums[forumId].available_tags = resp.available_tags
+        setElement("global.forums["+forumId+"].available_tags", resp.available_tags)
+    }
+    return resp
+}
+
+export function editForumSettings(forumId, field, value){
+    const url = "edit_forum_settings?forum_id="+JSON.stringify(forumId)+"&field="+field+"&value="+encodeURIComponent(value)
+    const request = xhr(url, function(){}, "POST", false)
+    return JSON.parse(request.responseText)
 }
 
 export function loadUser(){
@@ -952,7 +1067,8 @@ export function loadServer(id){
         const vocals = resp.vocals ? resp.vocals : []
         const drives = resp.drives ? resp.drives : []
         const notes = resp.notes ? resp.notes : []
-        serv["dirs"] = {"channels" : resp.channels, "dashboards" : dashboards , "vocals" : vocals, "drives" : drives, "notes": notes, "cat" : resp.cat}
+        const forums = resp.forums ? resp.forums : []
+        serv["dirs"] = {"channels" : resp.channels, "dashboards" : dashboards , "vocals" : vocals, "drives" : drives, "notes": notes, "forums": forums, "cat" : resp.cat}
 
         serv["members"] = {}
         let userList = []
@@ -1007,6 +1123,7 @@ export function orderServDirs(serv){
         ...(serv.dirs.vocals || []).map(c => ({...c, type: "vocal", name: c.name || "Salon vocal"})),
         ...(serv.dirs.drives || []).map(c => ({...c, type: "drive"})),
         ...(serv.dirs.notes || []).map(c => ({...c, type: "note"})),
+        ...(serv.dirs.forums || []).map(c => ({...c, type: "forum"})),
     ]
     allChannels.sort((a, b) => a.place - b.place)
 
@@ -1057,6 +1174,10 @@ function createChan(type = 'textual'){
             } else if (channelTypeStr === 'note') {
                 newChannel.type = 'note';
                 global.state.currentServer.dirs.notes.push(newChannel);
+            } else if (channelTypeStr === 'forum') {
+                newChannel.type = 'forum';
+                if (!global.state.currentServer.dirs.forums) global.state.currentServer.dirs.forums = [];
+                global.state.currentServer.dirs.forums.push(newChannel);
             }
 
             // Re-ordonner et mettre à jour l'affichage
@@ -1071,6 +1192,9 @@ function createChan(type = 'textual'){
 
     const menu = document.getElementById('create-channel');
     if(menu) menu.style.display = 'none';
+
+    // Close the server-settings flying menu if it's still open behind the dialog
+    closeFM();
 }
 window.createChan = createChan
 
@@ -1496,7 +1620,7 @@ function leaveServer(){
     if (!serverId) return
     if (!confirm(_t("Quitter ce serveur ?"))) return
     const onload = function() {
-        deleteElement("global.servers", serverId)
+        deleteElementDict("global.servers", serverId)
         goTo('sec-column', "column-perso", undefined, true, () => { goTo('sec-selector', "privateMessage") })
     }
     xhr("leave_server?server_id=".concat(serverId), onload, "POST")

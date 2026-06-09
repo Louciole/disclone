@@ -231,7 +231,7 @@ function insertAfter(newNode, refNode, container) {
 
 function findChannelInDirs(id) {
     const dirs = global.state.currentServer.dirs
-    for (const arr of [dirs.channels, dirs.vocals, dirs.drives, dirs.notes]) {
+    for (const arr of [dirs.channels, dirs.vocals, dirs.drives, dirs.notes, dirs.forums]) {
         const ch = arr?.find(c => c.id == id)
         if (ch) return ch
     }
@@ -240,7 +240,7 @@ function findChannelInDirs(id) {
 
 function getChannelArray(channelType) {
     const dirs = global.state.currentServer.dirs
-    const map = { textual: dirs.channels, vocal: dirs.vocals, drive: dirs.drives, note: dirs.notes }
+    const map = { textual: dirs.channels, vocal: dirs.vocals, drive: dirs.drives, note: dirs.notes, forum: dirs.forums }
     return map[channelType] || null
 }
 

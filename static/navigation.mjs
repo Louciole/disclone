@@ -1,10 +1,84 @@
 import global from "./framework/global.mjs"
-import {loadChan, loadConv, loadNote, loadServer, lookFor} from "./crud.mjs";
+import {loadChan, loadConv, loadNote, loadServer, lookFor, loadForum, loadForumPost} from "./crud.mjs";
 import {setElement} from "./framework/vesta.mjs";
 import {closeFM, goTo} from "./framework/navigation.mjs";
 import {xhr} from "./framework/templating.mjs";
 import {} from "./servers/drive.mjs"
 let emptyStr = '' //DO NOT REMOVE
+
+let _skipRoutePush = false
+
+function pushRoute(hash) {
+    if (_skipRoutePush) return
+    history.pushState(null, '', '/channels' + (hash ? '#' + hash : ''))
+}
+
+export function handleHashRoute(hash) {
+    if (!hash) return
+    _skipRoutePush = true
+    try {
+        if (hash === '@me') {
+            if (global.state.activeConv) {
+                document.getElementById('conv' + global.state.activeConv)?.classList.remove('selected')
+            }
+            global.state.activeConv = undefined
+            document.getElementById('friendCat')?.classList.add('selected')
+            if (global.state.isMobile) mobileDisplayContent()
+            goTo('content', 'friends', undefined, false)
+            goTo('friends-block', 'main-friend')
+            return
+        }
+
+        if (hash.startsWith('@me/')) {
+            const convId = parseInt(hash.slice(4))
+            if (!isNaN(convId) && global.convs?.[convId]) {
+                goToConv(convId)
+            }
+            return
+        }
+
+        const parts = hash.split('/')
+        if (parts.length >= 2) {
+            const serverId = parseInt(parts[0])
+            const channelId = parseInt(parts[1])
+            if (isNaN(serverId) || isNaN(channelId)) return
+
+            const server = lookFor(serverId, global.servers)
+            if (!server) return
+
+            global.state.currentServer = server
+            global.state.activeConv = undefined
+            global.state.isServer = true
+            loadServer(serverId)
+
+            goTo('sec-selector', 'serverSelector', undefined, false, () => {
+                const dirs = global.state.currentServer.dirs
+                if (!dirs) return
+
+                if (parts[2] === 'post' && parts[3]) {
+                    const postId = parseInt(parts[3])
+                    if (!isNaN(postId)) {
+                        goToForumChannel(channelId)
+                        setTimeout(() => goToForumPost(postId), 100)
+                    }
+                    return
+                }
+
+                if (dirs.channels?.some(c => c.id === channelId)) {
+                    goToChannel(channelId)
+                } else if (dirs.vocals?.some(c => c.id === channelId)) {
+                    goToVocalChannel(channelId)
+                } else if (dirs.notes?.some(c => c.id === channelId)) {
+                    goToNoteChannel(channelId)
+                } else if (dirs.forums?.some(c => c.id === channelId)) {
+                    goToForumChannel(channelId)
+                }
+            })
+        }
+    } finally {
+        _skipRoutePush = false
+    }
+}
 
 /**
  * Wraps MDToHTML and replaces :emojiname: shortcodes from known custom emojis
@@ -139,6 +213,7 @@ function goToConv(convId){
     targetElt.classList.add("selected")
 
     global.state.isServer = false
+    pushRoute('@me/' + convId)
     goTo('content','conversation',undefined,false)
 
     // Attach scroll listener to mark notifications as read
@@ -196,6 +271,7 @@ function goToChannel(id){
     targetElt = document.getElementById("channel".concat(global.state.activeChan.slug))
     targetElt.classList.add("selected")
 
+    pushRoute(global.state.currentServer?.id + '/' + id)
     goTo('content','server-channel',undefined,false)
 }
 window.goToChannel = goToChannel
@@ -220,6 +296,7 @@ function goToVocalChannel(id){
     targetElt = document.getElementById("channel".concat(global.state.activeChan.slug))
     targetElt.classList.add("selected")
 
+    pushRoute(global.state.currentServer?.id + '/' + id)
     goTo('content','server-vocal-content',undefined,false)
 }
 window.goToVocalChannel = goToVocalChannel
@@ -243,9 +320,48 @@ function goToNoteChannel(id){
     targetElt = document.getElementById("channel".concat(global.state.activeChan.slug))
     targetElt.classList.add("selected")
 
-
+    pushRoute(global.state.currentServer?.id + '/' + id)
 }
 window.goToNoteChannel = goToNoteChannel
+
+function goToForumChannel(id){
+    let targetElt
+    if(global.state.activeChan){
+        targetElt = document.getElementById("channel".concat(global.state.activeChan.slug))
+        targetElt?.classList.remove("selected")
+    }
+
+    global.state.activeChan = {id:id, slug:"-forum-"+id, type:"forum"}
+
+    loadForum(id)
+
+    if (global.state.isMobile) {
+        mobileDisplayContent()
+    }
+
+    targetElt = document.getElementById("channel".concat(global.state.activeChan.slug))
+    targetElt?.classList.add("selected")
+
+    pushRoute(global.state.currentServer?.id + '/' + id)
+}
+window.goToForumChannel = goToForumChannel
+
+function goToForumPost(postId){
+    loadForumPost(postId)
+    pushRoute(global.state.currentServer?.id + '/' + global.state.activeChan?.id + '/post/' + postId)
+    if (global.state.isMobile) {
+        mobileDisplayContent()
+    }
+}
+window.goToForumPost = goToForumPost
+
+function backToForum(){
+    const forumId = global.state.activeChan?.id
+    if (forumId !== undefined) {
+        goTo('content','server-forum-content',undefined,false)
+    }
+}
+window.backToForum = backToForum
 
 
 function goToFriends(event){
@@ -261,6 +377,7 @@ function goToFriends(event){
         mobileDisplayContent()
     }
 
+    pushRoute('@me')
     goTo('content',"friends",undefined,false)
     goTo('friends-block','main-friend')
 }

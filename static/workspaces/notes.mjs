@@ -13,10 +13,8 @@ import {mountTransportBlock} from "./transport.mjs";
 
 class Editor {
     constructor() {
-        if (Object.keys(global.notes[global.state.activeChan.id].blocks).length !== 0) {
-            this.blocks = global.notes[global.state.activeChan.id].blocks
-        }else{
-            this.blocks = {}
+        this.blocks = global.notes[global.state.activeChan.id].blocks
+        if (Object.keys(this.blocks).length === 0) {
             this.createBlock({},false)
         }
         this.draggedBlockId = null

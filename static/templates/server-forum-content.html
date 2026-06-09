@@ -1,0 +1,21 @@
+<div class="neutral forum-view">
+    <div class="selected-info">
+        <div class="title">
+            ${global.state.isMobile?'<img class="icon" src="/static/icons/material/back.svg" onclick="mobileHideContent()" style="margin-right: 0.6rem"/>':''}
+            <img class="icon" src="/static/icons/material/inbox.svg"/>
+            ${Subscribe("global.forums["+global.state.activeChan.id+"].name", ()=>{return global.forums[global.state.activeChan.id].name})}
+        </div>
+        <div>
+            <div class="btn blue forum-new-post-btn" onclick="openCreatePostModal(${global.state.activeChan.id})">${_t("New post")}</div>
+            <img class="icon" onclick="toggleMenu('member-list',true,'member-list-wrapper')" src="/static/icons/material/group.svg" style="margin-left: 0.8rem;">
+        </div>
+    </div>
+
+    ${Subscribe('global.forums['+global.state.activeChan.id+']', ()=>renderForumToolbar(global.state.activeChan.id))}
+
+    <div class="scrollable forum-scroll">
+        ${Subscribe('global.forums['+global.state.activeChan.id+']', ()=>renderForumPosts(global.state.activeChan.id))}
+    </div>
+
+    <div id="member-list-wrapper"></div>
+</div>

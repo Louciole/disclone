@@ -1,4 +1,5 @@
 import {initNavigation, printWatermark, goTo} from "/static/framework/navigation.mjs"
+import {handleHashRoute} from "/static/navigation.mjs"
 import {initWebSockets} from "./framework/websockets.mjs";
 import {loadServers, loadUser, loadConvs, loadUsers, handleMessageGroup, sendTyping, lookFor, orderServDirs} from "/static/crud.mjs"
 import global from "/static/framework/global.mjs"
@@ -17,6 +18,7 @@ import {} from "/static/constants.mjs"; // Expose and parseJsonArray globally
 import {} from "/static/mentions.mjs"; // Mention autocomplete system
 import {} from "/static/poll.mjs"; // Poll creation and voting
 import {} from "/static/conv-blocks.mjs"; // Conversation block insertion
+import {} from "/static/forum.mjs"; // Forum channels: posts, tags, layouts
 // Capacitor bridge — only activates when running inside a native shell
 import { hideSplash, registerPushNotifications } from "/static/capacitor-bridge.mjs";
 
@@ -70,6 +72,13 @@ export function postWS(){
     console.log("Client ready", global)
     hideLoadingScreen()
 
+    // URL routing: restore view from hash on initial load, handle browser back/forward
+    const _initialHash = window.location.hash.slice(1)
+    if (_initialHash) {
+        setTimeout(() => handleHashRoute(_initialHash), 300)
+    }
+    window.addEventListener('popstate', () => handleHashRoute(window.location.hash.slice(1)))
+
     // Hide native splash screen once the app is ready
     hideSplash();
 
@@ -95,7 +104,7 @@ export function postWS(){
         const { serverId, channelId } = e.detail;
         if (!serverId || !channelId) return;
         // Navigate to the server + channel
-        const srv = global.servers?.find(s => String(s.id) === String(serverId));
+        const srv = Object.values(global.servers || {}).find(s => String(s.id) === String(serverId));
         if (srv) {
             global.state.isServer = true;
             global.state.currentServer = srv;
@@ -650,6 +659,7 @@ goTo('content',"friends",undefined,true,()=>{goTo('friends-block','main-friend')
 loadTemplate("profile-info.html")
 loadTemplate("create-poll.html")
 loadTemplate("create-block.html")
+loadTemplate("create-forum-post.html")
 loadTemplate("poll-voters.html")
 loadUser()
 xhr("get_blocked", onBlockedLoaded)

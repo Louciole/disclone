@@ -1,0 +1,21 @@
+<div class="forum-post-card" onclick="goToForumPost(${element.id})">
+    <div class="forum-post-card-main">
+        <div class="forum-post-card-header">
+            ${element.pinned ? '<img class="icon forum-pin" src="/static/icons/material/flag.svg" title="Pinned"/>' : ''}
+            <span class="forum-post-title">${escHtml(element.title)}</span>
+            ${element.locked ? '<span class="forum-lock-badge">🔒</span>' : ''}
+        </div>
+        ${element.snippet ? '<p class="forum-post-snippet">'+escHtml(element.snippet)+'</p>' : ''}
+        ${renderPostTags(element.forumId, element.tags) ? '<div class="forum-post-card-tags">'+renderPostTags(element.forumId, element.tags)+'</div>' : ''}
+        <div class="forum-post-card-meta">
+            <div class="forum-post-author" style="${'background-image:url(/static/attachments/'+(global.users[element.author]?.pfp||'')+');'}"></div>
+            <span class="forum-post-author-name">${global.users[element.author]?.display || 'User'}</span>
+            <span class="forum-post-sep">•</span>
+            <span>${getTimeStr(element.last_activity)}</span>
+        </div>
+    </div>
+    <div class="forum-post-card-replies">
+        <img class="icon" src="/static/icons/material/message.svg"/>
+        <span>${element.reply_count}</span>
+    </div>
+</div>

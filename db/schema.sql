@@ -84,6 +84,32 @@ create table if not exists textual_channel (
     is_private boolean DEFAULT false
 ) inherits (conversationElement);
 
+create table if not exists forum_channel (
+    name varchar(255) NOT NULL,
+    server integer NOT NULL references server(id) ON DELETE CASCADE,
+    category integer,
+    place float NOT NULL DEFAULT 0.1,
+    is_private boolean DEFAULT false,
+    available_tags jsonb DEFAULT '[]',
+    default_layout varchar(10) DEFAULT 'list',
+    default_sort varchar(12) DEFAULT 'activity',
+    guidelines text
+) inherits (conversationElement);
+
+create table if not exists forum_post (
+    forum integer NOT NULL REFERENCES forum_channel(id) ON DELETE CASCADE,
+    server integer NOT NULL,
+    author integer NOT NULL,
+    title varchar(255) NOT NULL,
+    tags jsonb DEFAULT '[]',
+    pinned boolean DEFAULT false,
+    locked boolean DEFAULT false,
+    created_at timestamp DEFAULT CURRENT_TIMESTAMP,
+    last_activity timestamp DEFAULT CURRENT_TIMESTAMP
+) inherits (conversationElement);
+
+create index if not exists idx_forum_post_forum on forum_post(forum);
+
 create table if not exists accessConversation (
     id bigserial NOT NULL PRIMARY KEY,
     account integer NOT NULL,
