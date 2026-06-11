@@ -554,10 +554,10 @@ window.getDefaultMessage = getDefaultMessage
 
 function blockUser(id){
     const effect = function() {
-        const response = this.responseText.split(" ")
-        if(response[0] ==="ok"){
+        const response = JSON.parse(this.responseText)
+        if(response.status === "ok"){
             friend('removeYES', {"id":id})
-            addElement("global.user.blocked",{"id":parseInt(response[1]), "blocked":id})
+            addElement("global.user.blocked",{"id":response.id, "blocked":id})
         }
     };
 
@@ -1101,6 +1101,7 @@ export function loadServer(id){
     };
     xhr("get_serv_content?server_id=".concat(id.toString()),onload,"GET",false)
 }
+window.loadServer = loadServer;
 
 function firstGreater(arr, target) {
     for (let i = 0; i < arr.length; i++) {

@@ -212,7 +212,7 @@ export class DatabaseView {
             html += '<tr data-row-id="' + row.id + '">'
             this.columns.forEach(col => {
                 const rawValue = (this.cells[String(row.id)] || {})[String(col.id)] || ''
-                html += '<td>' + this._renderCell(row.id, col, rawValue) + '</td>'
+                html += '<td data-col-id="' + col.id + '">' + this._renderCell(row.id, col, rawValue) + '</td>'
             })
             html += '<td></td></tr>'
         })

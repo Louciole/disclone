@@ -118,8 +118,8 @@ export async function createConversation(page, name, memberIds = []) {
         if (!response.ok) {
             throw new Error(`Failed to create conversation: ${response.status}`);
         }
-        const text = await response.text();
-        return parseInt(text.replace(/"/g, ''));
+        const data = await response.json();
+        return data.id;
     }, { name, memberIds });
 
     console.log(`   ✅ Conversation created: ID=${convId}, members=${memberIds.length + 1}`);
@@ -252,11 +252,11 @@ export async function readCallViewState(page) {
  * @param {string} [opts.callType='audio']
  * @param {number[]} [opts.participantIds=[]] IDs des participants déjà dans l'appel
  */
-export async function injectBannerState(page, convId, { callType = 'audio', participantIds = [] } = {}) {
-    await page.evaluate(({ convId, callType, participantIds }) => {
+export async function injectBannerState(page, convId, { callType = 'audio', participantIds = [], callId = 99999 } = {}) {
+    await page.evaluate(({ convId, callType, participantIds, callId }) => {
         const cm = window.global.state.callManager;
         const fakeCallData = {
-            id: 99999,
+            id: callId,
             conversation_id: convId,
             call_type: callType,
             participants: participantIds,
@@ -266,7 +266,7 @@ export async function injectBannerState(page, convId, { callType = 'audio', part
         window.global.convs[convId] = window.global.convs[convId] || {};
         window.global.convs[convId].ongoingCall = fakeCallData;
         cm.setBannerState(fakeCallData);
-    }, { convId, callType, participantIds });
+    }, { convId, callType, participantIds, callId });
 
     console.log(`   ✅ Banner state injecté (conv=${convId}, type=${callType})`);
 }
@@ -277,10 +277,12 @@ export async function injectBannerState(page, convId, { callType = 'audio', part
  * @param {Page} page
  * @param {number[]} participantIds IDs des membres en train de sonner
  */
-export async function injectCallingState(page, participantIds = []) {
-    await page.evaluate((participantIds) => {
+export async function injectCallingState(page, participantIds = [], callType = 'audio') {
+    await page.evaluate(({ participantIds, callType }) => {
         const cm = window.global.state.callManager;
         cm.callState = 'calling';
+        cm.callType = callType;
+        cm.currentCall = { id: 0 }; // needed so leaveCall() doesn't bail early
         cm.remoteParticipants = participantIds.map(id => ({ userId: id, status: 'calling' }));
 
         // Déclencher les mises à jour réactives
@@ -291,7 +293,7 @@ export async function injectCallingState(page, participantIds = []) {
         }
         cm.availableActions = [{ type: 'controls' }];
         cm._updateCallViewState();
-    }, participantIds);
+    }, { participantIds, callType });
 
     console.log(`   ✅ Calling state injecté (${participantIds.length} participants en sonnerie)`);
 }

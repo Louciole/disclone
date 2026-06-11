@@ -3303,6 +3303,7 @@ class Mycelium(ForumMixin, Server):
                 "column_id": column_id,
                 "value": value
             })
+        return json.dumps({"status": "ok"})
 
     @Server.expose
     def get_relation_display(self, database_id, row_id):

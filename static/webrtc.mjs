@@ -335,7 +335,7 @@ export class CallManager {
      * Join an existing call
      */
     async joinCall(callId, video = false) {
-        if (this.callState !== 'none') return;
+        if (this.callState !== 'none' && this.callState !== 'banner') return;
         try {
             await this.getLocalStream(video);
 

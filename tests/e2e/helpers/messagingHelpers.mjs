@@ -137,7 +137,8 @@ export async function openPrivateConversation(page, convId) {
 export async function sendMessageInActiveConversation(page, text) {
     const input = page.locator('.chat-input textarea.selected');
     await input.fill(text);
-    await input.press('Enter');
+    await input.focus();
+    await page.keyboard.press('Enter');
 
     await expect(page.locator('.message .mdBlock').filter({ hasText: text }).last()).toBeVisible({ timeout: 10000 });
 }
