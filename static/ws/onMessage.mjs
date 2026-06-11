@@ -89,7 +89,7 @@ export async function onMessage(event) {
                         const box = document.getElementById("typing-name")
                         box.parentElement.style.display="flex";
                         // todo handle multiple names
-                        box.innerHTML = global.users[message.content.uid].display
+                        box.textContent = global.users[message.content.uid]?.display ?? ""
                         setTimeout(() => box.parentElement.style.display="none", 5000)
                     }
                     break
@@ -153,7 +153,8 @@ export async function onMessage(event) {
                                 div.className = 'inline poll-option';
                                 div.setAttribute('onclick',
                                     `const cb=this.querySelector('input');cb.checked=!cb.checked;${isMultiple ? '' : `uncheckOtherPollOptions(cb,${pollOptData.messageId});`}this.classList.toggle('selected',cb.checked)`);
-                                div.innerHTML = `<input type="checkbox" data-option-id="${pollOptData.option.id}" onclick="event.stopPropagation()"/><span>${pollOptData.option.text}</span>`;
+                                div.innerHTML = `<input type="checkbox" data-option-id="${pollOptData.option.id}" onclick="event.stopPropagation()"/><span></span>`;
+                                div.querySelector('span').textContent = pollOptData.option.text;
                                 poList.appendChild(div);
                             }
                         }

@@ -151,6 +151,28 @@ class Mycelium(ForumMixin, Server):
     # --------------------------------WEBSOCKETS--------------------------------
 
     async def handle_message(self, websocket):
+        try:
+            await self._handle_messages(websocket)
+        finally:
+            await self._cleanup_connection(websocket)
+
+    async def _cleanup_connection(self, websocket):
+        if websocket in self.clients:
+            self.clients.remove(websocket)
+
+        for connection_id in [cid for cid, entry in list(self.waiting_clients.items())
+                              if entry["connection"] == websocket]:
+            self.waiting_clients.pop(connection_id, None)
+
+        for client_id in [cid for cid, ws in list(self.pool.items()) if ws == websocket]:
+            client = self.db.getSomething("active_client", client_id)
+            self.pool.pop(client_id, None)
+            self.db.deleteSomething("active_client", client_id)
+            self.db.deleteSomething("subscription", client_id, selector="client")
+            if client:
+                await self.sendStatusUpdatesAsync(client["userid"])
+
+    async def _handle_messages(self, websocket):
         self.clients.append(websocket)
         self.calls = {}
 
@@ -174,17 +196,28 @@ class Mycelium(ForumMixin, Server):
                     else:
                         self.waiting_clients.pop(data["clientID"])
                 case "typing":
+                    if not self.checkWSAuth(websocket, data.get("clientID")):
+                        continue
+                    sender = self.db.getSomething("active_client", data["clientID"])
+                    sender_uid = sender["userid"]
                     channel = self.db.getSomething("textual_channel", data["conv"])
                     if channel:
+                        # Sender must be able to view the channel.
+                        if not self.checkChannelAccess(sender_uid, data["conv"], "textual", "view"):
+                            continue
                         members = self.db.getFilters("accessserver", ["server", "=", channel["server"]])
                     else:
+                        # Sender must be a member of the conversation.
+                        if not self.db.getFilters("accessconversation", ["conversation", "=", data["conv"], "and", "account", "=", sender_uid]):
+                            continue
                         members = self.db.getAll("accessconversation", data["conv"], "conversation")
 
+                    payload = {"type": "typing", "conv": data["conv"], "uid": sender_uid}
                     for user in members:
-                        if user["account"] != data["uid"]:
+                        if user["account"] != sender_uid:
                             if channel and channel.get("is_private") and not self.checkChannelAccess(user["account"], data["conv"], "textual", "view"):
                                 continue
-                            await self.sendNotificationAsync(user["account"], data)
+                            await self.sendNotificationAsync(user["account"], payload)
 
                 case "changeActivity":
                     if self.checkWSAuth(websocket,data["clientID"]):
@@ -324,10 +357,11 @@ class Mycelium(ForumMixin, Server):
 
                         call = self.callManager.active_calls.get(call_id)
 
-                        if call:
+                        # Only a participant of the call may relay signaling.
+                        if call and client["userid"] in call.participants:
                             if call.mode == 'p2p':
-                                # Mode P2P: relay direct vers le destinataire
-                                if target_user:
+                                # Mode P2P: relay direct vers le destinataire (participant only)
+                                if target_user and target_user in call.participants:
                                     await self.sendNotificationAsync(target_user, {
                                         "type": data["type"],
                                         "content": {
@@ -446,8 +480,7 @@ class Mycelium(ForumMixin, Server):
     @Server.expose
     def delete_server(self, server_id):
         uid = self.getUser()
-        if not self.checkAccessRights(uid, server_id, "server-admin"):
-            raise HTTPError(self.response, 403, "forbidden")
+        self.require_server_perm(uid, server_id, "server-admin")
 
         # If this is a personal server, deduct its usage from the owner's quota
         personal = self.db.getFilters("personal_server", ["server", "=", server_id])
@@ -646,7 +679,7 @@ class Mycelium(ForumMixin, Server):
     @Server.expose
     def edit_conv(self, element, value, conv_id):
         uid = self.getUser()
-        if element in ["id"]:
+        if element not in ("name",):
             raise HTTPError(self.response, 400, "Invalid element")
 
         members = self.db.getAll("accessconversation", conv_id, "conversation")
@@ -799,12 +832,7 @@ class Mycelium(ForumMixin, Server):
     @Server.expose
     def get_chan_content(self, channel_id):
         uid = self.getUser()
-        chan = self.db.getSomething("textual_channel", channel_id)
-        if not chan:
-            raise HTTPError(self.response, 404, "Not Found")
-
-        if not self.checkChannelAccess(uid, channel_id, "textual", "view"):
-            raise HTTPError(self.response, 403, "forbidden")
+        chan = self.require_channel_access(uid, channel_id, "textual", "view")
 
         content = {"name": chan["name"], "id": channel_id}
         content["messages"] = self.db.getFilters("message", ["place", "=", channel_id, "order by timestamp"])
@@ -816,12 +844,7 @@ class Mycelium(ForumMixin, Server):
     @Server.expose
     def get_note_content(self, channel_id):
         uid = self.getUser()
-        chan = self.db.getSomething("notes_channel", channel_id)
-        if not chan:
-            raise HTTPError(self.response, 404, "Not Found")
-
-        if not self.checkChannelAccess(uid, channel_id, "note", "view"):
-            raise HTTPError(self.response, 403, "forbidden")
+        chan = self.require_channel_access(uid, channel_id, "note", "view")
 
         content = {"name": chan["name"], "id": channel_id}
         content["blocks"] = self.db.getFilters("note_block", ["channel", "=", channel_id])
@@ -830,61 +853,58 @@ class Mycelium(ForumMixin, Server):
     @Server.expose
     def get_serv_content(self, server_id, channel_id=None):
         uid = self.getUser()
-        serv = self.db.getFilters("accessserver", ["account", "=", uid, "and", "server", "=", server_id])
-        if serv:
-            content = {}
-            if not channel_id:
-                content["channels"] = self.db.getAll("textual_channel", server_id,"server")
-                content["vocals"] = self.db.getAll("vocal_channel", server_id,"server")
-                content["drives"] = self.db.getAll("drive_channel", server_id,"server")
-                content["notes"] = self.db.getAll("notes_channel", server_id,"server")
-                content["forums"] = self.db.getAll("forum_channel", server_id,"server")
-                # content["whiteboard"] = self.db.getAll("drive_channel", server_id,"server")
-                op = self.db.getSomething("op_servs", server_id, "server")
-                if op:
-                    content["op"] = True
-                content["cat"] = self.db.getAll("server_cat", server_id,"server")
-                content["roles"] = self.db.getAll("role", server_id,"server")
+        self.require_member(uid, server_id)
+        content = {}
+        if not channel_id:
+            content["channels"] = self.db.getAll("textual_channel", server_id,"server")
+            content["vocals"] = self.db.getAll("vocal_channel", server_id,"server")
+            content["drives"] = self.db.getAll("drive_channel", server_id,"server")
+            content["notes"] = self.db.getAll("notes_channel", server_id,"server")
+            content["forums"] = self.db.getAll("forum_channel", server_id,"server")
+            # content["whiteboard"] = self.db.getAll("drive_channel", server_id,"server")
+            op = self.db.getSomething("op_servs", server_id, "server")
+            if op:
+                content["op"] = True
+            content["cat"] = self.db.getAll("server_cat", server_id,"server")
+            content["roles"] = self.db.getAll("role", server_id,"server")
 
-                personal = self.db.getFilters("personal_server", ["server", "=", server_id])
-                if personal:
-                    content["type"] = "personal"
-                    owner = self.db.getSomething("mycelium_account", personal[0]["owner"])
-                    content["storage_usage"] = owner.get("storage_usage", 0) if owner else 0
-                    content["storage_quota"] = USER_STORAGE_QUOTA
-                else:
-                    content["type"] = "standard"
-                    server_data = self.db.getSomething("server", server_id)
-                    content["storage_usage"] = server_data.get("storage_usage", 0) if server_data else 0
-                    content["storage_quota"] = SERVER_STORAGE_QUOTA
-
-                content["members"] = self.db.getFilters("accessserver", ["server", "=", server_id])
-                for i in range(0, len(content["members"])):
-                    userRoles = self.db.getFilters("role_attribution", ["server", "=", server_id, "and", "account", "=", content["members"][i]["account"]])
-                    for j in range (0,len(userRoles)):
-                        userRoles[j] = userRoles[j]["role"]
-                    content["members"][i] = {"id": content["members"][i]["account"], "roles": userRoles}
-
-                # Filter private channels: only show if user has view access
-                content["channels"] = [ch for ch in content["channels"] if not ch.get("is_private") or self.checkChannelAccess(uid, ch["id"], "textual", "view")]
-                content["vocals"] = [ch for ch in content["vocals"] if not ch.get("is_private") or self.checkChannelAccess(uid, ch["id"], "vocal", "view")]
-                content["drives"] = [ch for ch in content["drives"] if not ch.get("is_private") or self.checkChannelAccess(uid, ch["id"], "drive", "view")]
-                content["notes"] = [ch for ch in content["notes"] if not ch.get("is_private") or self.checkChannelAccess(uid, ch["id"], "note", "view")]
-                content["forums"] = [ch for ch in content["forums"] if not ch.get("is_private") or self.checkChannelAccess(uid, ch["id"], "forum", "view")]
-
-                # Include channel_permissions for this server
-                content["channel_permissions"] = self.db.getAll("channel_permission", server_id, "server") or []
+            personal = self.db.getFilters("personal_server", ["server", "=", server_id])
+            if personal:
+                content["type"] = "personal"
+                owner = self.db.getSomething("mycelium_account", personal[0]["owner"])
+                content["storage_usage"] = owner.get("storage_usage", 0) if owner else 0
+                content["storage_quota"] = USER_STORAGE_QUOTA
             else:
-                content["messages"] = self.db.getFilters("message", ["place", "=", channel_id, "order by timestamp"])
-            return json.dumps(content, default=str)
+                content["type"] = "standard"
+                server_data = self.db.getSomething("server", server_id)
+                content["storage_usage"] = server_data.get("storage_usage", 0) if server_data else 0
+                content["storage_quota"] = SERVER_STORAGE_QUOTA
+
+            content["members"] = self.db.getFilters("accessserver", ["server", "=", server_id])
+            for i in range(0, len(content["members"])):
+                userRoles = self.db.getFilters("role_attribution", ["server", "=", server_id, "and", "account", "=", content["members"][i]["account"]])
+                for j in range (0,len(userRoles)):
+                    userRoles[j] = userRoles[j]["role"]
+                content["members"][i] = {"id": content["members"][i]["account"], "roles": userRoles}
+
+            # Filter private channels: only show if user has view access
+            content["channels"] = [ch for ch in content["channels"] if not ch.get("is_private") or self.checkChannelAccess(uid, ch["id"], "textual", "view")]
+            content["vocals"] = [ch for ch in content["vocals"] if not ch.get("is_private") or self.checkChannelAccess(uid, ch["id"], "vocal", "view")]
+            content["drives"] = [ch for ch in content["drives"] if not ch.get("is_private") or self.checkChannelAccess(uid, ch["id"], "drive", "view")]
+            content["notes"] = [ch for ch in content["notes"] if not ch.get("is_private") or self.checkChannelAccess(uid, ch["id"], "note", "view")]
+            content["forums"] = [ch for ch in content["forums"] if not ch.get("is_private") or self.checkChannelAccess(uid, ch["id"], "forum", "view")]
+
+            # Include channel_permissions for this server
+            content["channel_permissions"] = self.db.getAll("channel_permission", server_id, "server") or []
+        else:
+            content["messages"] = self.db.getFilters("message", ["place", "=", channel_id, "order by timestamp"])
+        return json.dumps(content, default=str)
 
     @Server.expose
     def leave_server(self, server_id):
         uid = self.getUser()
-        records = self.db.getFilters("accessserver", ["account", "=", uid, "and", "server", "=", server_id])
-        if not records:
-            raise HTTPError(self.response, 404, "not found")
-        self.db.deleteSomething("accessserver", records[0]["id"])
+        record = self.require_member(uid, server_id)
+        self.db.deleteSomething("accessserver", record["id"])
         return json.dumps({"ok": True})
 
     @Server.expose
@@ -903,10 +923,7 @@ class Mycelium(ForumMixin, Server):
         """Get storage usage for a user or server."""
         uid = self.getUser()
         if server_id:
-            # Check access
-            access = self.db.getFilters("accessserver", ["account", "=", uid, "and", "server", "=", server_id])
-            if not access:
-                raise HTTPError(self.response, 403, "forbidden")
+            self.require_member(uid, server_id)
             personal = self.db.getFilters("personal_server", ["server", "=", server_id])
             if personal and personal != []:
                 owner = self.db.getSomething("mycelium_account", personal[0]["owner"])
@@ -1015,10 +1032,11 @@ class Mycelium(ForumMixin, Server):
         import datetime
 
         # Get all users with admin rights in op servers
-        users_op_servs = self.db.cur.execute(
-            "SELECT DISTINCT accessServer.account FROM op_servs, accessServer WHERE op_servs.server = accessServer.server",
-            ()
-        ).fetchall()
+        with self.db.pool.connection() as conn:
+            users_op_servs = conn.execute(
+                "SELECT DISTINCT accessServer.account FROM op_servs, accessServer WHERE op_servs.server = accessServer.server",
+                ()
+            ).fetchall()
 
         admin_ids = set()
 
@@ -1033,10 +1051,11 @@ class Mycelium(ForumMixin, Server):
 
     def _hasAdminRight(self, uid):
         """Check if user has mycelium_admin right (helper for cache refresh)"""
-        users_op_servs = self.db.cur.execute(
-            "SELECT * FROM op_servs, accessServer WHERE op_servs.server = accessServer.server AND accessServer.account = %s",
-            (uid,)
-        ).fetchall()
+        with self.db.pool.connection() as conn:
+            users_op_servs = conn.execute(
+                "SELECT * FROM op_servs, accessServer WHERE op_servs.server = accessServer.server AND accessServer.account = %s",
+                (uid,)
+            ).fetchall()
 
         for user_op_serv in users_op_servs:
             server_id = user_op_serv["server"]
@@ -1075,24 +1094,27 @@ class Mycelium(ForumMixin, Server):
             return
         personal = self.db.getFilters("personal_server", ["server", "=", server_id])
         if personal:
-            self.db.cur.execute(
-                "UPDATE mycelium_account SET storage_usage = GREATEST(0, storage_usage + %s) WHERE id = %s",
-                (delta, personal[0]["owner"])
-            )
+            with self.db.pool.connection() as conn:
+                conn.execute(
+                    "UPDATE mycelium_account SET storage_usage = GREATEST(0, storage_usage + %s) WHERE id = %s",
+                    (delta, personal[0]["owner"])
+                )
         else:
-            self.db.cur.execute(
-                "UPDATE server SET storage_usage = GREATEST(0, storage_usage + %s) WHERE id = %s",
-                (delta, server_id)
-            )
+            with self.db.pool.connection() as conn:
+                conn.execute(
+                    "UPDATE server SET storage_usage = GREATEST(0, storage_usage + %s) WHERE id = %s",
+                    (delta, server_id)
+                )
 
     def _adjustUserStorage(self, uid, delta):
         """Add delta bytes (negative to decrement) directly to a user's storage_usage."""
         if delta == 0:
             return
-        self.db.cur.execute(
-            "UPDATE mycelium_account SET storage_usage = GREATEST(0, storage_usage + %s) WHERE id = %s",
-            (delta, uid)
-        )
+        with self.db.pool.connection() as conn:
+            conn.execute(
+                "UPDATE mycelium_account SET storage_usage = GREATEST(0, storage_usage + %s) WHERE id = %s",
+                (delta, uid)
+            )
 
     def _checkQuota(self, server_id, size):
         """Raise HTTPError 413 if adding size bytes would exceed the server's quota."""
@@ -1130,30 +1152,32 @@ class Mycelium(ForumMixin, Server):
         Pass the IDs being deleted so they are excluded from the check.
         """
         # Check drive_file table
-        if exclude_drive_file_id:
-            drive_refs = self.db.cur.execute(
-                "SELECT id FROM drive_file WHERE filepath = %s AND id != %s",
-                (filepath, exclude_drive_file_id)
-            ).fetchall()
-        else:
-            drive_refs = self.db.cur.execute(
-                "SELECT id FROM drive_file WHERE filepath = %s",
-                (filepath,)
-            ).fetchall()
+        with self.db.pool.connection() as conn:
+            if exclude_drive_file_id:
+                drive_refs = conn.execute(
+                    "SELECT id FROM drive_file WHERE filepath = %s AND id != %s",
+                    (filepath, exclude_drive_file_id)
+                ).fetchall()
+            else:
+                drive_refs = conn.execute(
+                    "SELECT id FROM drive_file WHERE filepath = %s",
+                    (filepath,)
+                ).fetchall()
         if drive_refs:
             return False
 
         # Check message.attachments JSON column for any remaining reference
-        if exclude_message_id:
-            msg_refs = self.db.cur.execute(
-                "SELECT id FROM message WHERE attachments::text LIKE %s AND id != %s",
-                (f'%{filepath}%', exclude_message_id)
-            ).fetchall()
-        else:
-            msg_refs = self.db.cur.execute(
-                "SELECT id FROM message WHERE attachments::text LIKE %s",
-                (f'%{filepath}%',)
-            ).fetchall()
+        with self.db.pool.connection() as conn:
+            if exclude_message_id:
+                msg_refs = conn.execute(
+                    "SELECT id FROM message WHERE attachments::text LIKE %s AND id != %s",
+                    (f'%{filepath}%', exclude_message_id)
+                ).fetchall()
+            else:
+                msg_refs = conn.execute(
+                    "SELECT id FROM message WHERE attachments::text LIKE %s",
+                    (f'%{filepath}%',)
+                ).fetchall()
         return not msg_refs
 
     @Server.expose
@@ -1198,7 +1222,7 @@ class Mycelium(ForumMixin, Server):
         place_id = conv.get("id")
         channel = self.db.getSomething("textual_channel", place_id) if place_id else None
         if channel:
-            if channel.get("is_private") and not self.checkChannelAccess(uid, place_id, "textual", "send-messages"):
+            if not self.checkChannelAccess(uid, place_id, "textual", "send-messages"):
                 raise HTTPError(self.response, 403, "no permission to send messages in this channel")
             return channel, "textual"
 
@@ -1212,6 +1236,8 @@ class Mycelium(ForumMixin, Server):
             forum = self.db.getSomething("forum_channel", post["forum"])
             return forum, "forum"
 
+        if place_id and not self.db.getFilters("accessconversation", ["conversation", "=", place_id, "and", "account", "=", uid]):
+            raise HTTPError(self.response, 403, "no access to this conversation")
         return None, None
 
     @Server.expose
@@ -1604,12 +1630,14 @@ class Mycelium(ForumMixin, Server):
 
     def _enrichMessagesWithConvBlocks(self, messages):
         for msg in messages:
-            atts = msg.get("attachments") or "[]"
+            atts = msg.get("attachments") or []
             if isinstance(atts, str):
                 try: atts = json.loads(atts)
                 except: atts = []
+            if not isinstance(atts, list):
+                atts = []
             for att in atts:
-                if att and att.get("type") == "conv_spreadsheet":
+                if isinstance(att, dict) and att.get("type") == "conv_spreadsheet":
                     sheet = self.db.getSomething("note_spreadsheet", att["uuid"], "block_uuid")
                     if sheet:
                         cells_data = self.db.getFilters("note_spreadsheet_cell",
@@ -1699,14 +1727,10 @@ class Mycelium(ForumMixin, Server):
         message = self.db.getSomething("message", poll["message"])
         if not message:
             raise HTTPError(self.response, 404, "Poll message not found")
-        # Check access: either via accessconversation (DMs) or server membership (channels)
+        # Check access: either via accessconversation (DMs) or channel access (channels)
         channel = self.db.getSomething("textual_channel", message["place"])
         if channel:
-            access = self.db.getFilters("accessserver", ["account", "=", uid, "and", "server", "=", channel["server"]])
-            if not access:
-                raise HTTPError(self.response, 403, "No access to this poll")
-            if channel.get("is_private") and not self.checkChannelAccess(uid, message["place"], "textual", "view"):
-                raise HTTPError(self.response, 403, "No access to this poll")
+            self.require_channel_access(uid, message["place"], "textual", "view")
         else:
             access = self.db.getFilters("accessconversation", ["conversation", "=", message["place"], "and", "account", "=", uid])
             if not access:
@@ -1972,7 +1996,8 @@ class Mycelium(ForumMixin, Server):
     @Server.expose
     def change_profile(self, element, value):
         uid = self.getUser()
-        if element in ["id", "inscription", "storage_usage"]:
+        allowed = ("display", "pronouns", "description", "faction", "pfp", "banner")
+        if element not in allowed:
             return json.dumps({"error": "forbidden"})
         self.db.edit("mycelium_account", uid, element, value)
         return json.dumps({"status": "ok"})
@@ -2017,6 +2042,35 @@ class Mycelium(ForumMixin, Server):
         self.uniauth.deleteSomething("additional_mail", email_id)
 
         return json.dumps({"success": True})
+
+
+    def require_member(self, uid, server_id):
+        """Require that uid is a member of server_id. Returns the accessserver row."""
+        access = self.db.getFilters("accessserver", ["account", "=", uid, "and", "server", "=", server_id])
+        if not access:
+            raise HTTPError(self.response, 403, "forbidden")
+        return access[0]
+
+    def require_server_perm(self, uid, server_id, action):
+        """Require that uid has the `action` permission on server_id (owner always passes)."""
+        if not self.checkAccessRights(uid, server_id, action):
+            raise HTTPError(self.response, 403, "forbidden")
+
+    def require_channel_access(self, uid, channel_id, channel_type, action="view"):
+        """Require that uid can perform `action` on a channel. Returns the channel row.
+
+        Raises 400 for an unknown channel type, 404 if the channel doesn't exist,
+        403 if the user lacks access (membership for public channels, role
+        permissions for private ones)."""
+        table = self._getChannelTable(channel_type)
+        if not table:
+            raise HTTPError(self.response, 400, "invalid channel type")
+        chan = self.db.getSomething(table, channel_id)
+        if not chan:
+            raise HTTPError(self.response, 404, "channel not found")
+        if not self.checkChannelAccess(uid, channel_id, channel_type, action):
+            raise HTTPError(self.response, 403, "forbidden")
+        return chan
 
     # noinspection PyPackageRequirements
     def checkAccessRights(self, uid, server, action):
@@ -2138,8 +2192,7 @@ class Mycelium(ForumMixin, Server):
             raise HTTPError(self.response, 404, "channel not found")
 
         serverId = chan["server"]
-        if not self.checkAccessRights(uid, serverId, "server-admin"):
-            raise HTTPError(self.response, 403, "forbidden")
+        self.require_server_perm(uid, serverId, "server-admin")
 
         if action == "togglePrivacy":
             newValue = not chan.get("is_private", False)
@@ -2219,8 +2272,7 @@ class Mycelium(ForumMixin, Server):
             raise HTTPError(self.response, 404, "channel not found")
 
         serverId = chan["server"]
-        if not self.db.getFilters("accessserver", ["account", "=", uid, "and", "server", "=", serverId]):
-            raise HTTPError(self.response, 403, "forbidden")
+        self.require_member(uid, serverId)
 
         perms = self.db.getFilters("channel_permission", [
             "channel", "=", channelId, "and",
@@ -2231,8 +2283,7 @@ class Mycelium(ForumMixin, Server):
     @Server.expose
     def create_server_emoji(self, server_id, name, value):
         uid = self.getUser()
-        if not self.checkAccessRights(uid, server_id, "edit"):
-            raise HTTPError(self.response, 403)
+        self.require_server_perm(uid, server_id, "edit")
         existing = self.db.getAll("server_emoji", server_id, "server")
         if len(existing) >= 20:
             return json.dumps({"error": "max_emojis"})
@@ -2251,8 +2302,7 @@ class Mycelium(ForumMixin, Server):
         emoji = self.db.getSomething("server_emoji", emoji_id)
         if not emoji:
             raise HTTPError(self.response, 404)
-        if not self.checkAccessRights(uid, emoji["server"], "edit"):
-            raise HTTPError(self.response, 403)
+        self.require_server_perm(uid, emoji["server"], "edit")
         self.db.deleteSomething("server_emoji", emoji_id)
         return json.dumps({"status": "ok"})
 
@@ -2269,8 +2319,9 @@ class Mycelium(ForumMixin, Server):
     def edit_server_property(self, server_id, property, value=None):
         uid = self.getUser()
         forbidden_fields = ["id", "owner", "is_featured", "member_count"]
-        if property in forbidden_fields or not self.checkAccessRights(uid, server_id, "edit"):
+        if property in forbidden_fields:
             raise HTTPError(self.response, 403)
+        self.require_server_perm(uid, server_id, "edit")
 
         if property == "name":
             self.db.edit("server", server_id, property, value)
@@ -2296,8 +2347,7 @@ class Mycelium(ForumMixin, Server):
     @Server.expose
     def edit_server_channel(self, server_id, action="edit", field=None, value=None, targetId=None, channel_type=None):
         uid = self.getUser()
-        if not self.checkAccessRights(uid, server_id, "edit"):
-            raise HTTPError(self.response, 403)
+        self.require_server_perm(uid, server_id, "edit")
 
         if action == "create":
             channel_type = channel_type if channel_type else "textual"
@@ -2345,8 +2395,7 @@ class Mycelium(ForumMixin, Server):
     @Server.expose
     def edit_server_category(self, server_id, action, field=None, value=None, targetId=None):
         uid = self.getUser()
-        if not self.checkAccessRights(uid, server_id, "edit"):
-            raise HTTPError(self.response, 403)
+        self.require_server_perm(uid, server_id, "edit")
 
         if action == "create":
             cat_id = self.db.insertDict("server_cat", {"name": "New Category", "server": server_id}, getId=True)
@@ -2375,8 +2424,9 @@ class Mycelium(ForumMixin, Server):
     @Server.expose
     def edit_server_role(self, server_id, action, field=None, value=None, targetId=None):
         uid = self.getUser()
-        if not self.checkAccessRights(uid, server_id, "edit"):
-            raise HTTPError(self.response, 403)
+        # Role/permission management requires admin — otherwise an "edit" holder
+        # could grant themselves a role carrying "server-admin".
+        self.require_server_perm(uid, server_id, "server-admin")
 
         if action == "create":
             role_id = self.db.insertDict("role", {"name": "new role", "server": server_id}, getId=True)
@@ -2415,9 +2465,7 @@ class Mycelium(ForumMixin, Server):
         if not chan_info:
             raise HTTPError(self.response, 404)
 
-        server_id = chan_info["server"]
-        if not self.checkAccessRights(uid, server_id, "edit"):
-            raise HTTPError(self.response, 403)
+        self.require_server_perm(uid, chan_info["server"], "edit")
 
         block = json.loads(block)
         if op == "create":
@@ -2463,7 +2511,7 @@ class Mycelium(ForumMixin, Server):
         elif op == "edit":
             block_info = self.db.getSomething("note_block", str(block["uuid"]), "uuid")
 
-            if not block_info:
+            if not block_info or int(block_info["channel"]) != int(channel):
                 raise HTTPError(self.response, 404)
 
             forbidden_fields = ["id", "channel", "uuid"]
@@ -2726,7 +2774,8 @@ class Mycelium(ForumMixin, Server):
         if not chan_info:
             raise HTTPError(self.response, 404)
         server_id = chan_info["server"]
-        if not self.checkAccessRights(uid, server_id, "edit"):
+        self.require_server_perm(uid, server_id, "edit")
+        if chan_info.get("is_private") and not self.checkChannelAccess(uid, channel, "note", "view"):
             raise HTTPError(self.response, 403)
         return server_id
 
@@ -2748,12 +2797,7 @@ class Mycelium(ForumMixin, Server):
     @Server.expose
     def get_database_content(self, channel, block_uuid):
         uid = self.getUser()
-        chan_info = self.db.getSomething("notes_channel", channel)
-        if not chan_info:
-            raise HTTPError(self.response, 404)
-        server_id = chan_info["server"]
-        if not self.db.getFilters("accessserver", ["account", "=", uid, "and", "server", "=", server_id]):
-            raise HTTPError(self.response, 403)
+        self.require_channel_access(uid, channel, "note", "view")
 
         db_info = self.db.getSomething("note_database", block_uuid, "block_uuid")
         if not db_info:
@@ -2786,12 +2830,7 @@ class Mycelium(ForumMixin, Server):
         if conv_id is not None:
             self._checkConvAccess(uid, conv_id)
         elif channel is not None:
-            chan_info = self.db.getSomething("notes_channel", channel)
-            if not chan_info:
-                raise HTTPError(self.response, 404)
-            server_id = chan_info["server"]
-            if not self.db.getFilters("accessserver", ["account", "=", uid, "and", "server", "=", server_id]):
-                raise HTTPError(self.response, 403)
+            self.require_channel_access(uid, channel, "note", "view")
         else:
             raise HTTPError(self.response, 400)
 
@@ -2819,12 +2858,7 @@ class Mycelium(ForumMixin, Server):
     @Server.expose
     def get_spreadsheet_snapshot(self, channel, block_uuid):
         uid = self.getUser()
-        chan_info = self.db.getSomething("notes_channel", channel)
-        if not chan_info:
-            raise HTTPError(self.response, 404)
-        server_id = chan_info["server"]
-        if not self.db.getFilters("accessserver", ["account", "=", uid, "and", "server", "=", server_id]):
-            raise HTTPError(self.response, 403)
+        self.require_channel_access(uid, channel, "note", "view")
 
         sheet_info = self.db.getSomething("note_spreadsheet", block_uuid, "block_uuid")
         if not sheet_info or int(sheet_info["channel"]) != int(channel):
@@ -3278,12 +3312,7 @@ class Mycelium(ForumMixin, Server):
         if not db_info:
             raise HTTPError(self.response, 404)
 
-        chan_info = self.db.getSomething("notes_channel", db_info["channel"])
-        if not chan_info:
-            raise HTTPError(self.response, 404)
-        server_id = chan_info["server"]
-        if not self.db.getFilters("accessserver", ["account", "=", uid, "and", "server", "=", server_id]):
-            raise HTTPError(self.response, 403)
+        self.require_channel_access(uid, db_info["channel"], "note", "view")
 
         # Find first text column
         columns = self.db.getFilters("note_database_column", ["database_id", "=", database_id, "order by position"]) or []
@@ -3312,9 +3341,7 @@ class Mycelium(ForumMixin, Server):
     @Server.expose
     def create_invitation(self, server_id, pref=None):
         uid = self.getUser()
-        res = self.db.getFilters("accessserver", ["account", "=", uid, "and", "server", "=", server_id])
-        if not res or res == []:
-            raise HTTPError(self.response, 403, "forbidden")
+        self.require_member(uid, server_id)
 
         res = self.db.getSomething("invitation", server_id, "server")
         if res and res != [] and res["expiration"] > datetime.datetime.now():
@@ -3359,18 +3386,17 @@ class Mycelium(ForumMixin, Server):
         if not op:
             raise HTTPError(self.response, 403, "forbidden")
 
-        if not self.checkAccessRights(uid, server_id, "dashboard-read"):
-            raise HTTPError(self.response, 403, "forbidden")
+        self.require_server_perm(uid, server_id, "dashboard-read")
 
         #if mycelium get from self
         if service_id == "mycelium":
-            self.db.cur.execute("SELECT COUNT(*) FROM mycelium_account", ())
-            board = {"users": self.db.cur.fetchone()}
+            with self.db.pool.connection() as conn:
+                board = {"users": conn.execute("SELECT COUNT(*) FROM mycelium_account", ()).fetchone()}
             return json.dumps(board, default=str)
         #if uniauth get from uniauth
         elif service_id == "uniauth":
-            self.uniauth.cur.execute("SELECT COUNT(*) FROM account", ())
-            board = {"users": self.uniauth.cur.fetchone()}
+            with self.uniauth.pool.connection() as conn:
+                board = {"users": conn.execute("SELECT COUNT(*) FROM account", ()).fetchone()}
             return json.dumps(board, default=str)
         #else get from unibridge
         else:
@@ -3429,8 +3455,7 @@ class Mycelium(ForumMixin, Server):
         if not op:
             raise HTTPError(self.response, 403, "forbidden")
 
-        if not self.checkAccessRights(uid, server_id, "dashboard-read"):
-            raise HTTPError(self.response, 403, "forbidden")
+        self.require_server_perm(uid, server_id, "dashboard-read")
 
 
 
@@ -3496,10 +3521,19 @@ class Mycelium(ForumMixin, Server):
                 k.pop('key')
         return json.dumps(keys, default=str)
 
+    # Clients to notify when `uid`'s status changes: clients subscribed to uid,
+    # plus uid's own clients (which get the detailed status).
+    STATUS_RECIPIENTS_QUERY = (
+        "select ac.id, ac.userid, ac.server, ac.idle from active_client ac"
+        " join subscription s on ac.id = s.client where s.account = %s"
+        " union"
+        " select id, userid, server, idle from active_client where userid = %s;"
+    )
+
     def sendStatusUpdates(self, uid):
-        query = "select active_client.id, userid, server, idle from active_client,subscription where (subscription.account = %s and active_client.id = subscription.client) OR (active_client.id = %s);"
-        self.db.cur.execute(query, (uid, uid))
-        r = self.db.cur.fetchall()
+        query = self.STATUS_RECIPIENTS_QUERY
+        with self.db.pool.connection() as conn:
+            r = conn.execute(query, (uid, uid)).fetchall()
         for client in r:
             status = {"id":uid}
             if client["userid"] == uid:
@@ -3513,9 +3547,9 @@ class Mycelium(ForumMixin, Server):
             self.sendNotification(client["userid"], {"type": "update_status" ,"content": status})
 
     async def sendStatusUpdatesAsync(self, uid):
-        query = "select active_client.id, userid, server, idle from active_client,subscription where (subscription.account = %s and active_client.id = subscription.client) OR (active_client.id = %s);"
-        self.db.cur.execute(query, (uid, uid))
-        r = self.db.cur.fetchall()
+        query = self.STATUS_RECIPIENTS_QUERY
+        with self.db.pool.connection() as conn:
+            r = conn.execute(query, (uid, uid)).fetchall()
         for client in r:
             status = {"id":uid}
             if client["userid"] == uid:

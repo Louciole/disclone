@@ -185,7 +185,8 @@ function addUserPollOption(pollId, messageId, event) {
             div.className = 'inline poll-option'
             div.setAttribute('onclick',
                 `const cb=this.querySelector('input');cb.checked=!cb.checked;${isMultiple ? '' : `uncheckOtherPollOptions(cb,${messageId});`}this.classList.toggle('selected',cb.checked)`)
-            div.innerHTML = `<input type="checkbox" data-option-id="${newOption.id}" onclick="event.stopPropagation()"/><span>${newOption.text}</span>`
+            div.innerHTML = `<input type="checkbox" data-option-id="${newOption.id}" onclick="event.stopPropagation()"/><span></span>`
+            div.querySelector('span').textContent = newOption.text
             optionList.appendChild(div)
         }
 

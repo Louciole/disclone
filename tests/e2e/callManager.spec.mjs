@@ -43,7 +43,7 @@ test.describe('CallManager - E2E', () => {
         for (const callId of activeCallIds) {
             try {
                 await page.evaluate(async (callId) => {
-                    await fetch(`/leaveCall?call_id=${callId}`, {
+                    await fetch(`/leave_call?call_id=${callId}`, {
                         method: 'POST',
                         credentials: 'include'
                     });

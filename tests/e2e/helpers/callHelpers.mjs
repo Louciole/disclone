@@ -12,7 +12,7 @@
  */
 export async function startCall(page, convId, callType = 'audio') {
     const callData = await page.evaluate(async ({ convId, callType }) => {
-        const response = await fetch(`/startCall?conversation_id=${convId}&call_type=${callType}`, {
+        const response = await fetch(`/start_call?conversation_id=${convId}&call_type=${callType}`, {
             method: 'POST',
             credentials: 'include'
         });
@@ -35,7 +35,7 @@ export async function startCall(page, convId, callType = 'audio') {
  */
 export async function joinCall(page, callId) {
     const joinData = await page.evaluate(async (callId) => {
-        const response = await fetch(`/joinCall?call_id=${callId}`, {
+        const response = await fetch(`/join_call?call_id=${callId}`, {
             method: 'POST',
             credentials: 'include'
         });
@@ -58,7 +58,7 @@ export async function joinCall(page, callId) {
  */
 export async function leaveCall(page, callId) {
     const leaveData = await page.evaluate(async (callId) => {
-        const response = await fetch(`/leaveCall?call_id=${callId}`, {
+        const response = await fetch(`/leave_call?call_id=${callId}`, {
             method: 'POST',
             credentials: 'include'
         });
@@ -81,7 +81,7 @@ export async function leaveCall(page, callId) {
  */
 export async function getCallState(page, convId) {
     const callState = await page.evaluate(async (convId) => {
-        const response = await fetch(`/getCallState?conversation_id=${convId}`, {
+        const response = await fetch(`/get_call_state?conversation_id=${convId}`, {
             credentials: 'include'
         });
         if (!response.ok) {
@@ -109,7 +109,7 @@ export async function getCallState(page, convId) {
 export async function createConversation(page, name, memberIds = []) {
     const convId = await page.evaluate(async ({ name, memberIds }) => {
         const response = await fetch(
-            `/createConv?name=${encodeURIComponent(name)}&members=${JSON.stringify(memberIds)}&private=true`,
+            `/create_conv?name=${encodeURIComponent(name)}&members=${JSON.stringify(memberIds)}&private=true`,
             {
                 method: 'POST',
                 credentials: 'include'
@@ -133,7 +133,7 @@ export async function createConversation(page, name, memberIds = []) {
  */
 export async function getUserInfo(page) {
     const userInfo = await page.evaluate(async () => {
-        const response = await fetch('/getUserInfo', {
+        const response = await fetch('/get_user_info', {
             method: 'POST',
             credentials: 'include'
         });

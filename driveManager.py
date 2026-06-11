@@ -22,8 +22,7 @@ class DriveManager:
         drive = self.srv.db.getSomething("drive_channel", drive_id)
         if not drive:
             raise HTTPError(self.srv.response, 404, "Drive channel not found")
-        if not self.srv.db.getFilters("accessserver", ["account", "=", uid, "and", "server", "=", drive["server"]]):
-            raise HTTPError(self.srv.response, 403, "No access to this drive")
+        self.srv.require_member(uid, drive["server"])
         return drive
 
     def upload(self, user_id, drive_id, file, parent_folder=None):

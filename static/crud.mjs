@@ -486,7 +486,7 @@ export function sendTyping(){
 
     console.log("send typing",global.state.lastTyping)
     if( !global.settings.silent_typing && (!global.state.lastTyping || global.state.lastTyping+5000 < new Date().valueOf())){
-        const message = {"type" : 'typing', "uid": global.user.id, "conv": global.state.activeConv};
+        const message = {"type" : 'typing', "clientID": global.state.clientID, "conv": global.state.activeConv};
         global.state.lastTyping = new Date().valueOf()
         global.state.websocket.send(JSON.stringify(message))
     }
