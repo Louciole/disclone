@@ -1,6 +1,9 @@
 import json
 import uuid
 from vesta import Server, HTTPError
+from message_helpers import (_enrichMessagesWithPolls, _enrichMessagesWithReactions,
+                             _enrichMessagesWithConvBlocks,
+                             notifyChannelMesage)
 
 
 class ForumMixin:
@@ -65,9 +68,9 @@ class ForumMixin:
             "created_at": post.get("created_at"),
         }
         content["messages"] = self.db.getFilters("message", ["place", "=", post_id, "order by timestamp"])
-        self._enrichMessagesWithPolls(content["messages"], uid)
-        self._enrichMessagesWithReactions(content["messages"])
-        self._enrichMessagesWithConvBlocks(content["messages"])
+        _enrichMessagesWithPolls(self, content["messages"], uid)
+        _enrichMessagesWithReactions(self, content["messages"])
+        _enrichMessagesWithConvBlocks(self, content["messages"])
         return json.dumps(content, default=str)
 
     @Server.expose
@@ -125,7 +128,7 @@ class ForumMixin:
         if total_attachment_size > 0:
             self._adjustStorage(forum["server"], total_attachment_size)
 
-        self.notifyChannelMesage(uid, forum, message, "forum")
+        notifyChannelMesage(self, uid, forum, message, "forum")
 
         post = self.db.getSomething("forum_post", post_id)
         if isinstance(post.get("tags"), str):
