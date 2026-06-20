@@ -433,3 +433,39 @@ ALTER TABLE note_spreadsheet DROP CONSTRAINT IF EXISTS note_spreadsheet_block_uu
 
 create index if not exists idx_note_spreadsheet_conv    on note_spreadsheet(conv_id);
 create index if not exists idx_note_spreadsheet_message on note_spreadsheet(message_id);
+
+-- Computed (live-metric) databases: rows are generated from a whitelisted
+-- server-side aggregate query at read time, never stored. No history.
+-- metric_key references a named preset; metric_spec holds a declarative
+-- MetricSpec compiled by metrics.py. See metrics.py for the semantic layer.
+ALTER TABLE note_database ADD COLUMN IF NOT EXISTS source varchar(20) NOT NULL DEFAULT 'manual';
+ALTER TABLE note_database ADD COLUMN IF NOT EXISTS metric_key varchar(64);
+ALTER TABLE note_database ADD COLUMN IF NOT EXISTS metric_spec jsonb;
+
+-- Analytics views: the safe surface metrics can query. They join/derive what
+-- dashboards need and expose ONLY non-PII columns (ids, timestamps, counts) —
+-- never email, message bodies, hashes, tokens, avatars, etc. The metrics
+-- catalog (metrics.py) declares dimensions/measures over these views only.
+create or replace view analytics_users as
+    select id, inscription, faction
+    from mycelium_account;
+
+create or replace view analytics_messages as
+    select m.id, m.timestamp, m.sender, tc.server
+    from message m
+    left join textual_channel tc on tc.id = m.place;
+
+create or replace view analytics_servers as
+    select id, name, member_count, storage_usage
+    from server;
+
+create or replace view analytics_calls as
+    select id, started_at, ended_at, call_type, mode, active
+    from call_session;
+
+create or replace view analytics_overview as
+    select
+        (select count(*) from mycelium_account)          as users,
+        (select count(*) from server)                    as servers,
+        (select count(*) from message)                   as messages,
+        (select count(*) from call_session where active) as active_calls;

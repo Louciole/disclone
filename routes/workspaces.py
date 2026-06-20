@@ -8,6 +8,8 @@ import re
 
 from vesta import Server, HTTPError
 
+import metrics
+
 
 @Server.expose
 def save_block(self, channel, block, op="edit"):
@@ -114,6 +116,29 @@ def get_database_content(self, channel, block_uuid):
         raise HTTPError(self.response, 404)
 
     db_id = db_info["id"]
+
+    # Computed databases expose platform-wide aggregate metrics — strictly
+    # admin-only, regardless of who can view the notes channel.
+    if db_info.get("source") == "computed":
+        if not self.isAdmin(uid):
+            raise HTTPError(self.response, 403)
+        spec = metrics.resolve_spec(db_info)
+        # Return metadata only — the frontend fetches data asynchronously via
+        # run_metric_spec so the note paints immediately.
+        result = {
+            "id": db_id,
+            "block_uuid": db_info["block_uuid"],
+            "name": db_info["name"],
+            "view_type": db_info.get("view_type", "table"),
+            "gallery_cover_column": db_info.get("gallery_cover_column"),
+            "source": "computed",
+            "metric_key": db_info.get("metric_key"),
+            "metric_spec": spec,
+            "read_only": True,
+            "columns": [], "rows": [], "cells": {},
+        }
+        return json.dumps(result, default=str)
+
     columns = self.db.getFilters("note_database_column", ["database_id", "=", db_id, "order by position"]) or []
     rows = self.db.getFilters("note_database_row", ["database_id", "=", db_id, "order by position"]) or []
 
@@ -128,11 +153,42 @@ def get_database_content(self, channel, block_uuid):
         "name": db_info["name"],
         "view_type": db_info.get("view_type", "table"),
         "gallery_cover_column": db_info.get("gallery_cover_column"),
+        "source": db_info.get("source", "manual"),
+        "metric_key": db_info.get("metric_key"),
+        "metric_spec": db_info.get("metric_spec"),
+        "read_only": False,
         "columns": columns,
         "rows": rows,
         "cells": cells
     }
     return json.dumps(result, default=str)
+
+
+@Server.expose
+def describe_datasets(self):
+    """Catalog + presets for the live-metric builder. Admin-only."""
+    uid = self.getUser()
+    if not self.isAdmin(uid):
+        raise HTTPError(self.response, 403)
+    return json.dumps({
+        "datasets": metrics.describe_datasets(),
+        "presets": metrics.list_presets(),
+    }, default=str)
+
+
+@Server.expose
+def run_metric_spec(self, spec):
+    """Compile + run a MetricSpec without saving it (builder preview). Admin-only."""
+    uid = self.getUser()
+    if not self.isAdmin(uid):
+        raise HTTPError(self.response, 403)
+    try:
+        spec = json.loads(spec)
+        return json.dumps(metrics.run_spec(self, spec), default=str)
+    except metrics.SpecError as e:
+        raise HTTPError(self.response, 400, str(e))
+    except (ValueError, TypeError):
+        raise HTTPError(self.response, 400)
 
 
 @Server.expose
@@ -450,10 +506,32 @@ def save_database(self, channel, database, op="create"):
         db_info = self.db.getSomething("note_database", database["id"])
         if not db_info or int(db_info["channel"]) != int(channel):
             raise HTTPError(self.response, 404)
-        allowed = ["name", "view_type", "gallery_cover_column"]
+        # A computed database must reference a valid, compilable metric.
+        if "source" in database and database["source"] not in ("manual", "computed"):
+            raise HTTPError(self.response, 400)
+        new_source = database.get("source", db_info.get("source", "manual"))
+        # Configuring a live metric, or editing one that is already computed,
+        # is admin-only — these expose platform-wide aggregate data.
+        if new_source == "computed" or db_info.get("source") == "computed":
+            if not self.isAdmin(uid):
+                raise HTTPError(self.response, 403)
+        if new_source == "computed":
+            spec = database.get("metric_spec", db_info.get("metric_spec"))
+            if not spec:
+                preset = metrics.METRIC_PRESETS.get(
+                    database.get("metric_key", db_info.get("metric_key")))
+                spec = preset["spec"] if preset else None
+            try:
+                metrics.validate_spec(spec)
+            except metrics.SpecError:
+                raise HTTPError(self.response, 400)
+        allowed = ["name", "view_type", "gallery_cover_column", "source", "metric_key", "metric_spec"]
         for key in allowed:
             if key in database and database[key] != db_info.get(key):
-                self.db.edit("note_database", database["id"], key, database[key])
+                value = database[key]
+                if key == "metric_spec" and value is not None:
+                    value = json.dumps(value)   # store as jsonb text
+                self.db.edit("note_database", database["id"], key, value)
     elif op == "delete":
         db_info = self.db.getSomething("note_database", database["id"])
         if not db_info or int(db_info["channel"]) != int(channel):
@@ -470,6 +548,8 @@ def save_database_column(self, channel, database_id, column, op="create"):
     db_info = self.db.getSomething("note_database", database_id)
     if not db_info or int(db_info["channel"]) != int(channel):
         raise HTTPError(self.response, 404)
+    if db_info.get("source") == "computed":
+        raise HTTPError(self.response, 403)
 
     valid_types = ["text", "number", "checkbox", "date", "select", "relation", "formula"]
 
@@ -515,6 +595,8 @@ def save_database_row(self, channel, database_id, row, op="create"):
     db_info = self.db.getSomething("note_database", database_id)
     if not db_info or int(db_info["channel"]) != int(channel):
         raise HTTPError(self.response, 404)
+    if db_info.get("source") == "computed":
+        raise HTTPError(self.response, 403)
 
     if op == "create":
         row_id = self.db.insertDict("note_database_row", {
@@ -544,6 +626,8 @@ def save_database_cell(self, channel, database_id, cell):
     db_info = self.db.getSomething("note_database", database_id)
     if not db_info or int(db_info["channel"]) != int(channel):
         raise HTTPError(self.response, 404)
+    if db_info.get("source") == "computed":
+        raise HTTPError(self.response, 403)
 
     row_id = cell["row_id"]
     column_id = cell["column_id"]

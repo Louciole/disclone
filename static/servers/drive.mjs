@@ -146,41 +146,257 @@ function uploadDriveFile() {
 }
 window.uploadDriveFile = uploadDriveFile
 
-function handleDriveFileSelect(event) {
-    const file = event.target.files[0]
-    if (!file) return
+function uploadDriveFolder() {
+    const input = document.getElementById('drive-folder-input')
+    if (input) {
+        input.click()
+    }
+}
+window.uploadDriveFolder = uploadDriveFolder
 
-    const reader = new FileReader()
-    reader.onload = function(e) {
-        const base64 = e.target.result
-        const drive_id = global.state.activeChan.id
-        const parent_folder = getCurrentDriveFolder()
+// Upload a single File object into the given folder (null = root of the drive).
+// Resolves on success, rejects with Error("quota") when the quota is exceeded.
+function uploadSingleDriveFile(file, drive_id, parent_folder) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = function(e) {
+            const base64 = e.target.result
 
+            const onload = function() {
+                if (this.status === 413) {
+                    handleQuotaError(this)
+                    reject(new Error("quota"))
+                    return
+                }
+                if (this.status >= 400) {
+                    reject(new Error("upload failed: " + this.status))
+                    return
+                }
+                resolve()
+            }
+
+            const url = parent_folder
+                ? `upload_drive_file?drive_id=${drive_id}&filename=${encodeURIComponent(file.name)}&parent_folder=${parent_folder}`
+                : `upload_drive_file?drive_id=${drive_id}&filename=${encodeURIComponent(file.name)}`
+
+            // Send file content in the body, not in the URL
+            const request = xhr(url, onload, "POST", true, {"file": base64})
+            request.onerror = () => reject(new Error("network error"))
+        }
+        reader.onerror = () => reject(reader.error || new Error("read error"))
+        reader.readAsDataURL(file)
+    })
+}
+
+// Create a folder remotely and resolve with its new id.
+function createDriveFolderRemote(drive_id, foldername, parent_folder) {
+    return new Promise((resolve, reject) => {
         const onload = function() {
-            if (handleQuotaError(this)) {
-                event.target.value = ''
+            if (this.status >= 400) {
+                reject(new Error("folder creation failed: " + this.status))
                 return
             }
-            console.log("File uploaded:", this.responseText)
-            // Reload drive content
-            loadDriveContent(drive_id, parent_folder)
-            // Clear input
-            event.target.value = ''
+            try {
+                resolve(JSON.parse(this.responseText).folder_id)
+            } catch (e) {
+                reject(e)
+            }
         }
-
-        // Build URL with just metadata (not the file content)
         const url = parent_folder
-            ? `upload_drive_file?drive_id=${drive_id}&filename=${encodeURIComponent(file.name)}&parent_folder=${parent_folder}`
-            : `upload_drive_file?drive_id=${drive_id}&filename=${encodeURIComponent(file.name)}`
+            ? `create_drive_folder?drive_id=${drive_id}&foldername=${encodeURIComponent(foldername)}&parent_folder=${parent_folder}`
+            : `create_drive_folder?drive_id=${drive_id}&foldername=${encodeURIComponent(foldername)}`
+        const request = xhr(url, onload, "POST", true)
+        request.onerror = () => reject(new Error("network error"))
+    })
+}
 
-        // Send file content in the body, not in the URL
-        xhr(url, onload, "POST", true, {"file": base64})
+async function handleDriveFileSelect(event) {
+    const files = Array.from(event.target.files || [])
+    if (!files.length) return
+
+    const drive_id = global.state.activeChan.id
+    const parent_folder = getCurrentDriveFolder()
+
+    for (const file of files) {
+        try {
+            await uploadSingleDriveFile(file, drive_id, parent_folder)
+        } catch (e) {
+            console.warn("Upload failed for", file.name, e)
+            if (e.message === "quota") break
+        }
     }
-    reader.readAsDataURL(file)
+
+    loadDriveContent(drive_id, parent_folder)
+    event.target.value = ''
 }
 window.handleDriveFileSelect = handleDriveFileSelect
 
+async function handleDriveFolderSelect(event) {
+    const files = Array.from(event.target.files || [])
+    if (!files.length) return
+
+    const drive_id = global.state.activeChan.id
+    const rootParent = getCurrentDriveFolder()
+
+    // Maps a relative directory path (e.g. "myfolder/sub") to its created folder id.
+    // The empty path maps to the folder we are currently browsing.
+    const folderMap = { '': rootParent }
+
+    async function ensureFolder(dirPath) {
+        if (dirPath in folderMap) return folderMap[dirPath]
+        const slashIdx = dirPath.lastIndexOf('/')
+        const parentPath = slashIdx === -1 ? '' : dirPath.slice(0, slashIdx)
+        const name = slashIdx === -1 ? dirPath : dirPath.slice(slashIdx + 1)
+        const parentId = await ensureFolder(parentPath)
+        const folderId = await createDriveFolderRemote(drive_id, name, parentId)
+        folderMap[dirPath] = folderId
+        return folderId
+    }
+
+    for (const file of files) {
+        const relPath = file.webkitRelativePath || file.name
+        const slashIdx = relPath.lastIndexOf('/')
+        const dirPath = slashIdx === -1 ? '' : relPath.slice(0, slashIdx)
+        try {
+            const folderId = await ensureFolder(dirPath)
+            await uploadSingleDriveFile(file, drive_id, folderId)
+        } catch (e) {
+            console.warn("Upload failed for", relPath, e)
+            if (e.message === "quota") break
+        }
+    }
+
+    loadDriveContent(drive_id, rootParent)
+    event.target.value = ''
+}
+window.handleDriveFolderSelect = handleDriveFolderSelect
+
+// ── Drop files/folders from the OS onto the drive to upload ───────────────────
+
+// Recursively walk a dropped FileSystemEntry into a flat list of
+// {file, dirPath} (dirPath = "" at root, "sub/deep" for nested folders).
+function walkDriveEntry(entry, dirPath, out) {
+    return new Promise((resolve) => {
+        if (entry.isFile) {
+            entry.file(
+                (file) => { out.push({ file, dirPath }); resolve() },
+                () => resolve()
+            )
+        } else if (entry.isDirectory) {
+            const subPath = dirPath ? `${dirPath}/${entry.name}` : entry.name
+            const reader = entry.createReader()
+            // readEntries returns results in batches — keep reading until empty.
+            const readBatch = () => {
+                reader.readEntries(async (results) => {
+                    if (!results.length) { resolve(); return }
+                    for (const child of results) await walkDriveEntry(child, subPath, out)
+                    readBatch()
+                }, () => resolve())
+            }
+            readBatch()
+        } else {
+            resolve()
+        }
+    })
+}
+
+// Upload a flat {file, dirPath} list into targetFolder, creating any missing
+// folders first. Does NOT refresh the view — the caller decides what to reload.
+async function uploadDriveFileList(fileList, drive_id, targetFolder) {
+    const folderMap = { '': targetFolder }
+
+    async function ensureFolder(dirPath) {
+        if (dirPath in folderMap) return folderMap[dirPath]
+        const slashIdx = dirPath.lastIndexOf('/')
+        const parentPath = slashIdx === -1 ? '' : dirPath.slice(0, slashIdx)
+        const name = slashIdx === -1 ? dirPath : dirPath.slice(slashIdx + 1)
+        const parentId = await ensureFolder(parentPath)
+        const folderId = await createDriveFolderRemote(drive_id, name, parentId)
+        folderMap[dirPath] = folderId
+        return folderId
+    }
+
+    for (const { file, dirPath } of fileList) {
+        try {
+            const folderId = await ensureFolder(dirPath)
+            await uploadSingleDriveFile(file, drive_id, folderId)
+        } catch (e) {
+            console.warn("Upload failed for", file.name, e)
+            if (e.message === "quota") break
+        }
+    }
+}
+
+// Upload everything in a drop's dataTransfer into targetFolder (folders walked
+// recursively via the entries API; flat fallback otherwise). No view refresh.
+async function uploadDroppedItems(dataTransfer, drive_id, targetFolder) {
+    const items = dataTransfer.items
+    const entries = []
+    if (items && items.length && items[0].webkitGetAsEntry) {
+        for (const item of items) {
+            const entry = item.webkitGetAsEntry?.()
+            if (entry) entries.push(entry)
+        }
+    }
+
+    if (entries.length) {
+        const fileList = []
+        for (const entry of entries) await walkDriveEntry(entry, '', fileList)
+        await uploadDriveFileList(fileList, drive_id, targetFolder)
+        return
+    }
+
+    // Fallback (no entries API): flat files only.
+    for (const file of Array.from(dataTransfer.files || [])) {
+        try {
+            await uploadSingleDriveFile(file, drive_id, targetFolder)
+        } catch (e) {
+            if (e.message === "quota") break
+        }
+    }
+}
+window.uploadDroppedItems = uploadDroppedItems
+
+// True when the drag carries OS files (an upload) rather than an internal move.
+function isExternalFileDrag(event) {
+    const types = event.dataTransfer.types
+    if (!types) return false
+    return types.includes('Files') && !types.includes('application/x-drive-move')
+}
+window.isExternalFileDrag = isExternalFileDrag
+
+function onDriveUploadDragOver(event) {
+    if (!isExternalFileDrag(event)) return
+    event.preventDefault()
+    event.dataTransfer.dropEffect = 'copy'
+    event.currentTarget.classList.add('drive-upload-dragover')
+}
+window.onDriveUploadDragOver = onDriveUploadDragOver
+
+function onDriveUploadDragLeave(event) {
+    if (!event.currentTarget.contains(event.relatedTarget)) {
+        event.currentTarget.classList.remove('drive-upload-dragover')
+    }
+}
+window.onDriveUploadDragLeave = onDriveUploadDragLeave
+
+// Drop on the empty drive area → upload into the folder currently being viewed.
+async function handleDriveExternalDrop(event) {
+    if (!isExternalFileDrag(event)) return  // internal moves are handled elsewhere
+    event.preventDefault()
+    event.stopPropagation()
+    event.currentTarget.classList.remove('drive-upload-dragover')
+
+    const drive_id = global.state.activeChan.id
+    await uploadDroppedItems(event.dataTransfer, drive_id, getCurrentDriveFolder())
+    loadDriveContent(drive_id, getCurrentDriveFolder())
+}
+window.handleDriveExternalDrop = handleDriveExternalDrop
+
 function downloadDriveFile(file_id, filename) {
+    // filename is optional — resolve from loaded state so callers don't have to
+    // pass it through inline HTML (avoids breakage on names with quotes).
+    if (!filename) filename = findDriveFile(file_id)?.filename || 'download'
     // Create a temporary link to download the file
     const link = document.createElement('a')
     link.href = `/download_drive_file?file_id=${file_id}`
@@ -281,14 +497,15 @@ function onDriveItemDrag(event, type, id) {
 window.onDriveItemDrag = onDriveItemDrag
 
 function onDriveFolderDragOver(event) {
-    const data = event.dataTransfer.types.includes('application/x-drive-move')
-    if (!data) return
+    const external = isExternalFileDrag(event)
+    const internal = event.dataTransfer.types.includes('application/x-drive-move')
+    if (!external && !internal) return
 
     event.preventDefault()
-    event.dataTransfer.dropEffect = 'move'
+    event.stopPropagation()  // don't also trigger the list-level upload highlight
+    event.dataTransfer.dropEffect = external ? 'copy' : 'move'
 
-    const folderEl = event.currentTarget
-    folderEl.classList.add('drive-drop-target')
+    event.currentTarget.classList.add('drive-drop-target')
 }
 window.onDriveFolderDragOver = onDriveFolderDragOver
 
@@ -322,10 +539,19 @@ function isDescendantFolder(folderId, targetFolderId) {
     return false
 }
 
-function onDriveFolderDrop(event, targetFolderId) {
+async function onDriveFolderDrop(event, targetFolderId) {
+    const external = isExternalFileDrag(event)
     event.preventDefault()
     event.stopPropagation()
     event.currentTarget.classList.remove('drive-drop-target')
+
+    // OS files dropped onto a folder tile → upload into that folder.
+    if (external) {
+        const drive_id = global.state.activeChan.id
+        await uploadDroppedItems(event.dataTransfer, drive_id, targetFolderId)
+        loadDriveContent(drive_id, getCurrentDriveFolder())
+        return
+    }
 
     const raw = event.dataTransfer.getData('application/x-drive-move')
     if (!raw) return
@@ -419,6 +645,128 @@ function moveDriveItems(items, targetFolder) {
 }
 window.moveDriveItems = moveDriveItems
 
+
+// Files handed off to the external Photon editor on double-click.
+// Override in dev/staging via window.PHOTON_ORIGIN before this module loads.
+const PHOTON_ORIGIN = window.PHOTON_ORIGIN || 'https://photo.carbonlab.dev'
+const PHOTON_EDITOR_URL = `${PHOTON_ORIGIN}/edit`
+// Native Photon project formats — these open straight in Photon on double-click.
+const PHOTON_PROJECT_EXTENSIONS = ['pto', 'psd']
+// Raster images Photon can open as a layer (svg/ico left out — vector/icon).
+const PHOTON_IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'webp', 'bmp', 'gif', 'avif']
+
+function isPhotonEditable(filename) {
+    const ext = getFileExtension(filename)
+    return PHOTON_PROJECT_EXTENSIONS.includes(ext) || PHOTON_IMAGE_EXTENSIONS.includes(ext)
+}
+window.isPhotonEditable = isPhotonEditable
+
+// Resolve a drive item's name from loaded state by id. Names are looked up here
+// rather than passed through inline HTML attributes, so names containing quotes
+// (e.g. "folder's images") can't break the onclick/oncontextmenu handlers.
+function findDriveFile(file_id) {
+    return (global.driveFiles[global.state.activeChan.id] || []).find(f => f.id === file_id)
+}
+function findDriveFolder(folder_id) {
+    return (global.driveFolders[global.state.activeChan.id] || []).find(f => f.id === folder_id)
+}
+
+// Open a drive file in the Photon editor (new tab), passing a download URL +
+// file_id so Photon can fetch it and later save the edits back.
+function editInPhoton(file_id, filename) {
+    const src = encodeURIComponent(`${location.origin}/download_drive_file?file_id=${file_id}`)
+    const name = encodeURIComponent(filename)
+    window.open(`${PHOTON_EDITOR_URL}?open=${src}&file_id=${file_id}&name=${name}`, '_blank')
+}
+window.editInPhoton = editInPhoton
+
+// Double-click: native project files (.pto/.psd) open straight in Photon;
+// everything else downloads. Images are edited via the right-click menu.
+function openDriveFile(file_id) {
+    const filename = findDriveFile(file_id)?.filename || ''
+    if (PHOTON_PROJECT_EXTENSIONS.includes(getFileExtension(filename))) {
+        editInPhoton(file_id, filename)
+        return
+    }
+    downloadDriveFile(file_id, filename)
+}
+window.openDriveFile = openDriveFile
+
+// ── Right-click context menu on drive files ───────────────────────────────────
+function closeDriveContextMenu() {
+    if (global._driveCtxEl) { global._driveCtxEl.remove(); global._driveCtxEl = null }
+    if (global._driveCtxClose) {
+        document.removeEventListener('click', global._driveCtxClose)
+        document.removeEventListener('contextmenu', global._driveCtxClose)
+        global._driveCtxClose = null
+    }
+}
+window.closeDriveContextMenu = closeDriveContextMenu
+
+function openDriveContextMenu(event, type, id) {
+    event.preventDefault()
+    event.stopPropagation()
+    closeDriveContextMenu()
+
+    const items = []
+    if (type === 'folder') {
+        items.push({ label: _t('Open'), icon: 'folder', action: () => openDriveFolder(id) })
+        items.push({ label: _t('Delete'), icon: 'trash', danger: true, action: () => deleteDriveFolder(id) })
+    } else {
+        const name = findDriveFile(id)?.filename || ''
+        if (isPhotonEditable(name)) {
+            items.push({ label: _t('Edit in Photon'), icon: 'edit', action: () => editInPhoton(id, name) })
+        }
+        items.push({ label: _t('Download'), icon: 'download', action: () => downloadDriveFile(id, name) })
+        items.push({ label: _t('Delete'), icon: 'trash', danger: true, action: () => deleteDriveFile(id) })
+    }
+
+    const menu = document.createElement('div')
+    menu.className = 'drive-context-menu'
+    for (const item of items) {
+        const btn = document.createElement('button')
+        btn.type = 'button'
+        btn.className = 'drive-context-item' + (item.danger ? ' danger' : '')
+        btn.innerHTML = `<img class="icon" src="/static/icons/material/${item.icon}.svg"/><span>${item.label}</span>`
+        btn.onclick = (e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            closeDriveContextMenu()
+            item.action()
+        }
+        menu.appendChild(btn)
+    }
+
+    menu.style.position = 'fixed'
+    menu.style.left = event.clientX + 'px'
+    menu.style.top = event.clientY + 'px'
+    document.body.appendChild(menu)
+
+    // Keep the menu inside the viewport.
+    const rect = menu.getBoundingClientRect()
+    if (rect.right > window.innerWidth) menu.style.left = Math.max(8, window.innerWidth - rect.width - 8) + 'px'
+    if (rect.bottom > window.innerHeight) menu.style.top = Math.max(8, window.innerHeight - rect.height - 8) + 'px'
+
+    global._driveCtxEl = menu
+    global._driveCtxClose = (e) => { if (!menu.contains(e.target)) closeDriveContextMenu() }
+    setTimeout(() => {
+        document.addEventListener('click', global._driveCtxClose)
+        document.addEventListener('contextmenu', global._driveCtxClose)
+    }, 0)
+}
+window.openDriveContextMenu = openDriveContextMenu
+
+// Photon posts back here after saving an edited file to the drive — refresh the
+// current listing so the new/updated file shows immediately.
+if (!window._myceliumDriveSaveListener) {
+    window._myceliumDriveSaveListener = true
+    window.addEventListener('message', (event) => {
+        if (event.origin !== PHOTON_ORIGIN) return
+        if (event.data?.type !== 'mycelium-drive-file-saved') return
+        if (!global.state.activeChan || global.state.activeChan.type !== 'drive') return
+        loadDriveContent(global.state.activeChan.id, getCurrentDriveFolder())
+    })
+}
 
 const IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'ico', 'avif']
 const TEXT_EXTENSIONS = [

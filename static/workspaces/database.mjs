@@ -56,7 +56,11 @@ export class DatabaseView {
             id: data.id,
             name: data.name,
             view_type: data.view_type || 'table',
-            gallery_cover_column: data.gallery_cover_column
+            gallery_cover_column: data.gallery_cover_column,
+            source: data.source || 'manual',
+            metric_key: data.metric_key || null,
+            metric_spec: data.metric_spec || null,
+            read_only: !!data.read_only
         }
 
         // Parse options once, sort by position
@@ -71,6 +75,33 @@ export class DatabaseView {
         // Prefetch relation display names
         this._prefetchRelationDisplays()
 
+        this.render()
+
+        // Computed databases: data arrives separately so the note paints first.
+        if (this.database.source === 'computed' && this.database.metric_spec) {
+            this._loadMetricData()
+        }
+    }
+
+    _loadMetricData() {
+        const spec = this.database.metric_spec
+        xhr(
+            "run_metric_spec?spec=" + encodeURIComponent(JSON.stringify(spec)),
+            (ev) => {
+                if (ev.target.status !== 200) return
+                this._applyMetricData(JSON.parse(ev.target.responseText))
+            },
+            "GET", true
+        )
+    }
+
+    _applyMetricData(data) {
+        this.columns = (data.columns || []).map(col => ({
+            ...col,
+            options: typeof col.options === 'string' ? JSON.parse(col.options) : (col.options || {})
+        })).sort((a, b) => a.position - b.position)
+        this.rows = (data.rows || []).sort((a, b) => a.position - b.position)
+        this.cells = data.cells || {}
         this.render()
     }
 
@@ -174,11 +205,16 @@ export class DatabaseView {
             name: this.database.name,
             isTable: this.database.view_type === 'table',
             isGallery: this.database.view_type === 'gallery',
+            isComputed: this.database.source === 'computed',
+            readOnly: !!this.database.read_only,
+            isAdmin: !!(global.user && global.user.isAdmin),
         }
 
         let html = fillWith('database-header', [viewData])
 
-        if (this.database.view_type === 'gallery') {
+        if (this.database.source === 'computed' && !this.columns.length) {
+            html += '<div class="db-loading">Loading…</div>'
+        } else if (this.database.view_type === 'gallery') {
             html += this._renderGallery()
         } else {
             html += this._renderTable()
@@ -201,10 +237,14 @@ export class DatabaseView {
             blockUuid: this.blockUuid
         }))
 
+        const readOnly = !!this.database.read_only
+
         let html = '<div class="db-table-wrapper"><table class="db-table">'
         html += '<thead><tr>'
         html += fillWith('database-column-header', headerCols)
-        html += '<th class="add-col"><button onclick="global.state.databaseViews[\'' + this.blockUuid + '\'].addColumn()">+</button></th>'
+        if (!readOnly) {
+            html += '<th class="add-col"><button onclick="global.state.databaseViews[\'' + this.blockUuid + '\'].addColumn()">+</button></th>'
+        }
         html += '</tr></thead>'
 
         html += '<tbody>'
@@ -218,7 +258,9 @@ export class DatabaseView {
         })
         html += '</tbody></table></div>'
 
-        html += '<button class="db-add-row" onclick="global.state.databaseViews[\'' + this.blockUuid + '\'].addRow()">+ New row</button>'
+        if (!readOnly) {
+            html += '<button class="db-add-row" onclick="global.state.databaseViews[\'' + this.blockUuid + '\'].addRow()">+ New row</button>'
+        }
         return html
     }
 
@@ -247,7 +289,9 @@ export class DatabaseView {
 
         let html = '<div class="db-gallery">'
         html += fillWith('database-gallery-card', cards)
-        html += '<div class="gallery-card gallery-add" onclick="global.state.databaseViews[\'' + this.blockUuid + '\'].addRow()">+ New</div>'
+        if (!this.database.read_only) {
+            html += '<div class="gallery-card gallery-add" onclick="global.state.databaseViews[\'' + this.blockUuid + '\'].addRow()">+ New</div>'
+        }
         html += '</div>'
         return html
     }
@@ -256,6 +300,11 @@ export class DatabaseView {
 
     _renderCell(rowId, col, rawValue) {
         const b = 'global.state.databaseViews[\'' + this.blockUuid + '\']'
+
+        // Computed / read-only databases: show static values, no inputs.
+        if (this.database.read_only) {
+            return '<span class="cell-static">' + this._esc(this._displayValue(col, rawValue)) + '</span>'
+        }
 
         switch (col.type) {
             case 'text':
@@ -336,6 +385,7 @@ export class DatabaseView {
 
     openColumnMenu(colId, event) {
         event.stopPropagation()
+        if (this.database.read_only) return
         document.querySelectorAll('.col-menu').forEach(el => el.remove())
 
         const col = this.columns.find(c => c.id === colId)
@@ -484,6 +534,204 @@ export class DatabaseView {
         this.render()
     }
 
+    // ─── Live metrics (computed databases) ────────────────────────────
+
+    // Re-pull live data (fresh-on-open; metrics keep no history).
+    refresh() {
+        this.load()
+    }
+
+    // Open the catalog-driven metric builder (admin-only; server enforces too).
+    openMetricBuilder(event) {
+        event.stopPropagation()
+        if (!(global.user && global.user.isAdmin)) return
+
+        if (!this._catalog) {
+            const req = xhr("describe_datasets", () => {}, "GET", false)
+            if (req.status !== 200) return
+            this._catalog = JSON.parse(req.responseText)
+        }
+
+        // Seed builder state from the current spec, else the first dataset.
+        const cur = this.database.metric_spec
+        if (cur && cur.dataset) {
+            this._builder = this._builderFromSpec(cur)
+        } else {
+            const first = this._catalog.datasets[0]
+            this._builder = {
+                dataset: first ? first.key : null,
+                dimensions: new Set(), measures: new Set(), sinceDays: 0, limit: null,
+            }
+        }
+
+        document.querySelectorAll('.metric-builder-overlay').forEach(el => el.remove())
+        const overlay = document.createElement('div')
+        overlay.className = 'metric-builder-overlay'
+        overlay.onclick = (e) => { if (e.target === overlay) overlay.remove() }
+        this._builderOverlay = overlay
+        document.body.appendChild(overlay)
+        this._renderBuilder()
+    }
+
+    _builderFromSpec(s) {
+        const since = (s.filters || []).find(f => f.field === 'since' && f.op === 'last_days')
+        return {
+            dataset: s.dataset,
+            dimensions: new Set(s.dimensions || []),
+            measures: new Set(s.measures || []),
+            sinceDays: since ? since.value : 0,
+            limit: s.limit || null,
+        }
+    }
+
+    _renderBuilder() {
+        const o = this._builderOverlay
+        if (!o) return
+        const b = this._builder
+        const ref = "global.state.databaseViews['" + this.blockUuid + "']"
+        const ds = this._catalog.datasets.find(d => d.key === b.dataset)
+
+        let h = '<div class="metric-builder" onclick="event.stopPropagation()">'
+        h += '<div class="mb-head"><h3>⚡ Live metric</h3>'
+        h += '<button class="mb-close" onclick="this.closest(\'.metric-builder-overlay\').remove()">×</button></div>'
+
+        h += '<label class="mb-label">Preset</label>'
+        h += '<select class="mb-select" onchange="' + ref + '.builderLoadPreset(this.value)">'
+        h += '<option value="">— custom —</option>'
+        this._catalog.presets.forEach(p => {
+            h += '<option value="' + p.key + '">' + this._esc(p.name) + '</option>'
+        })
+        h += '</select>'
+
+        h += '<label class="mb-label">Dataset</label>'
+        h += '<select class="mb-select" onchange="' + ref + '.builderSetDataset(this.value)">'
+        this._catalog.datasets.forEach(d => {
+            h += '<option value="' + d.key + '"' + (d.key === b.dataset ? ' selected' : '') + '>' + this._esc(d.label) + '</option>'
+        })
+        h += '</select>'
+
+        if (ds && ds.provider) {
+            h += '<div class="mb-note">Live server snapshot — no configuration needed.</div>'
+        } else if (ds) {
+            if (ds.dimensions.length) {
+                h += '<label class="mb-label">Group by</label><div class="mb-chips">'
+                ds.dimensions.forEach(dim => {
+                    const on = b.dimensions.has(dim.key)
+                    h += '<label class="mb-chip' + (on ? ' on' : '') + '">'
+                    h += '<input type="checkbox"' + (on ? ' checked' : '') + ' onchange="' + ref + '.builderToggle(\'dim\',\'' + dim.key + '\')"> '
+                    h += this._esc(dim.label) + '</label>'
+                })
+                h += '</div>'
+            }
+
+            h += '<label class="mb-label">Measure</label><div class="mb-chips">'
+            ds.measures.forEach(m => {
+                const on = b.measures.has(m.key)
+                h += '<label class="mb-chip' + (on ? ' on' : '') + '">'
+                h += '<input type="checkbox"' + (on ? ' checked' : '') + ' onchange="' + ref + '.builderToggle(\'measure\',\'' + m.key + '\')"> '
+                h += this._esc(m.label) + '</label>'
+            })
+            h += '</div>'
+
+            const hasSince = ds.filters.some(f => f.key === 'since' && f.ops.includes('last_days'))
+            if (hasSince) {
+                h += '<label class="mb-label">Date range</label>'
+                h += '<select class="mb-select" onchange="' + ref + '.builderSetSince(this.value)">'
+                ;[['0', 'All time'], ['7', 'Last 7 days'], ['30', 'Last 30 days'], ['90', 'Last 90 days']].forEach(opt => {
+                    h += '<option value="' + opt[0] + '"' + (String(b.sinceDays) === opt[0] ? ' selected' : '') + '>' + opt[1] + '</option>'
+                })
+                h += '</select>'
+            }
+        }
+
+        h += '<div class="mb-actions">'
+        h += '<button class="mb-btn" onclick="' + ref + '.builderPreview()">Preview</button>'
+        h += '<button class="mb-btn primary" onclick="' + ref + '.builderApply()">Apply</button>'
+        if (this.database.source === 'computed') {
+            h += '<button class="mb-btn danger" onclick="' + ref + '.builderDisable()">Turn off</button>'
+        }
+        h += '</div>'
+        h += '<div class="mb-preview" id="mb-preview-' + this.blockUuid + '"></div>'
+        h += '</div>'
+        o.innerHTML = h
+    }
+
+    builderSetDataset(key) {
+        this._builder.dataset = key
+        this._builder.dimensions = new Set()
+        this._builder.measures = new Set()
+        this._renderBuilder()
+    }
+
+    builderToggle(kind, key) {
+        const set = kind === 'dim' ? this._builder.dimensions : this._builder.measures
+        if (set.has(key)) set.delete(key); else set.add(key)
+        this._renderBuilder()
+    }
+
+    builderSetSince(value) {
+        this._builder.sinceDays = parseInt(value) || 0
+    }
+
+    builderLoadPreset(key) {
+        if (!key) return
+        const p = this._catalog.presets.find(x => x.key === key)
+        if (p) { this._builder = this._builderFromSpec(p.spec); this._renderBuilder() }
+    }
+
+    _currentDataset() {
+        return this._catalog.datasets.find(d => d.key === this._builder.dataset)
+    }
+
+    _specFromBuilder() {
+        const b = this._builder
+        const ds = this._currentDataset()
+        if (ds && ds.provider) return {dataset: b.dataset}
+        const spec = {dataset: b.dataset, dimensions: [...b.dimensions], measures: [...b.measures]}
+        if (b.sinceDays) spec.filters = [{field: 'since', op: 'last_days', value: b.sinceDays}]
+        if (b.dimensions.size) spec.order = [{by: [...b.dimensions][0], dir: 'asc'}]
+        if (b.limit) spec.limit = b.limit
+        return spec
+    }
+
+    builderPreview() {
+        const el = document.getElementById('mb-preview-' + this.blockUuid)
+        const ds = this._currentDataset()
+        const spec = this._specFromBuilder()
+        if (!(ds && ds.provider) && !spec.measures.length) { el.innerHTML = '<div class="mb-err">Pick at least one measure.</div>'; return }
+        const req = xhr("run_metric_spec?spec=" + encodeURIComponent(JSON.stringify(spec)), () => {}, "GET", false)
+        if (req.status !== 200) { el.innerHTML = '<div class="mb-err">Invalid metric.</div>'; return }
+        el.innerHTML = this._previewTable(JSON.parse(req.responseText))
+    }
+
+    _previewTable(d) {
+        if (!d.rows.length) return '<div class="mb-empty">No rows.</div>'
+        let h = '<table class="mb-table"><thead><tr>'
+        d.columns.forEach(c => h += '<th>' + this._esc(c.name) + '</th>')
+        h += '</tr></thead><tbody>'
+        d.rows.slice(0, 50).forEach(r => {
+            h += '<tr>'
+            d.columns.forEach(c => h += '<td>' + this._esc((d.cells[String(r.id)] || {})[String(c.id)] || '') + '</td>')
+            h += '</tr>'
+        })
+        return h + '</tbody></table>'
+    }
+
+    builderApply() {
+        const ds = this._currentDataset()
+        const spec = this._specFromBuilder()
+        if (!(ds && ds.provider) && !spec.measures.length) return
+        this._saveDbSync({id: this.database.id, source: 'computed', metric_key: null, metric_spec: spec})
+        if (this._builderOverlay) this._builderOverlay.remove()
+        this.load()
+    }
+
+    builderDisable() {
+        this._saveDbSync({id: this.database.id, source: 'manual'})
+        if (this._builderOverlay) this._builderOverlay.remove()
+        this.load()
+    }
+
     addColumn() {
         const lastCol = this.columns.length > 0 ? this.columns[this.columns.length - 1] : null
         const position = lastCol ? lastCol.position + 0.1 : 0.1
@@ -614,6 +862,14 @@ export class DatabaseView {
         xhr("/save_database?channel=" + this.channelId
             + "&database=" + encodeURIComponent(JSON.stringify(data))
             + "&op=edit", () => {})
+    }
+
+    // Synchronous edit — used before an immediate reload so the change is
+    // committed before load() re-fetches (avoids a read-before-write race).
+    _saveDbSync(data) {
+        xhr("/save_database?channel=" + this.channelId
+            + "&database=" + encodeURIComponent(JSON.stringify(data))
+            + "&op=edit", () => {}, "GET", false)
     }
 
     _saveCol(colId, data) {

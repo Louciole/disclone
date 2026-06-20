@@ -17,6 +17,15 @@ class CallManager:
         self.active_calls = {}
         self.conversation_calls = {}
 
+    def get_active_call_ids_for_user(self, user_id):
+        """In-memory call ids where this user is currently a participant.
+
+        Used to clean up after an abrupt WebSocket disconnect (no explicit
+        hang-up) so the session doesn't linger forever with active=true.
+        """
+        return [cid for cid, call in list(self.active_calls.items())
+                if user_id in call.participants]
+
     def get_call_by_conversation(self, conv_id):
         # Try memory first (fast path)
         call_id = self.conversation_calls.get(conv_id)

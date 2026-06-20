@@ -1,0 +1,51 @@
+# Template for /etc/mycelium/staging.ini  (chmod 600, owned by gitlab-runner)
+# Copy to the box, fill in real secrets. NEVER commit the filled-in version.
+#
+# Runs on the SAME machine as prod — every value below that could collide
+# with prod has been changed. Do not reuse prod's ports or DB names.
+
+[server]
+IP = 0.0.0.0
+PORT = 9776                 # prod is 9876 — MUST differ on a shared box
+DEBUG = false
+DEFAULT_ENDPOINT = /channels
+SERVICE_NAME = Mycelium (staging)
+
+[security]
+SECRET_KEY = CHANGE_ME      # use a distinct random key, not prod's
+
+[DB]
+DB_USER = mycelium_staging
+DB_PASSWORD = CHANGE_ME
+DB_NAME = mycelium_staging  # prod is mycelium
+DB_HOST = localhost
+DB_PORT = 5432
+POOL_SIZE = 2
+
+[UNIAUTH]
+DB_NAME = uniauth_staging   # prod is uniauth
+DB_HOST = localhost
+DB_PORT = 5432
+
+[MAILING]
+# Neutered on staging so it can never email real users. Leave DKIM empty
+# and point at a throwaway/disabled account, or a local catch-all.
+MAILING_ADDRESS = noreply@staging.carbonlab.dev
+NOREPLY_PASSWORD = CHANGE_ME
+MAILING_HOST = ssl0.ovh.net
+MAILING_PORT = 587
+DKIM_DOMAIN =
+DKIM_SELECTOR =
+DKIM_KEY_PATH = mailing/dkim.txt
+
+[NOTIFICATION]
+PORT = 9788                 # prod is 9888 — MUST differ on a shared box
+DEBUG_URL = ws://localhost:9788
+URL = wss://ws-staging.carbonlab.dev
+
+[MOBILITY]
+API_BASE = https://data.belgianmobility.io/api/explore/v2.1
+API_KEY =
+API_KEY_MODE = query
+API_KEY_HEADER = apikey
+OPERATORS = {"stib":{"label":"STIB/MIVB"},"tec":{"label":"TEC"}}

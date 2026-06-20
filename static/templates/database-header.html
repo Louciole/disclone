@@ -1,11 +1,13 @@
 <div class="db-header">
-    <input class="db-title" value="${element.name}"
+    <input class="db-title" value="${element.name}" ${element.readOnly ? 'readonly' : ''}
            onchange="global.state.databaseViews['${element.blockUuid}'].onTitleChange(event)" />
+    ${element.isComputed ? '<span class="db-live-badge" title="Live metric — refreshes on open">⚡ Live</span>' : ''}
     <div class="db-view-toggle">
         <button class="${element.isTable ? 'active' : ''}"
                 onclick="global.state.databaseViews['${element.blockUuid}'].switchView('table')">Table</button>
         <button class="${element.isGallery ? 'active' : ''}"
                 onclick="global.state.databaseViews['${element.blockUuid}'].switchView('gallery')">Gallery</button>
     </div>
+    ${element.isComputed && element.isAdmin ? '<button class="db-refresh" title="Refresh" onclick="global.state.databaseViews[\'' + element.blockUuid + '\'].refresh()">↻</button>' : ''}
+    ${element.isAdmin ? '<button class="db-metric-btn" title="Live metric source" onclick="global.state.databaseViews[\'' + element.blockUuid + '\'].openMetricBuilder(event)">⚡</button>' : ''}
 </div>
-

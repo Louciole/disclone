@@ -1,4 +1,11 @@
 export let lang = {
+    "New folder": "Nouveau dossier",
+    "Upload files": "Envoyer des fichiers",
+    "Upload a folder": "Envoyer un dossier",
+    "Edit in Photon": "Modifier dans Photon",
+    "Download": "Télécharger",
+    "Delete": "Supprimer",
+    "Open": "Ouvrir",
     "WAITING": "EN ATTENTE",
     "DISPLAY NAME": "NOM D'AFFICHAGE",
     "USER NAME": "NOM D'UTILISATEUR",

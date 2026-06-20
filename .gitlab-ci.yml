@@ -60,6 +60,21 @@ test:
     - npx playwright test --config tests/playwright.config.mjs
 
 
+deploy-staging:
+  stage: deploy
+  # Runs on the gitlab-runner installed on the staging server itself
+  # (shell executor, registered with the tag below). No SSH, no exposed ports.
+  tags:
+    - staging
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "maine"'
+  # Start as soon as tests pass — don't wait behind the Android builds.
+  needs:
+    - job: test
+  script:
+    - ./misc/deploy_staging.sh "$CI_COMMIT_SHA"
+
+
 build-apk:
   stage: build
   image: mingc/android-build-box:latest

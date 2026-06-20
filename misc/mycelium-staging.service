@@ -1,0 +1,15 @@
+[Unit]
+Description=Mycelium staging : a shitty Discord clone by Lou ! (staging)
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+Restart=always
+WorkingDirectory=/opt/mycelium-staging
+ExecStart=/opt/mycelium-staging/venv/bin/python /opt/mycelium-staging/server.py
+KillSignal=SIGINT
+# prod uses ExecStopPost=killPort [SERV-PORT]; staging's port lives in
+# /etc/mycelium/staging.ini ([server] PORT) — keep it distinct from prod.
+
+[Install]
+WantedBy=multi-user.target

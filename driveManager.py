@@ -3,6 +3,7 @@ import mimetypes
 import os
 
 from vesta import HTTPError
+from constants import PHOTON_ORIGIN
 
 
 class DriveManager:
@@ -16,6 +17,23 @@ class DriveManager:
     def __init__(self, srv):
         self.srv = srv
 
+
+    def _photon_origin(self):
+        """Allowed origin for cross-origin Photon requests (config override)."""
+        try:
+            return self.srv.config.get("integrations", "PHOTON_ORIGIN")
+        except Exception:
+            return PHOTON_ORIGIN
+
+    def _add_cors_headers(self):
+        """Allow the Photon editor (separate origin) to read credentialed
+        responses. A specific origin + Allow-Credentials is required; "*" is
+        illegal once cookies are involved."""
+        self.srv.response.headers.append(
+            ('Access-Control-Allow-Origin', self._photon_origin()))
+        self.srv.response.headers.append(
+            ('Access-Control-Allow-Credentials', 'true'))
+        self.srv.response.headers.append(('Vary', 'Origin'))
 
     def _get_drive_access(self, drive_id, uid):
         """Return the drive row, or raise 404/403."""
@@ -97,12 +115,16 @@ class DriveManager:
 
         self.upload(uid, first_drive[0]["id"], (filename, file))
 
+    def _require_drive_write(self, drive, drive_id, uid):
+        """Raise 403 unless ``uid`` may add/replace files in this drive."""
+        if drive.get("is_private") and not self.srv.checkChannelAccess(uid, drive_id, "drive", "send-messages"):
+            raise HTTPError(self.srv.response, 403, "No permission for this drive channel")
+
     def upload_file(self, drive_id, filename, file, parent_folder=None):
         uid = self.srv.getUser()
         drive = self._get_drive_access(drive_id, uid)
 
-        if drive.get("is_private") and not self.srv.checkChannelAccess(uid, drive_id, "drive", "send-messages"):
-            raise HTTPError(self.srv.response, 403, "No permission for this drive channel")
+        self._require_drive_write(drive, drive_id, uid)
 
         if parent_folder and parent_folder != "null":
             parent_folder = int(parent_folder)
@@ -179,10 +201,124 @@ class DriveManager:
         with open(filepath, 'rb') as fh:
             file_content = fh.read()
 
+        self._add_cors_headers()
         self.srv.response.headers.append(('Content-Type', mime_type))
         self.srv.response.headers.append(('Content-Disposition', f'attachment; filename="{file_info["filename"]}"'))
         self.srv.response.headers.append(('Content-Length', str(len(file_content))))
         return file_content
+
+    def _files_in_folder(self, drive_id, parent_folder):
+        """List drive_file rows directly under ``parent_folder`` (None = root)."""
+        if parent_folder:
+            return self.srv.db.getAll("drive_file", parent_folder, "parent_folder") or []
+        return self.srv.db.getFilters("drive_file", [
+            "drive_channel", "=", drive_id, "and", "parent_folder", "is", None
+        ]) or []
+
+    def _unique_filename(self, drive_id, parent_folder, filename):
+        """Return ``filename`` made unique within its folder by appending
+        " (n)" before the extension, so "save as new" never silently shadows an
+        existing same-named file."""
+        names = {f["filename"] for f in self._files_in_folder(drive_id, parent_folder)}
+        if filename not in names:
+            return filename
+        dot = filename.rfind('.')
+        base = filename if dot == -1 else filename[:dot]
+        ext = '' if dot == -1 else filename[dot:]
+        n = 1
+        while f"{base} ({n}){ext}" in names:
+            n += 1
+        return f"{base} ({n}){ext}"
+
+    def save_file(self, file_id, file, mode="overwrite", filename=None):
+        """Save edits coming back from the Photon editor.
+
+        ``file`` is a base64 (data-URI or raw) string, matching ``upload``'s
+        contract. ``mode``:
+          - ``"overwrite"`` → replace the existing file in place (same id).
+                              Restricted to the uploader or a server admin, to
+                              match ``delete_file``'s authority over a file.
+          - ``"new"``       → create a sibling in the same folder (non-destructive,
+                              e.g. opened logo.psd, saved as logo.pto). ``filename``
+                              is required and supplies the new name/extension.
+        The originating drive/folder is derived from ``file_id`` so the caller can
+        never target an arbitrary drive. The blob is stored content-addressed
+        (sha256), so distinct files never collide on disk.
+        """
+        uid = self.srv.getUser()
+
+        file_info = self.srv.db.getSomething("drive_file", file_id)
+        if not file_info:
+            raise HTTPError(self.srv.response, 404, "File not found")
+
+        drive_id = file_info["drive_channel"]
+        drive = self._get_drive_access(drive_id, uid)
+        self._require_drive_write(drive, drive_id, uid)
+
+        self._add_cors_headers()
+
+        if mode not in ("overwrite", "new"):
+            raise HTTPError(self.srv.response, 400, "Invalid save mode")
+
+        new_name = filename or file_info["filename"]
+
+        # Normalise to a data-URI and approximate the decoded size.
+        content = file
+        if not content.startswith("data:"):
+            mime_type, _ = mimetypes.guess_type(new_name)
+            content = f"data:{mime_type or 'application/octet-stream'};base64,{content}"
+        content_data = content.split(",")[1] if "," in content else content
+        new_size = int(len(content_data) * 3 / 4)
+
+        ext = new_name.rsplit('.', 1)[1] if '.' in new_name else ''
+
+        if mode == "new":
+            new_name = self._unique_filename(drive_id, file_info.get("parent_folder"), new_name)
+            self.srv._checkQuota(drive["server"], new_size)
+            # name="" → content-addressed path (no collision with the original).
+            filepath = self.srv.saveFile(content, ext=ext, category=f"drive_{drive_id}")
+            new_id = self.srv.db.insertDict("drive_file", {
+                "drive_channel": drive_id,
+                "filename": new_name,
+                "filepath": filepath,
+                "size": new_size,
+                "uploader": uid,
+                "parent_folder": file_info.get("parent_folder"),
+            }, getId=True)
+            self.srv._adjustStorage(drive["server"], new_size)
+            return json.dumps({"file_id": new_id, "filename": new_name, "mode": "new"})
+
+        # ── Overwrite in place — uploader or admin only ───────────────────────
+        server_info = self.srv.db.getSomething("server", drive["server"])
+        if file_info["uploader"] != uid and (not server_info or server_info["owner"] != uid):
+            if not self.srv.checkAccessRights(uid, drive["server"], "edit"):
+                raise HTTPError(self.srv.response, 403,
+                                "Only the uploader or a server admin can overwrite this file")
+
+        old_size = file_info.get("size", 0)
+        # Only the *delta* counts against the quota for an in-place replace.
+        self.srv._checkQuota(drive["server"], new_size - old_size)
+
+        new_filepath = self.srv.saveFile(content, ext=ext, category=f"drive_{drive_id}")
+
+        old_filepath = file_info["filepath"]
+        self.srv.db.edit("drive_file", file_id, "filepath", new_filepath)
+        self.srv.db.edit("drive_file", file_id, "size", new_size)
+        if new_name != file_info["filename"]:
+            self.srv.db.edit("drive_file", file_id, "filename", new_name)
+
+        # Drop the previous blob if nothing else references it (content-addressed
+        # saveFile means the path changed unless the bytes were identical).
+        if old_filepath != new_filepath and self.srv._isFilepathOrphaned(old_filepath, exclude_drive_file_id=file_id):
+            try:
+                disk = self.srv.path + "/static/attachments/" + old_filepath
+                if os.path.exists(disk):
+                    os.remove(disk)
+            except Exception as e:
+                print(f"Error deleting old file {old_filepath}: {e}")
+
+        self.srv._adjustStorage(drive["server"], new_size - old_size)
+        return json.dumps({"file_id": file_id, "filename": new_name, "mode": "overwrite"})
 
     def delete_file(self, file_id):
         uid = self.srv.getUser()

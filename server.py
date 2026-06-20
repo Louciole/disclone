@@ -160,7 +160,35 @@ class Mycelium(ForumMixin, Server):
             self.db.deleteSomething("active_client", client_id)
             self.db.deleteSomething("subscription", client_id, selector="client")
             if client:
+                await self._cleanup_user_calls(client["userid"])
                 await self.sendStatusUpdatesAsync(client["userid"])
+
+    async def _cleanup_user_calls(self, user_id):
+        """A WS dropped without an explicit hang-up — remove the user from any
+        active call so the session is properly ended instead of lingering as a
+        zombie (active=true forever). Mirrors the notifications of call_leave."""
+        for call_id in self.callManager.get_active_call_ids_for_user(user_id):
+            result = self.callManager.leave_call(call_id, user_id)
+            if not result:
+                continue
+            call = result["call"]
+            if result.get("ended"):
+                members = self.db.getAll("accessconversation", call.conversation_id, "conversation")
+                for member in members:
+                    await self.sendNotificationAsync(member["account"], {
+                        "type": "call_ended",
+                        "content": {"call_id": call_id, "conversation_id": call.conversation_id}
+                    })
+            else:
+                for participant_id in call.participants:
+                    await self.sendNotificationAsync(participant_id, {
+                        "type": "call_participant_left",
+                        "content": {
+                            "call": call.to_dict(),
+                            "user_id": user_id,
+                            "mode_changed": result.get("mode_changed", False)
+                        }
+                    })
 
     async def _handle_messages(self, websocket):
         self.clients.append(websocket)

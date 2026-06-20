@@ -1,6 +1,8 @@
 <div class="drive-file-item" data-file-id="${element.id}"
      draggable="true"
      ondragstart="onDriveItemDrag(event, 'file', ${element.id})"
+     ondblclick="openDriveFile(${element.id})"
+     oncontextmenu="openDriveContextMenu(event, 'file', ${element.id})"
      onclick="toggleDriveSelection('file', ${element.id}, event)">
     <div class="file-name">${element.filename}</div>
     ${getDriveFilePreviewHtml(element)}
@@ -13,7 +15,7 @@
             <span>${formatDate(element.uploaded_at)}</span>
         </div>
         <div class="file-actions">
-            <div class="icon-wrapper" onclick="event.stopPropagation(); downloadDriveFile(${element.id}, '${element.filename}')">
+            <div class="icon-wrapper" onclick="event.stopPropagation(); downloadDriveFile(${element.id})">
                 <img class="icon" src="/static/icons/material/download.svg"/>
                 <span class="tooltip bottom">${_t("Download")}</span>
             </div>

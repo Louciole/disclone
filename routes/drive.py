@@ -43,6 +43,12 @@ def download_drive_file(self, file_id):
 
 
 @Server.expose
+def save_drive_file(self, file_id, file, mode="overwrite", filename=None):
+    """Save edits returned by the Photon editor (cross-origin, multipart)."""
+    return self.drive.save_file(file_id, file, mode, filename)
+
+
+@Server.expose
 def delete_drive_file(self, file_id):
     return self.drive.delete_file(file_id)
 

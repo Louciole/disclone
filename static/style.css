@@ -2113,6 +2113,7 @@ img.icon{
     font-size: 2rem;
     border-radius: 6px;
     cursor: pointer;
+    color: black;
 }
 
 .emoji-board .item:hover {
@@ -5290,6 +5291,12 @@ input:checked + .slider:before {
     overflow-x: auto;
 }
 
+.note-database .db-loading{
+    color: var(--txt2);
+    padding: 1rem;
+    font-style: italic;
+}
+
 .note-database .db-error{
     color: #ef4444;
     padding: 1rem;
@@ -5351,6 +5358,159 @@ input:checked + .slider:before {
 .note-database .db-view-toggle button:hover{
     color: var(--text);
 }
+
+/* Live metric (computed databases) */
+
+.note-database .db-live-badge{
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--text);
+    background: var(--bg4);
+    border-radius: 4px;
+    padding: 0.15rem 0.4rem;
+    white-space: nowrap;
+}
+
+.note-database .db-refresh,
+.note-database .db-metric-btn{
+    background: none;
+    border: none;
+    color: var(--text2bis);
+    cursor: pointer;
+    font-size: 0.9rem;
+    padding: 0.2rem 0.4rem;
+    border-radius: 3px;
+}
+
+.note-database .db-refresh:hover,
+.note-database .db-metric-btn:hover{
+    color: var(--text);
+    background: var(--bg4);
+}
+
+.note-database .cell-static{
+    display: block;
+    padding: 0.25rem 0.4rem;
+    color: var(--text);
+}
+
+/* Live metric builder */
+
+.metric-builder-overlay{
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.metric-builder{
+    background: var(--bg2);
+    border: 1px solid var(--bg4);
+    border-radius: 8px;
+    padding: 1rem 1.2rem;
+    width: 460px;
+    max-width: 92vw;
+    max-height: 86vh;
+    overflow-y: auto;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+
+.metric-builder .mb-head{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.6rem;
+}
+
+.metric-builder .mb-head h3{ margin: 0; font-size: 1.05rem; }
+
+.metric-builder .mb-close{
+    background: none; border: none; color: var(--text2bis);
+    font-size: 1.4rem; cursor: pointer; line-height: 1;
+}
+
+.metric-builder .mb-label{
+    display: block;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--text2bis);
+    margin: 0.7rem 0 0.25rem;
+}
+
+.metric-builder .mb-select{
+    width: 100%;
+    background: var(--bg4);
+    color: var(--text);
+    border: 1px solid var(--bg3);
+    border-radius: 4px;
+    padding: 0.4rem 0.5rem;
+}
+
+.metric-builder .mb-chips{ display: flex; flex-wrap: wrap; gap: 0.4rem; }
+
+.metric-builder .mb-chip{
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: var(--bg4);
+    border: 1px solid var(--bg3);
+    border-radius: 999px;
+    padding: 0.25rem 0.6rem;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.metric-builder .mb-chip.on{
+    background: var(--accent, var(--bg3));
+    color: var(--text);
+    border-color: var(--accent, var(--text2bis));
+}
+
+.metric-builder .mb-actions{
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.metric-builder .mb-btn{
+    flex: 1;
+    background: var(--bg4);
+    color: var(--text);
+    border: none;
+    border-radius: 4px;
+    padding: 0.5rem;
+    cursor: pointer;
+}
+
+.metric-builder .mb-btn.primary{ background: var(--accent, #5865f2); color: #fff; }
+.metric-builder .mb-btn.danger{ background: none; color: #e06c75; flex: 0 0 auto; }
+.metric-builder .mb-btn:hover{ filter: brightness(1.1); }
+
+.metric-builder .mb-preview{ margin-top: 0.8rem; }
+.metric-builder .mb-empty,
+.metric-builder .mb-note,
+.metric-builder .mb-err{ color: var(--text2bis); font-size: 0.85rem; padding: 0.4rem 0; }
+.metric-builder .mb-note{ margin-top: 0.6rem; font-style: italic; }
+.metric-builder .mb-err{ color: #e06c75; }
+
+.metric-builder .mb-table{
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+}
+
+.metric-builder .mb-table th,
+.metric-builder .mb-table td{
+    border: 1px solid var(--bg4);
+    padding: 0.25rem 0.45rem;
+    text-align: left;
+}
+
+.metric-builder .mb-table th{ color: var(--text2bis); font-weight: 600; }
 
 /* Table view */
 
@@ -6504,3 +6664,60 @@ span.progress-bar {
 
 /* Tag admin */
 .forum-tag-admin-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem; }
+/* ── Drive file/folder right-click context menu ───────────────────────────── */
+.drive-context-menu {
+    position: fixed;
+    z-index: 9999;
+    min-width: 200px;
+    background: var(--bg3);
+    border: 1px solid var(--bg5);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.drive-context-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    border: none;
+    background: transparent;
+    color: var(--text2);
+    text-align: left;
+    border-radius: 4px;
+    padding: 8px 10px;
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.95rem;
+}
+.drive-context-item:hover {
+    background: var(--accent);
+    color: #fff;
+}
+.drive-context-item .icon {
+    height: 1.1rem;
+    width: 1.1rem;
+    margin: 0;
+}
+.drive-context-item:hover .icon {
+    /* override the global grey icon filter → white on the accent highlight */
+    filter: brightness(0) invert(1);
+}
+.drive-context-item.danger {
+    color: var(--red);
+}
+.drive-context-item.danger:hover {
+    background: var(--red);
+    color: #fff;
+}
+
+/* Drag OS files/folders onto the drive to upload */
+#drive-files-list.drive-upload-dragover {
+    outline: 2px dashed var(--accent);
+    outline-offset: -6px;
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
+    border-radius: 8px;
+}

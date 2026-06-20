@@ -2,11 +2,12 @@
     <div class="title">
         ${global.state.isMobile?'<img class="icon" src="/static/icons/material/back.svg" onclick="mobileHideContent()" style="margin-right: 0.6rem"/>':''}
         <img class="icon" src="/static/icons/material/folder.svg" style="margin-right: 0.5rem;">
-        ${Subscribe("global.convs["+global.state.activeConv+"].name", ()=>{return global.convs[global.state.activeConv].name})}
+        ${Subscribe("global.convs["+global.state.activeChan.id+"].name", ()=>{return global.convs[global.state.activeChan.id].name})}
     </div>
     <div>
-        <img class="icon"  onclick="createNewDriveFolder()" src="/static/icons/material/folder.svg"/>
-        <img class="icon" onclick="uploadDriveFile()" src="/static/icons/material/add.svg"/>
+        <img class="icon"  onclick="createNewDriveFolder()" src="/static/icons/material/folder.svg" title="${_t('New folder')}"/>
+        <img class="icon" onclick="uploadDriveFile()" src="/static/icons/material/add.svg" title="${_t('Upload files')}"/>
+        <img class="icon" onclick="uploadDriveFolder()" src="/static/icons/material/groupadd.svg" title="${_t('Upload a folder')}"/>
         <img class="icon" onclick="toggleMenu('member-list',true,'member-list-wrapper')" src="/static/icons/material/group.svg" style="margin-right: 0.8rem;">
         <img class="icon" src="/static/icons/material/inbox.svg" style="margin-right: 0.8rem;">
         <img class="icon" src="/static/icons/material/help.svg">
@@ -52,6 +53,9 @@
         </div>
         <div id="drive-files-list" class=""
              style="flex: 1; overflow-y: auto;"
+             ondragover="onDriveUploadDragOver(event)"
+             ondragleave="onDriveUploadDragLeave(event)"
+             ondrop="handleDriveExternalDrop(event)"
              onclick="if(event.target === this || event.target.id === 'drive-files-list') clearDriveSelection()">
             ${Subscribe('global.driveFolders['.concat(global.state.activeChan.id,']'), ()=>{
                 const folders = global.driveFolders[global.state.activeChan.id] || [];
@@ -62,5 +66,6 @@
     </div>
 </div>
 
-<input type="file" id="drive-file-input" style="display: none;" onchange="handleDriveFileSelect(event)"/>
+<input type="file" id="drive-file-input" multiple style="display: none;" onchange="handleDriveFileSelect(event)"/>
+<input type="file" id="drive-folder-input" webkitdirectory directory multiple style="display: none;" onchange="handleDriveFolderSelect(event)"/>
 
