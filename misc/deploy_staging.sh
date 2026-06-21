@@ -26,6 +26,7 @@ rsync -a --delete \
   --exclude 'venv' \
   --exclude 'node_modules' \
   --exclude 'server.ini' \
+  --exclude 'serviceAccountKey.json' \
   "$SRC"/ "$APP_DIR"/
 
 cd "$APP_DIR"
@@ -67,6 +68,17 @@ rsync -a --delete static/ "$STATIC_DIR/static/"
 
 echo ">> applying staging config + starting"
 cp "$STAGING_INI" "$APP_DIR/server.ini"
+
+# Firebase Admin SDK key (push notifications) — kept off-repo, provided as a
+# masked/protected GitLab CI/CD variable (Settings > CI/CD > Variables).
+# Never committed; decoded straight onto the box at deploy time.
+if [ -n "${FIREBASE_ADMIN_KEY_BASE64:-}" ]; then
+  echo "$FIREBASE_ADMIN_KEY_BASE64" | base64 -d > "$APP_DIR/serviceAccountKey.json"
+  chmod 600 "$APP_DIR/serviceAccountKey.json"
+else
+  echo "!! FIREBASE_ADMIN_KEY_BASE64 not set in CI/CD variables — push notifications will stay disabled"
+fi
+
 sudo systemctl start "$SERVICE"
 
 echo ">> deployed: $(git -C "$SRC" rev-parse --short HEAD 2>/dev/null || echo "$1")"

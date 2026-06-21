@@ -97,7 +97,6 @@ build-apk:
     - npm install
     - mkdir -p android/app
     - echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/app/mycelium.keystore
-    - echo "$FIREBASE_ADMIN_KEY_BASE64" | base64 -d > serviceAccountKey.json
     - npx cap sync android
     - cd android
     - chmod +x gradlew
@@ -137,7 +136,6 @@ build-aab:
     - npm install
     - mkdir -p android/app
     - echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/app/mycelium.keystore
-    - echo "$FIREBASE_ADMIN_KEY_BASE64" | base64 -d > serviceAccountKey.json
     - npx cap sync android
     - cd android
     - |
@@ -193,7 +191,6 @@ publish-play-store:
     - npm ci
     - mkdir -p android/app
     - echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/app/mycelium.keystore
-    - echo "$FIREBASE_ADMIN_KEY_BASE64" | base64 -d > serviceAccountKey.json
     - npx cap sync android
     - cd android
 

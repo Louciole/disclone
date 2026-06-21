@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Tint applied by Android to the (white silhouette) notification icon. -->
+    <color name="notification_color">#6c63ff</color>
+</resources>
