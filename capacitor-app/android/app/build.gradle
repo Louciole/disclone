@@ -19,10 +19,34 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        release {
+            // Driven by env vars (CI) or -P gradle properties (local). Guarded so
+            // debug/unsigned builds without a keystore still work.
+            def ksPath = System.getenv("ANDROID_KEYSTORE_FILE") ?: project.findProperty("ANDROID_KEYSTORE_FILE")
+            if (ksPath != null && !ksPath.toString().trim().isEmpty()) {
+                storeFile file(ksPath)
+                storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD") ?: project.findProperty("ANDROID_KEYSTORE_PASSWORD")
+                keyAlias System.getenv("ANDROID_KEY_ALIAS") ?: project.findProperty("ANDROID_KEY_ALIAS")
+                keyPassword System.getenv("ANDROID_KEY_PASSWORD") ?: project.findProperty("ANDROID_KEY_PASSWORD")
+                // Force modern signature schemes. v2 is REQUIRED to install on
+                // Android 11+ (API 30+); v1-only APKs fail with "package invalid".
+                enableV1Signing true
+                enableV2Signing true
+            }
+        }
+    }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            // Only attach when a keystore is actually configured (so the AAB/Play
+            // jobs that still pass -Pandroid.injected.signing.* keep working and
+            // local unsigned builds don't break).
+            def ksPath = System.getenv("ANDROID_KEYSTORE_FILE") ?: project.findProperty("ANDROID_KEYSTORE_FILE")
+            if (ksPath != null && !ksPath.toString().trim().isEmpty()) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 }

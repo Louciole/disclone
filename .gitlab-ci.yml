@@ -100,13 +100,16 @@ build-apk:
     - npx cap sync android
     - cd android
     - chmod +x gradlew
-    - |
-      ./gradlew assembleRelease \
-        -Pandroid.injected.signing.store.file="$CI_PROJECT_DIR/capacitor-app/android/app/mycelium.keystore" \
-        -Pandroid.injected.signing.store.password="$ANDROID_KEYSTORE_PASSWORD" \
-        -Pandroid.injected.signing.key.alias="$ANDROID_KEY_ALIAS" \
-        -Pandroid.injected.signing.key.password="$ANDROID_KEY_PASSWORD"
-    - cp app/build/outputs/apk/release/*.apk "$CI_PROJECT_DIR/mycelium-release.apk"
+    # Sign via the explicit signingConfig in app/build.gradle (forces v1+v2).
+    # ANDROID_KEYSTORE_PASSWORD / ANDROID_KEY_ALIAS / ANDROID_KEY_PASSWORD come
+    # from CI variables and are already in the environment.
+    - export ANDROID_KEYSTORE_FILE="$CI_PROJECT_DIR/capacitor-app/android/app/mycelium.keystore"
+    - ./gradlew assembleRelease
+    # Copy the exact signed artifact (never a stray *-unsigned.apk).
+    - cp app/build/outputs/apk/release/app-release.apk "$CI_PROJECT_DIR/mycelium-release.apk"
+    # Fail the build if the APK isn't properly signed with v2 (installable on API 30+).
+    - APKSIGNER="$(ls -d $ANDROID_HOME/build-tools/*/apksigner | sort -V | tail -1)"
+    - "$APKSIGNER" verify --verbose --print-certs "$CI_PROJECT_DIR/mycelium-release.apk"
 
   artifacts:
     name: "mycelium-release"
