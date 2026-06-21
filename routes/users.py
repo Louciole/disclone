@@ -20,7 +20,7 @@ REGEX_USERNAME = re.compile(r'^(?=.{3,}$)[a-zA-Z0-9_\-\.]*$')
 # ------------------------------- devices -----------------------------------
 
 @Server.expose
-def register_device(self):
+def register_device(self, token, platform='android'):
     """
     Register a mobile device push token.
     Called by the Capacitor app when it receives a FCM / APNs token.
@@ -28,9 +28,8 @@ def register_device(self):
     POST body (JSON): { "token": "...", "platform": "ios" | "android" }
     """
     uid = self.getUser()
-    body = json.loads(self.request.body.decode('utf-8'))
-    token = body.get('token', '').strip()
-    platform = body.get('platform', 'android').strip()[:10]
+    token = (token or '').strip()
+    platform = (platform or 'android').strip()[:10]
 
     if not token:
         raise HTTPError(self.response, 400, "Missing token")
@@ -40,10 +39,10 @@ def register_device(self):
         "account", "=", uid, "AND", "token", "=", token
     ])
     if existing:
-        self.db.execute(
+        self.db._do(lambda conn: conn.execute(
             "UPDATE device_token SET updated_at = NOW(), platform = %s WHERE account = %s AND token = %s",
             (platform, uid, token)
-        )
+        ))
     else:
         self.db.insertDict("device_token", {
             "account": uid,
@@ -55,19 +54,18 @@ def register_device(self):
 
 
 @Server.expose
-def unregister_device(self):
+def unregister_device(self, token=''):
     """
     Remove a device token when the user logs out.
     POST body (JSON): { "token": "..." }
     """
     uid = self.getUser()
-    body = json.loads(self.request.body.decode('utf-8'))
-    token = body.get('token', '').strip()
+    token = (token or '').strip()
     if token:
-        self.db.execute(
+        self.db._do(lambda conn: conn.execute(
             "DELETE FROM device_token WHERE account = %s AND token = %s",
             (uid, token)
-        )
+        ))
     return json.dumps({"status": "ok"})
 
 

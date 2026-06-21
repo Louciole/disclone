@@ -97,8 +97,8 @@ async def call_start(self, websocket, data):
                         "body": "Incoming call...",
                         "data": {
                             "type": "call",
-                            "call_id": call.id,
-                            "conv_id": str(conv_id)
+                            "callId": str(call.id),
+                            "convId": str(conv_id)
                         }
                     })
 

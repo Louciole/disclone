@@ -132,10 +132,14 @@ async function registerPush() {
     const payload = notification.data || {};
 
     if (document.visibilityState === 'hidden' || payload.forceLocal) {
+      // Messages get the reply / mark-as-read actions; calls get answer / decline.
+      const isCall = payload.type === 'call';
       await scheduleLocalNotification({
         title: notification.title || 'Mycelium',
         body: notification.body || '',
         extra: payload,
+        actionTypeId: isCall ? 'CALL_ACTION' : 'MESSAGE_ACTION',
+        channelId: isCall ? 'calls' : 'messages',
       });
     }
   });
@@ -165,7 +169,11 @@ export async function notifyMessage(opts = {}) {
   });
 }
 
-async function scheduleLocalNotification({ title, body, extra = {} }) {
+async function scheduleLocalNotification({
+  title, body, extra = {},
+  actionTypeId = 'MESSAGE_ACTION',
+  channelId = 'messages',
+}) {
   const { LocalNotifications } = getPlugins();
   const id = _notifId++;
 
@@ -176,9 +184,9 @@ async function scheduleLocalNotification({ title, body, extra = {} }) {
       body,
       extra,
       sound: 'notification.wav',
-      smallIcon: 'ic_stat_icon_config_sample',
-      actionTypeId: 'MESSAGE_ACTION',
-      channelId: 'messages',
+      smallIcon: 'ic_stat_mycelium',
+      actionTypeId,
+      channelId,
     }],
   });
 }
@@ -289,7 +297,7 @@ export async function callStarted({ callId, callerName, callType = 'audio' } = {
       body: `${callerName} is calling…`,
       extra: { callId, callType, type: 'incoming_call' },
       sound: 'ringtone.wav',
-      smallIcon: 'ic_stat_icon_config_sample',
+      smallIcon: 'ic_stat_mycelium',
       actionTypeId: 'CALL_ACTION',
       ongoing: true,
       autoCancel: false,

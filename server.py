@@ -66,17 +66,36 @@ class Mycelium(ForumMixin, Server):
         tokens = [t["token"] for t in tokens_records]
 
         try:
+            data_payload = {k: str(v) for k, v in data.get("data", {}).items()}
+            # Route to the matching client-side channel (created in capacitor-bridge.mjs).
+            channel_id = "calls" if data_payload.get("type") == "call" else "messages"
+
             # Construct MulticastMessage
             message = messaging.MulticastMessage(
                 notification=messaging.Notification(
                     title=data.get("title", "Mycelium"),
                     body=data.get("body", "New activity"),
                 ),
-                data={k: str(v) for k, v in data.get("data", {}).items()},
+                data=data_payload,
+                # Brand the notification the OS shows automatically when the app
+                # is backgrounded/killed (no JS runs in that path).
+                android=messaging.AndroidConfig(
+                    priority="high",
+                    notification=messaging.AndroidNotification(
+                        icon="ic_stat_mycelium",
+                        color="#6c63ff",
+                        channel_id=channel_id,
+                    ),
+                ),
+                apns=messaging.APNSConfig(
+                    payload=messaging.APNSPayload(
+                        aps=messaging.Aps(sound="default", badge=1),
+                    ),
+                ),
                 tokens=tokens,
             )
 
-            response = messaging.send_multicast(message)
+            response = messaging.send_each_for_multicast(message)
 
             if response.failure_count > 0:
                 print(f"Failed to send {response.failure_count} push notifications")
@@ -85,7 +104,7 @@ class Mycelium(ForumMixin, Server):
                         # Check error code and delete if 'registration-token-not-registered'
                         err_code = resp.exception.code
                         if err_code == 'messaging/registration-token-not-registered':
-                             self.db.execute("DELETE FROM device_token WHERE token = %s", (tokens[idx],))
+                             self.db.deleteSomething("device_token", tokens[idx], "token")
         except Exception as e:
             print(f"Error sending push notifications: {e}")
 
@@ -194,14 +213,25 @@ class Mycelium(ForumMixin, Server):
         self.clients.append(websocket)
         self.calls = {}
 
-        async for message in websocket:
-            data = json.loads(message)
-            print("WS message received :", message)
-            handler = ws_handlers.HANDLERS.get(data["type"])
-            if handler:
-                await handler(self, websocket, data)
-            else:
-                print("unknown message received", message)
+        try:
+            async for message in websocket:
+                try:
+                    data = json.loads(message)
+                except (json.JSONDecodeError, TypeError):
+                    print("WS ignoring malformed message:", message)
+                    continue
+                print("WS message received :", message)
+                handler = ws_handlers.HANDLERS.get(data.get("type"))
+                if handler:
+                    await handler(self, websocket, data)
+                else:
+                    print("unknown message received", message)
+        except (websockets.exceptions.ConnectionClosedOK,
+                websockets.exceptions.ConnectionClosedError) as e:
+            # Client dropped without a proper close handshake (network loss,
+            # app backgrounded/killed, tab closed). This is expected — the
+            # `finally` in handle_message() runs _cleanup_connection().
+            print(f"WS connection closed: {e.__class__.__name__}")
 
     # -----------------------------------API-------------------------------------
 

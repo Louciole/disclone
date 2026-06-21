@@ -32,7 +32,7 @@
              when the app is in the background or killed (no JS involved). -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
-            android:resource="@drawable/ic_stat_icon_config_sample" />
+            android:resource="@drawable/ic_stat_mycelium" />
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_color"
             android:resource="@color/notification_color" />

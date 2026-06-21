@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Mycelium status-bar / push notification icon.
+  MUST be a flat white silhouette on a transparent background — Android
+  tints it with `notification_color`; any other color is ignored and can
+  render as a solid white square on some OS versions.
+  Referenced by:
+    - capacitor.config.json -> plugins.LocalNotifications.smallIcon
+    - AndroidManifest.xml -> com.google.firebase.messaging.default_notification_icon
+    - static/capacitor-bridge.mjs -> scheduleLocalNotification() / callStarted()
+    - server.py -> sendPushNotification() AndroidConfig.notification.icon
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Mushroom cap -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M12,3 C7,3 3,6.6 3,11 C3,11.55 3.45,12 4,12 L20,12 C20.55,12 21,11.55 21,11 C21,6.6 17,3 12,3 Z" />
+    <!-- Mushroom stem -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M9.8,13 L14.2,13 L14.2,19 C14.2,20.1 13.2,21 12,21 C10.8,21 9.8,20.1 9.8,19 Z" />
+</vector>

@@ -70,7 +70,7 @@ def notifyChannelMesage(self, uid, channel, message, channel_type="textual"):
             self.sendPushNotification(target_uid, {
                 "title": f"Mentioned in {channel.get('name', 'channel')}",
                 "body": message.get("body", "New mention"),
-                "data": {"type": "mention", "channel_id": str(channel["id"])}
+                "data": {"type": "mention", "serverId": str(server_id), "channelId": str(channel["id"])}
             })
 
 

@@ -39,7 +39,7 @@
       "presentationOptions": ["badge", "sound", "alert"]
     },
     "LocalNotifications": {
-      "smallIcon": "ic_stat_icon_config_sample",
+      "smallIcon": "ic_stat_mycelium",
       "iconColor": "#6c63ff",
       "sound": "notification.wav"
     }

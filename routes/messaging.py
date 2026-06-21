@@ -514,7 +514,7 @@ def notifyConvMessage(self,uid ,conv, message):
             self.sendPushNotification(user["account"], {
                 "title": sender_name,
                 "body": message.get("body", "New message"),
-                "data": {"type": "message", "conv_id": str(conv["id"])}
+                "data": {"type": "message", "convId": str(conv["id"])}
             })
 
             notif  = self.db.getFilters("offline_notifs", ["account", "=", user['account'], "and", "conversation", "=", conv["id"]])
