@@ -4,4 +4,7 @@
     <string name="title_activity_main">Mycelium</string>
     <string name="package_name">dev.carbonlab.mycelium.app</string>
     <string name="custom_url_scheme">dev.carbonlab.mycelium.app</string>
+    <string name="notif_reply">Reply</string>
+    <string name="notif_you">You</string>
+    <string name="notif_reply_failed">Not delivered — open the app to retry</string>
 </resources>

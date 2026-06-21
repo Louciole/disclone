@@ -18,6 +18,14 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- mycelium:// deep links (invite / channel / conv). Used by
+                 notification tap intents and external links. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="mycelium" />
+            </intent-filter>
         </activity>
 
         <provider
@@ -36,6 +44,23 @@
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_color"
             android:resource="@color/notification_color" />
+
+        <!-- Custom FCM handler. Declared here (app manifest) so it takes
+             precedence over the Capacitor push plugin's service and receives
+             our data-only messages, letting us attach the inline reply action.
+             Handles all app states (foreground / background / killed). -->
+        <service
+            android:name="dev.carbonlab.mycelium.app.MyceliumMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
+        <!-- Handles the inline "Reply" RemoteInput from message notifications. -->
+        <receiver
+            android:name="dev.carbonlab.mycelium.app.NotificationReplyReceiver"
+            android:exported="false" />
     </application>
 
     <!-- Permissions -->

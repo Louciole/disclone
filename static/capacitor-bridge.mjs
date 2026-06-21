@@ -144,10 +144,26 @@ async function registerPush() {
     }
   });
 
-  // User tapped a notification
+  // User tapped a notification or used an action button.
+  // On iOS, inline reply on a remote push arrives here as actionId 'reply'
+  // with the typed text in inputValue (the MESSAGE_ACTION category is
+  // registered via registerActionTypes). On Android, replies are handled
+  // natively by NotificationReplyReceiver, so this mainly covers taps there.
   PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
     console.log('[cap-bridge] Push action performed:', action);
-    handleNotificationNavigation(action.notification?.data || {});
+    const data = action.notification?.data || {};
+
+    if (action.actionId === 'reply' && action.inputValue) {
+      window.dispatchEvent(new CustomEvent('cap:quickReply', {
+        detail: { convId: data.convId, message: action.inputValue },
+      }));
+    } else if (action.actionId === 'mark_read') {
+      window.dispatchEvent(new CustomEvent('cap:markRead', {
+        detail: { convId: data.convId },
+      }));
+    } else {
+      handleNotificationNavigation(data);
+    }
   });
 }
 
@@ -327,6 +343,12 @@ async function setupDeepLinks() {
     if (url.hostname === 'invite' || url.pathname.startsWith('/invite/')) {
       const token = url.pathname.split('/').pop() || url.hostname;
       window.dispatchEvent(new CustomEvent('cap:deepLinkInvite', { detail: { token } }));
+    }
+
+    // mycelium://conv/<convId> — tapping a DM/message notification.
+    if (url.hostname === 'conv') {
+      const convId = url.pathname.split('/').pop() || url.hostname;
+      window.dispatchEvent(new CustomEvent('cap:navigateToConv', { detail: { convId } }));
     }
 
     // mycelium://channel/<serverId>/<channelId>

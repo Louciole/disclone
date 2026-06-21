@@ -66,31 +66,37 @@ class Mycelium(ForumMixin, Server):
         tokens = [t["token"] for t in tokens_records]
 
         try:
+            title = data.get("title", "Mycelium")
+            body = data.get("body", "New activity")
+
+            # DATA-ONLY message on Android: no top-level `notification` block, so
+            # FCM delivers to MyceliumMessagingService.onMessageReceived() in ALL
+            # app states (foreground/background/killed). The native service builds
+            # the notification and attaches the inline "Reply" action — which is
+            # impossible with an OS-rendered notification payload. title/body are
+            # carried in `data` for the service to render.
             data_payload = {k: str(v) for k, v in data.get("data", {}).items()}
-            # Route to the matching client-side channel (created in capacitor-bridge.mjs).
-            channel_id = "calls" if data_payload.get("type") == "call" else "messages"
+            data_payload["title"] = title
+            data_payload["body"] = body
+
+            # iOS: show a visible alert. For DMs, attach the "MESSAGE_ACTION"
+            # category so the OS renders the inline reply field — that category
+            # is registered client-side via LocalNotifications.registerActionTypes
+            # and applies to remote push too. The reply text comes back through
+            # the Capacitor plugin's pushNotificationActionPerformed (inputValue).
+            aps = messaging.Aps(
+                alert=messaging.ApsAlert(title=title, body=body),
+                sound="default",
+                badge=1,
+                category="MESSAGE_ACTION" if data_payload.get("type") == "message" else None,
+            )
 
             # Construct MulticastMessage
             message = messaging.MulticastMessage(
-                notification=messaging.Notification(
-                    title=data.get("title", "Mycelium"),
-                    body=data.get("body", "New activity"),
-                ),
                 data=data_payload,
-                # Brand the notification the OS shows automatically when the app
-                # is backgrounded/killed (no JS runs in that path).
-                android=messaging.AndroidConfig(
-                    priority="high",
-                    notification=messaging.AndroidNotification(
-                        icon="ic_stat_mycelium",
-                        color="#6c63ff",
-                        channel_id=channel_id,
-                    ),
-                ),
+                android=messaging.AndroidConfig(priority="high"),
                 apns=messaging.APNSConfig(
-                    payload=messaging.APNSPayload(
-                        aps=messaging.Aps(sound="default", badge=1),
-                    ),
+                    payload=messaging.APNSPayload(aps=aps),
                 ),
                 tokens=tokens,
             )

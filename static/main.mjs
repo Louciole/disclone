@@ -117,10 +117,14 @@ export function postWS(){
     window.addEventListener('cap:quickReply', (e) => {
         const { convId, message } = e.detail;
         if (!convId || !message) return;
+        // Notification payloads carry convId as a string; the server expects the
+        // same numeric id the in-app send uses.
+        const convIdNum = Number(convId);
+        const id = Number.isNaN(convIdNum) ? convId : convIdNum;
         const savedConv = global.state.activeConv;
-        global.state.activeConv = convId;
+        global.state.activeConv = id;
         const xhr2 = new XMLHttpRequest();
-        xhr2.open('GET', `send_message?conv=${encodeURI(JSON.stringify({id: convId}))}&content=${encodeURIComponent(message)}&reply=`, true);
+        xhr2.open('GET', `send_message?conv=${encodeURI(JSON.stringify({id}))}&content=${encodeURIComponent(message)}&reply=`, true);
         xhr2.withCredentials = true;
         xhr2.send();
         global.state.activeConv = savedConv;
