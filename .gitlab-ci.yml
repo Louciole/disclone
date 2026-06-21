@@ -108,8 +108,9 @@ build-apk:
     # Copy the exact signed artifact (never a stray *-unsigned.apk).
     - cp app/build/outputs/apk/release/app-release.apk "$CI_PROJECT_DIR/mycelium-release.apk"
     # Fail the build if the APK isn't properly signed with v2 (installable on API 30+).
-    - APKSIGNER="$(ls -d $ANDROID_HOME/build-tools/*/apksigner | sort -V | tail -1)"
-    - "$APKSIGNER" verify --verbose --print-certs "$CI_PROJECT_DIR/mycelium-release.apk"
+    - |
+      APKSIGNER="$(ls -d $ANDROID_HOME/build-tools/*/apksigner | sort -V | tail -1)"
+      "$APKSIGNER" verify --verbose --print-certs "$CI_PROJECT_DIR/mycelium-release.apk"
 
   artifacts:
     name: "mycelium-release"
