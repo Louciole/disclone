@@ -8,12 +8,12 @@
   },
   "ios": {
     "contentInset": "always",
-    "backgroundColor": "#2a2d30",
+    "backgroundColor": "#1E1F22",
     "scheme": "mycelium",
     "preferredContentMode": "mobile"
   },
   "android": {
-    "backgroundColor": "#2a2d30",
+    "backgroundColor": "#1E1F22",
     "allowMixedContent": false,
     "webContentsDebuggingEnabled": false
   },

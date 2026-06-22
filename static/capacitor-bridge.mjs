@@ -394,7 +394,7 @@ async function setupStatusBar() {
     // Style.Dark = "light (white) content for a dark background". Drives the iOS
     // status bar text and nudges the Android status bar; nav-bar icons and
     // rotation persistence are handled by the SystemBars plugin config.
-    await StatusBar.setStyle({ style: 'Dark' });
+    await StatusBar.setStyle({ style: 'DARK' });
   } catch (e) {
     console.warn('[cap-bridge] StatusBar setup failed:', e);
   }
@@ -447,6 +447,8 @@ function injectSafeAreaCSS() {
        shorter — the viewport shrinks instead of being overlapped. */
     body {
       box-sizing: border-box;
+      /* Colour the safe-area strips (shown behind the transparent system bars). */
+      background: var(--bg4);
       padding-top:    var(--safe-area-inset-top);
       padding-right:  var(--safe-area-inset-right);
       padding-bottom: var(--safe-area-inset-bottom);
