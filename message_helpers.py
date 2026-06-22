@@ -58,6 +58,9 @@ def notifyChannelMesage(self, uid, channel, message, channel_type="textual"):
                 continue
             self.sendNotification(member_uid, {"type": "message", "content": message})
 
+        sender = self.db.getSomething("mycelium_account", uid)
+        sender_name = sender.get("display", "Someone") if sender else "Someone"
+
         # Offline notifs only for mention targets
         for target_uid in mention_targets:
             notif = self.db.getFilters("offline_notifs", ["account", "=", target_uid, "and", "conversation", "=", channel["id"]])
@@ -66,11 +69,19 @@ def notifyChannelMesage(self, uid, channel, message, channel_type="textual"):
             else:
                 self.db.insertDict("offline_notifs", {"account": target_uid, "conversation": channel["id"]})
 
-            # Push Notification for Mention
+            # Push Notification for a channel message — same unified "message"
+            # contract as DMs (repliable + threaded). serverId marks it as a
+            # channel (drives navigation + a distinct thread id); groupTitle is
+            # the channel name shown as the conversation title.
             self.sendPushNotification(target_uid, {
-                "title": f"Mentioned in {channel.get('name', 'channel')}",
-                "body": message.get("body", "New mention"),
-                "data": {"type": "mention", "serverId": str(server_id), "channelId": str(channel["id"])}
+                "title": sender_name,
+                "body": message.get("body", "New message"),
+                "data": {
+                    "type": "message",
+                    "convId": str(channel["id"]),
+                    "serverId": str(server_id),
+                    "groupTitle": channel.get("name", "channel"),
+                }
             })
 
 

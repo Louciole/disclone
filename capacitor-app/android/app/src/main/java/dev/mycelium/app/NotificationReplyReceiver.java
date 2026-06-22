@@ -26,6 +26,7 @@ public class NotificationReplyReceiver extends BroadcastReceiver {
         }
         CharSequence reply = results.getCharSequence(MyceliumMessagingService.REPLY_KEY);
         final String convId = intent.getStringExtra(MyceliumMessagingService.EXTRA_CONV_ID);
+        final String serverId = intent.getStringExtra(MyceliumMessagingService.EXTRA_SERVER_ID);
         final int notifId = intent.getIntExtra(MyceliumMessagingService.EXTRA_NOTIF_ID, -1);
 
         if (reply == null || reply.toString().trim().isEmpty() || convId == null) {
@@ -38,6 +39,9 @@ public class NotificationReplyReceiver extends BroadcastReceiver {
         final Map<String, String> data = new HashMap<>();
         data.put("type", "message");
         data.put("convId", convId);
+        if (serverId != null) {
+            data.put("serverId", serverId);
+        }
 
         // Show the user's reply in the thread right away (optimistic UI).
         NotificationHelper.appendOwnReply(appCtx, data, notifId, text);

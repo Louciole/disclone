@@ -361,123 +361,78 @@ async function setupDeepLinks() {
   });
 }
 
-// ─── Status Bar + Safe Area ───────────────────────────────────────────────────
-const SYSTEM_BAR_COLOR = '#1a1a2e';
+// ─── Status Bar + Safe Area ───────────────────────────────────
+// No hard-coded "system bar" colour any more. On Android 15+ (target SDK 35+)
+// edge-to-edge is forced and StatusBar.setBackgroundColor() is a no-op, so the
+// bar areas are coloured by letting the WebView's own background show through the
+// (transparent) system bars. The previous #1a1a2e was the splash colour and did
+// not match the app's grey theme — that was the "strange blue" the old overlay
+// bars showed.
+//
+// How the bars are driven on Capacitor 8:
+//   - Icon colour: the always-on core "SystemBars" plugin (configured style:DARK
+//     in capacitor.config.json) sets BOTH status- and nav-bar icons to white and
+//     re-applies on rotation / theme change. The native theme also defaults
+//     windowLight*Bar=false so icons aren't black during the splash/launch theme.
+//     @capacitor/status-bar.setStyle below only covers the status bar (used by
+//     iOS, and as a belt-and-suspenders nudge on Android).
+//   - Insets: on Android 15+ the core "SystemBars" plugin reads the real
+//     WindowInsets (system bars + display cutout, excluding the keyboard) and
+//     injects --safe-area-inset-* as inline vars on <html>. We consume those
+//     vars below; env() is only the fallback for iOS and Android < 15.
 
 async function setupStatusBar() {
   const { StatusBar } = getPlugins();
   if (!StatusBar) return;
-  const platform = window.Capacitor.getPlatform();
 
   try {
-    // Edge-to-edge: WebView draws behind the status bar and gesture nav bar.
-    // The safe-area-inset-* env() values then become non-zero and our CSS/bars use them.
+    // Edge-to-edge: WebView draws behind the status/nav bar so the safe-area
+    // insets are non-zero. No-op on Android 15+ (already forced) but needed for
+    // iOS and older Android.
     await StatusBar.setOverlaysWebView({ overlay: true });
 
-    if (platform === 'ios') {
-      await StatusBar.setStyle({ style: 'Dark' });
-    } else {
-      await StatusBar.setBackgroundColor({ color: SYSTEM_BAR_COLOR });
-      await StatusBar.setStyle({ style: 'Dark' });
-    }
+    // Style.Dark = "light (white) content for a dark background". Drives the iOS
+    // status bar text and nudges the Android status bar; nav-bar icons and
+    // rotation persistence are handled by the SystemBars plugin config.
+    await StatusBar.setStyle({ style: 'Dark' });
   } catch (e) {
     console.warn('[cap-bridge] StatusBar setup failed:', e);
   }
 
   injectSafeAreaCSS();
-  injectSystemBars();
 }
 
 /**
- * Inject two thin fixed overlay bars:
- *   - Top bar  → covers the notch / status bar area
- *   - Bottom bar → covers the Android gesture navigation bar area
- * They sit at z-index 9999 so they're always on top, and are sized via
- * the safe-area-inset env() values so they exactly match the system UI.
+ * Edge-to-edge safe-area handling.
+ *
+ * Instead of painting opaque overlay bars on top of the UI (which covered
+ * content, used a foreign colour, and double-stacked on the 3-button nav bar),
+ * we *inset the app* by the system insets. The freed space exposes the page
+ * background behind the transparent system bars, so the notch / gesture pill /
+ * nav bar sit over the app's own colour and the content shrinks to fit rather
+ * than being overlapped.
+ *
+ * The --safe-area-inset-* values resolve to (in priority order): the inline vars
+ * Capacitor's SystemBars plugin injects on <html> from native WindowInsets
+ * (Android 15+, the accurate source — keyboard-aware and per nav-mode), else
+ * the env() fallback (iOS / Android < 15). Because the native vars are set inline
+ * on the same element our :root rule targets, they always win when present.
  */
-function injectSystemBars() {
-  if (document.getElementById('cap-system-bars')) return;
-
-  // Safety net: ensure viewport-fit=cover is set so env(safe-area-inset-*)
-  // returns real values. Without this the bars would have height 0.
-  const vmeta = document.querySelector('meta[name="viewport"]');
-  if (vmeta && !vmeta.content.includes('viewport-fit')) {
-    vmeta.content += ',viewport-fit=cover';
-  }
-
-  const style = document.createElement('style');
-  style.id = 'cap-system-bars';
-  style.textContent = `
-    /* Top bar – covers notch / status bar */
-    #cap-top-bar {
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      height: env(safe-area-inset-top, 0px);
-      background: ${SYSTEM_BAR_COLOR};
-      z-index: 9999;
-      pointer-events: none;
-    }
-    /* Bottom bar – covers Android gesture nav bar */
-    #cap-bottom-bar {
-      position: fixed;
-      bottom: 0; left: 0; right: 0;
-      height: env(safe-area-inset-bottom, 0px);
-      background: ${SYSTEM_BAR_COLOR};
-      z-index: 9999;
-      pointer-events: none;
-    }
-  `;
-  document.head.appendChild(style);
-
-  const top = document.createElement('div');
-  top.id = 'cap-top-bar';
-
-  const bottom = document.createElement('div');
-  bottom.id = 'cap-bottom-bar';
-
-  document.body.prepend(bottom);
-  document.body.prepend(top);
-
-  const body = document.querySelector("body")
-  body.style.boxSizing = "border-box"
-  body.style.paddingTop = `env(safe-area-inset-top, 24px)`
-  body.style.paddingBottom = `env(safe-area-inset-bottom, 16px)`
-
-
-  // JS fallback: env() requires a layout pass to resolve.
-  // After paint, check if the computed height is still 0 on Android
-  // and force sensible pixel values (status bar ~24dp, gesture bar ~16dp at mdpi).
-  if (window.Capacitor?.getPlatform() === 'android') {
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        const topH = parseFloat(getComputedStyle(top).height);
-        const botH = parseFloat(getComputedStyle(bottom).height);
-        // If env() didn't resolve, fall back to window.screen density-aware defaults
-        const dpr = window.devicePixelRatio || 1;
-        if (topH === 0) {
-          // ~24dp status bar height
-          top.style.height = Math.round(24 * dpr * 0.5) + 'px';
-        }
-        if (botH === 0) {
-          // ~16dp gesture bar height (only when gesture nav is active)
-          // We can't detect gesture vs button nav reliably in JS, so we use
-          // a small default that looks fine on both
-          bottom.style.height = Math.round(16 * dpr * 0.5) + 'px';
-        }
-
-        body.style.paddingTop = top.style.height
-        body.style.paddingBottom = bottom.style.height
-      });
-    });
-  }
-}
-
 function injectSafeAreaCSS() {
   if (document.getElementById('capacitor-safe-area')) return;
+
+  // env() and the native injection both require viewport-fit=cover. main.html
+  // already sets it; this is a safety net for any other entry page.
+  const vmeta = document.querySelector('meta[name="viewport"]');
+  if (vmeta && !vmeta.content.includes('viewport-fit')) {
+    vmeta.content += ', viewport-fit=cover';
+  }
+
   const style = document.createElement('style');
   style.id = 'capacitor-safe-area';
   style.textContent = `
-    /* Expose safe area values as CSS custom properties */
+    /* Expose safe area values as CSS custom properties (env() = fallback;
+       Capacitor's SystemBars overrides these inline on <html> on Android 15+). */
     :root {
       --safe-area-inset-top:    env(safe-area-inset-top,    0px);
       --safe-area-inset-right:  env(safe-area-inset-right,  0px);
@@ -485,31 +440,31 @@ function injectSafeAreaCSS() {
       --safe-area-inset-left:   env(safe-area-inset-left,   0px);
     }
 
-    /* body uses position:fixed + 100svh, so we offset the main columns instead */
-    #main-selector {
-      padding-top:  var(--safe-area-inset-top);
-      padding-left: var(--safe-area-inset-left);
-      padding-bottom: var(--safe-area-inset-bottom);
-    }
-    #sec-column {
-      padding-top: var(--safe-area-inset-top);
-      padding-bottom: var(--safe-area-inset-bottom);
-    }
-    #content {
+    /* The app shell fills the whole screen (its background shows behind the
+       transparent system bars) and is padded inward by the insets so no real
+       content ends up under the notch / status bar / nav bar. box-sizing keeps
+       the padding inside the 100svh/100vw box, so the flex columns simply get
+       shorter — the viewport shrinks instead of being overlapped. */
+    body {
+      box-sizing: border-box;
       padding-top:    var(--safe-area-inset-top);
       padding-right:  var(--safe-area-inset-right);
       padding-bottom: var(--safe-area-inset-bottom);
+      padding-left:   var(--safe-area-inset-left);
     }
 
-    /* Menus and modals should also respect the notch */
+    /* Fixed-position overlays live outside the padded body box, so they need
+       their own insets to stay clear of the system bars. */
     .menu-wrapper .menu,
     .fullscreen-menu {
+      box-sizing: border-box;
       padding-top:    var(--safe-area-inset-top);
       padding-bottom: var(--safe-area-inset-bottom);
     }
 
     /* Loading screen */
     #loading-screen {
+      box-sizing: border-box;
       padding-top: var(--safe-area-inset-top);
     }
   `;

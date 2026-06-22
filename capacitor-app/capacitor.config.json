@@ -8,12 +8,12 @@
   },
   "ios": {
     "contentInset": "always",
-    "backgroundColor": "#1a1a2e",
+    "backgroundColor": "#2a2d30",
     "scheme": "mycelium",
     "preferredContentMode": "mobile"
   },
   "android": {
-    "backgroundColor": "#1a1a2e",
+    "backgroundColor": "#2a2d30",
     "allowMixedContent": false,
     "webContentsDebuggingEnabled": false
   },
@@ -32,11 +32,18 @@
     },
     "StatusBar": {
       "style": "DARK",
-      "backgroundColor": "#1a1a2e",
       "overlaysWebView": true
     },
+    "SystemBars": {
+      "style": "DARK",
+      "insetsHandling": "css"
+    },
     "PushNotifications": {
-      "presentationOptions": ["badge", "sound", "alert"]
+      "presentationOptions": [
+        "badge",
+        "sound",
+        "alert"
+      ]
     },
     "LocalNotifications": {
       "smallIcon": "ic_stat_mycelium",
@@ -45,4 +52,3 @@
     }
   }
 }
-

@@ -33,16 +33,16 @@ final class NotificationHelper {
     private NotificationHelper() {
     }
 
-    /** Stable notification id per conversation/channel so messages thread together. */
-    static int idFor(String convId, String serverId, String channelId) {
-        String key;
-        if (convId != null) {
-            key = "conv:" + convId;
-        } else if (serverId != null && channelId != null) {
-            key = "chan:" + serverId + "/" + channelId;
-        } else {
-            key = "misc";
+    /**
+     * Stable notification id per place so messages thread together. A DM and a
+     * channel can share the same numeric id (different tables), so channels are
+     * namespaced with the serverId to avoid collisions.
+     */
+    static int idFor(String convId, String serverId) {
+        if (convId == null) {
+            return "misc".hashCode();
         }
+        String key = (serverId != null) ? ("chan:" + serverId + ":" + convId) : ("conv:" + convId);
         return key.hashCode();
     }
 
@@ -50,6 +50,8 @@ final class NotificationHelper {
     static void showIncoming(Context ctx, Map<String, String> data) {
         String type = data.get("type");
         String convId = data.get("convId");
+        String serverId = data.get("serverId");
+        String groupTitle = data.get("groupTitle");
         String title = orDefault(data.get("title"), "Mycelium");
         String body = orDefault(data.get("body"), "");
 
@@ -57,13 +59,18 @@ final class NotificationHelper {
         String channelId = "call".equals(type) ? "calls" : "messages";
         ensureChannel(ctx, channelId);
 
-        int notifId = idFor(convId, data.get("serverId"), data.get("channelId"));
+        int notifId = idFor(convId, serverId);
         NotificationCompat.Builder b = baseBuilder(ctx, channelId, data, notifId, isMessage);
 
         if (isMessage) {
             NotificationCompat.MessagingStyle style = existingStyle(ctx, notifId);
             if (style == null) {
                 style = new NotificationCompat.MessagingStyle(self(ctx));
+            }
+            // A channel post is a group conversation titled with the channel name.
+            if (groupTitle != null) {
+                style.setConversationTitle(groupTitle);
+                style.setGroupConversation(true);
             }
             Person sender = new Person.Builder().setName(title).setKey("peer:" + convId).build();
             style.addMessage(body, System.currentTimeMillis(), sender);
@@ -134,6 +141,7 @@ final class NotificationHelper {
             Intent replyIntent = new Intent(ctx, NotificationReplyReceiver.class)
                     .setAction(MyceliumMessagingService.ACTION_REPLY)
                     .putExtra(MyceliumMessagingService.EXTRA_CONV_ID, data.get("convId"))
+                    .putExtra(MyceliumMessagingService.EXTRA_SERVER_ID, data.get("serverId"))
                     .putExtra(MyceliumMessagingService.EXTRA_NOTIF_ID, notifId);
 
             PendingIntent replyPI = PendingIntent.getBroadcast(
@@ -151,11 +159,15 @@ final class NotificationHelper {
     }
 
     private static Intent contentIntent(Context ctx, Map<String, String> data) {
+        String convId = data.get("convId");
+        String serverId = data.get("serverId");
         Uri uri = null;
-        if (data.get("convId") != null) {
-            uri = Uri.parse("mycelium://conv/" + data.get("convId"));
-        } else if (data.get("serverId") != null && data.get("channelId") != null) {
-            uri = Uri.parse("mycelium://channel/" + data.get("serverId") + "/" + data.get("channelId"));
+        if (serverId != null && convId != null) {
+            // Channel post → open the channel within its server.
+            uri = Uri.parse("mycelium://channel/" + serverId + "/" + convId);
+        } else if (convId != null) {
+            // Direct message → open the conversation.
+            uri = Uri.parse("mycelium://conv/" + convId);
         }
         Intent intent = (uri != null)
                 ? new Intent(Intent.ACTION_VIEW, uri).setPackage(ctx.getPackageName())

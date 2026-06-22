@@ -31,6 +31,7 @@ public class MyceliumMessagingService extends FirebaseMessagingService {
 
     public static final String REPLY_KEY = "key_text_reply";
     public static final String EXTRA_CONV_ID = "convId";
+    public static final String EXTRA_SERVER_ID = "serverId";
     public static final String EXTRA_NOTIF_ID = "notifId";
     public static final String ACTION_REPLY = "dev.carbonlab.mycelium.app.ACTION_REPLY";
 
