@@ -2,6 +2,7 @@ package dev.carbonlab.mycelium.app;
 
 import android.app.ActivityManager;
 import android.content.Context;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 
@@ -33,10 +34,17 @@ public class MyceliumMessagingService extends FirebaseMessagingService {
     public static final String EXTRA_NOTIF_ID = "notifId";
     public static final String ACTION_REPLY = "dev.carbonlab.mycelium.app.ACTION_REPLY";
 
+    private static final String TAG = "MyceliumFCM";
+
     @Override
     public void onMessageReceived(@NonNull RemoteMessage remoteMessage) {
         Map<String, String> data = remoteMessage.getData();
+        // Diagnostic: confirms OUR service (not the Capacitor plugin) handles FCM.
+        Log.d(TAG, "onMessageReceived data=" + data
+                + " notification=" + (remoteMessage.getNotification() != null));
+
         if (data == null || data.isEmpty()) {
+            Log.w(TAG, "Ignoring message with no data payload (is the server sending data-only?)");
             return;
         }
 
@@ -45,6 +53,7 @@ public class MyceliumMessagingService extends FirebaseMessagingService {
         // foreground behavior and avoids notifying the user about the chat they're
         // actively looking at).
         if (isAppInForeground()) {
+            Log.d(TAG, "App in foreground, suppressing notification");
             return;
         }
 

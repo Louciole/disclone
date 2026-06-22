@@ -91,6 +91,10 @@ class Mycelium(ForumMixin, Server):
                 category="MESSAGE_ACTION" if data_payload.get("type") == "message" else None,
             )
 
+            # Diagnostic: confirms the deployed server is the data-only version.
+            print(f"[push] uid={uid} type={data_payload.get('type')} "
+                  f"tokens={len(tokens)} mode=data-only")
+
             # Construct MulticastMessage
             message = messaging.MulticastMessage(
                 data=data_payload,

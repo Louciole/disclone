@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -61,6 +62,15 @@
         <receiver
             android:name="dev.carbonlab.mycelium.app.NotificationReplyReceiver"
             android:exported="false" />
+
+        <!-- Remove the Capacitor push plugin's FCM service so OURS is the only
+             handler for MESSAGING_EVENT. Otherwise FCM may dispatch to the
+             plugin's service (which doesn't render our data-only messages,
+             icon, threading, or reply). Initial token still works via the
+             plugin's getToken(); refreshes are handled in our onNewToken(). -->
+        <service
+            android:name="com.capacitorjs.plugins.pushnotifications.MessagingService"
+            tools:node="remove" />
     </application>
 
     <!-- Permissions -->

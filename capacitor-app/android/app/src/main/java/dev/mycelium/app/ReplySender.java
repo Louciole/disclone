@@ -1,5 +1,6 @@
 package dev.carbonlab.mycelium.app;
 
+import android.util.Log;
 import android.webkit.CookieManager;
 
 import java.io.OutputStream;
@@ -17,6 +18,7 @@ import java.nio.charset.StandardCharsets;
 final class ReplySender {
 
     private static final String BASE = "https://mycelium.carbonlab.dev";
+    private static final String TAG = "MyceliumFCM";
 
     interface Callback {
         void onResult(boolean success);
@@ -32,7 +34,9 @@ final class ReplySender {
             HttpURLConnection conn = null;
             try {
                 String cookie = CookieManager.getInstance().getCookie(BASE);
-                if (cookie != null) {
+                if (cookie == null) {
+                    Log.w(TAG, "No session cookie for " + BASE + " — reply can't be authenticated");
+                } else {
                     // Matches main.mjs: send_message?conv={"id":<id>}&content=<text>&reply=
                     String convParam = URLEncoder.encode("{\"id\":" + convId + "}", "UTF-8");
                     String contentParam = URLEncoder.encode(content, "UTF-8");
@@ -46,9 +50,10 @@ final class ReplySender {
                     conn.setReadTimeout(15000);
                     int code = conn.getResponseCode();
                     ok = code >= 200 && code < 300;
+                    Log.d(TAG, "Reply send HTTP " + code + " (ok=" + ok + ")");
                 }
-            } catch (Exception ignored) {
-                // ok stays false → caller surfaces a failure state
+            } catch (Exception e) {
+                Log.w(TAG, "Reply send failed", e);
             } finally {
                 if (conn != null) {
                     conn.disconnect();
