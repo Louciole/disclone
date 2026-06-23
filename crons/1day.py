@@ -7,7 +7,8 @@ PATH =  abspath(join(dirname(__file__),".."))
 
 class Cron(Server):
     def exec(self):
-        pass
+        # Drop expired/revoked auth sessions (uniauth housekeeping).
+        self.purgeExpiredSessions()
 
 task = Cron(path=PATH, configFile="/server.ini", noStart=True)
 task.exec()
