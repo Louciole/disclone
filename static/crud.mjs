@@ -444,20 +444,12 @@ export function lookFor(element, array){
     }
 }
 
-/**
- * Get the last message ID from messages dict
- * @param {number} convId - Conversation ID
- * @returns {number|null} Last message ID or null if no messages
- */
-function getLastMessageId(convId) {
-    const messages = global.convs[convId]?.messages
-    if (!messages) return null
-
-    const keys = Object.keys(messages)
-    if (keys.length === 0) return null
-
-    // Get the last key (messages are added in order, so last key = last message)
-    return parseInt(keys[keys.length - 1])
+function getLastMessage(convId) {
+    const groups = global.convs[convId]?.messageGroups
+    if (!groups || groups.length === 0) return null
+    const lastGroup = groups[groups.length - 1]
+    if (!lastGroup.messages || lastGroup.messages.length === 0) return null
+    return lastGroup.messages[lastGroup.messages.length - 1]
 }
 
 /**
@@ -485,9 +477,8 @@ export function handleMessageGroup(message){
     }
     if (!message.attachments) message.attachments = []
 
-    const lastMsgId = getLastMessageId(message.place)
-    if (lastMsgId !== null){
-        const lastMsg = global.convs[message.place].messages[lastMsgId]
+    const lastMsg = getLastMessage(message.place)
+    if (lastMsg !== null){
         // Group if same sender, < 3 min apart, same day, and not a reply
         if(message.sender === lastMsg.sender && (new Date(message.timestamp)-new Date(lastMsg.timestamp))/60000<3 && getTimeStr(message.timestamp, { locale: "fr-FR",hour: undefined, minute: undefined}) === getTimeStr(lastMsg.timestamp, { locale: "fr-FR",hour: undefined, minute: undefined}) && !message.reply){
             // Add reference to existing group
