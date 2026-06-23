@@ -383,13 +383,23 @@ function friend(action, element, event = undefined){
         const domElt= document.getElementById(element)
         xhr("add_friend?username=".concat(encodeURIComponent(domElt.value)),effect)
     }else if(action === "accept"){
-        xhr("accept_friend?invitation_id=".concat(element),effect)
+        const invitationId = element
+        const onAccept = function() {
+            let res
+            try { res = JSON.parse(this.responseText) } catch(e){ return }
+            if (res.status !== "ok") return
 
-        // doing some magic here to update the local state
-        const invitationNumber = Array.prototype.indexOf.call(event.currentTarget.parentElement.children, event.currentTarget) - 1
-        global.user.friends.push(global.user.invitations[invitationNumber])
-        global.user.friends[global.user.friends.length-1].private = true
-        deleteElement("global.user.invitations",invitationNumber)
+            const idx = global.user.invitations.findIndex(inv => inv.id === invitationId)
+            if (idx === -1) return
+
+            const accepted = global.user.invitations[idx]
+            accepted.accepted = true
+            accepted.private = true
+            accepted.conv = res.conv
+            pushElement("global.user.friends", accepted)
+            deleteElement("global.user.invitations", idx)
+        }
+        xhr("accept_friend?invitation_id=".concat(invitationId), onAccept)
     }else if(action === "remove"){
         element = lookFor(element.getAttribute("data-id"),global.user.friends)
         if (confirm("Do you really want to remove ".concat(global.users[getRelevantUser(element)].display," from your friends ?"))){

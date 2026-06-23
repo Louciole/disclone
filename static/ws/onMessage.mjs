@@ -77,7 +77,13 @@ export async function onMessage(event) {
                     }
                     break;
                 case "added_conv":
-                    addElement('global.convs', message.content.content)
+                    const newConv = message.content.content
+                    newConv.ongoingCall = null
+                    if (newConv.private === undefined) newConv.private = true
+                    if (!newConv.messages) newConv.messages = {}
+                    loadUsers(newConv.members)
+                    global.convs[newConv.id] = newConv
+                    addElement('global.privateConvs', newConv)
                     break;
                 case "update_status":
                     if (message.content.content.id === global.user.id){

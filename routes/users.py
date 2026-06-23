@@ -139,10 +139,10 @@ def accept_friend(self, invitation_id):
         friendship[0]["conv"] = conv_id
         self.sendNotification(friendship[0]["kopinprincipal"], {"type": "accepted_request", "content": friendship[0]})
 
-        conv = {"id": conv_id, "name": "", "members": [uid, friendship[0]["kopinprincipal"]]}
+        conv = {"id": conv_id, "name": "", "members": [uid, friendship[0]["kopinprincipal"]], "private": True}
         self.sendNotification(uid, {"type": "added_conv", "content": conv})
         self.sendNotification(friendship[0]["kopinprincipal"], {"type": "added_conv", "content": conv})
-        return json.dumps({"status": "ok"})
+        return json.dumps({"status": "ok", "conv": conv_id})
     raise HTTPError(self.response, 403, "forbidden")
 
 

@@ -640,6 +640,11 @@ class Mycelium(ForumMixin, Server):
                 self.db.insertDict("status", {"id": user['id']})
                 params = {"mode": 0}
 
+            if params.get('mode') is not None:
+                params['mode'] = int(params['mode'])
+            if params.get('expiration') is not None:
+                params['expiration'] = str(params['expiration'])
+
             clients = self.db.getAll('active_client', user['id'], "userid")
             if not len(clients):
                 if not detailed:

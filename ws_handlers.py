@@ -33,6 +33,7 @@ async def unregister(self, websocket, data):
 async def typing(self, websocket, data):
     if not self.checkWSAuth(websocket, data.get("clientID")):
         return
+
     sender = self.db.getSomething("active_client", data["clientID"])
     sender_uid = sender["userid"]
     channel = self.db.getSomething("textual_channel", data["conv"])
