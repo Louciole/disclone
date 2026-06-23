@@ -14,6 +14,7 @@ import global from "./framework/global.mjs"
 import {xhr} from "./framework/templating.mjs";
 import {goTo, initNavigation, closeFM} from "./framework/navigation.mjs";
 import imageEditor, { emojiImageEditor } from "/static/imageEditor.mjs"
+import {initActivity} from "./activity.mjs";
 
 function changeUsername(){
     const input = document.getElementById("username-input")
@@ -343,6 +344,7 @@ export function loadUser(){
         global.users[global.user.id] = global.user
         loadConvs()
         initWebSockets()
+        initActivity()
     };
 
     request.onerror = function() {

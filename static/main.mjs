@@ -569,8 +569,8 @@ function resizeHeight(event, target = undefined){
     if (!target){
         target = event.currentTarget
     }
-    const lines = 1 + (target.value?.match(/\n/g) || []).length;
-    target.rows = lines > 25 ? 25 : lines;
+    target.style.height = 'auto';
+    target.style.height = target.scrollHeight + 'px';
 }
 window.resizeHeight = resizeHeight
 

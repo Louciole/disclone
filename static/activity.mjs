@@ -2,6 +2,7 @@ import global from "./framework/global.mjs";
 import {setElement} from "./framework/vesta.mjs";
 
 export function initActivity(){
+    global.state.idle = {state: false, time: new Date().valueOf()}
     global.state.dom.addEventListener("mousemove", (event) => resetIdle());
     setInterval(checkIdle,60000)
     setInterval(checkStatus,60000)
