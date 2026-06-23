@@ -13,5 +13,5 @@
         <div class="icon">+</div>
         <span class="tooltip bottom">${_t("Créer un MP")}</span>
     </div>
-    ${Subscribe('global.privateConvs',()=>fillWith('conversation_element',global.privateConvs))}
+    ${Subscribe('global.privateConvs',()=>fillWith('conversation_element',Object.values(global.privateConvs).sort((a,b)=>String(b.last_activity||'').localeCompare(String(a.last_activity||'')))))}
 </div>

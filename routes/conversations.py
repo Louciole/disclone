@@ -44,7 +44,7 @@ def get_user_convs(self):
         convs[j]["members"] = self.db.getFilters("accessconversation", ["conversation", "=", convs[j]["id"]])
         for i in range(0, len(convs[j]["members"])):
             convs[j]["members"][i] = convs[j]["members"][i]["account"]
-    return json.dumps(convs)
+    return json.dumps(convs, default=str)
 
 
 @Server.expose

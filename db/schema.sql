@@ -73,7 +73,8 @@ create table if not exists conversationElement (
 
 create table if not exists conversation (
     name varchar(255) NOT NULL,
-    private bool default true
+    private bool default true,
+    last_activity timestamp DEFAULT CURRENT_TIMESTAMP
 ) inherits (conversationElement);
 
 create table if not exists textual_channel (
@@ -469,3 +470,20 @@ create or replace view analytics_overview as
         (select count(*) from server)                    as servers,
         (select count(*) from message)                   as messages,
         (select count(*) from call_session where active) as active_calls;
+
+create index if not exists idx_message_place_timestamp on message(place, timestamp desc);
+
+CREATE OR REPLACE FUNCTION bump_conversation_activity() RETURNS trigger AS $$
+BEGIN
+    UPDATE conversation
+    SET last_activity = GREATEST(last_activity, NEW.timestamp)
+    WHERE id = NEW.place;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_bump_conversation_activity ON message;
+CREATE TRIGGER trg_bump_conversation_activity
+    AFTER INSERT ON message
+    FOR EACH ROW EXECUTE FUNCTION bump_conversation_activity();
+

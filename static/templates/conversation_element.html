@@ -1,4 +1,4 @@
-<div id="conv${element.id}" class="item" onclick="${'goToConv('+element.id+')'}">
+<div id="conv${element.id}" class="item${element.id === global.state?.activeConv ? ' selected' : ''}" onclick="${'goToConv('+element.id+')'}">
     <div class="global-user-pfp pfp red" data-target="style" data-element="global.convs[${element.id}]" data-content="(element)=>{return 'background-image:url(/static/attachments/'+global.users[notMe(element.members,true)]?.pfp+');'}" style="background-image:url(/static/attachments/${global.users[notMe(element.members,true)]?.pfp}">
 
         <div class="activity-wrapper">

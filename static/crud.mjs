@@ -88,6 +88,19 @@ export function loadConvs(){
     xhr("get_user_convs",onload)
 }
 
+export function bumpConvActivity(convId){
+    const conv = global.privateConvs[convId]
+    if (!conv) return
+    let max = ''
+    for (const c of Object.values(global.privateConvs)) {
+        const v = String(c.last_activity || '')
+        if (v > max) max = v
+    }
+    conv.last_activity = max + '~'
+    updateElement('global.privateConvs')
+}
+window.bumpConvActivity = bumpConvActivity
+
 export function loadUsers(keys){
     const diff = difference(keys, global.users)
 

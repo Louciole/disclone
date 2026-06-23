@@ -2,7 +2,7 @@ import global from "../framework/global.mjs";
 import {xhr} from "../framework/templating.mjs";
 import {displayNotif, postWS} from "../main.mjs";
 import {setElement, pushElement, deleteElement, addElement} from "../framework/vesta.mjs";
-import {handleMessageGroup} from "../crud.mjs";
+import {handleMessageGroup, bumpConvActivity} from "../crud.mjs";
 import { notifyMessage, setBadge, callStarted, callEnded, isNative } from "../capacitor-bridge.mjs";
 
 export async function onMessage(event) {
@@ -25,6 +25,7 @@ export async function onMessage(event) {
                     const currentDate = new Date()
                     const timestamp = currentDate.getTime()
                     message.content.content["timestamp"] = timestamp
+                    bumpConvActivity(message.content.content.place, timestamp)
                     if(message.content.content.place === global.state.activeConv){
                         handleMessageGroup(message.content.content)
                         addElement('global.convs['.concat(message.content.content.place,'].messages'), message.content.content)

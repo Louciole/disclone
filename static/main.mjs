@@ -1,7 +1,7 @@
 import {initNavigation, printWatermark, goTo} from "/static/framework/navigation.mjs"
 import {handleHashRoute} from "/static/navigation.mjs"
 import {initWebSockets} from "./framework/websockets.mjs";
-import {loadServers, loadUser, loadConvs, loadUsers, handleMessageGroup, sendTyping, lookFor, orderServDirs} from "/static/crud.mjs"
+import {loadServers, loadUser, loadConvs, loadUsers, handleMessageGroup, sendTyping, lookFor, orderServDirs, bumpConvActivity} from "/static/crud.mjs"
 import global from "/static/framework/global.mjs"
 import {MDToHTML} from "/static/markdown/utils.mjs"; // DO NOT REMOVE
 import {} from "/static/admin.mjs"; // DO NOT REMOVE
@@ -479,6 +479,7 @@ function sendMessage(event){
             handleMessageGroup(message)
 
             addElement('global.convs['.concat(global.state.activeConv,'].messages'), message)
+            bumpConvActivity(global.state.activeConv, timestamp)
 
             target.value = ''
             resizeHeight(event, target)
