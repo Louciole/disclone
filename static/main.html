@@ -36,7 +36,7 @@
     <div id="app-track">
     <section id="main-selector">
         <div class="container">
-            <div id="logo" class="item selected" data-haptic="selection" onclick="global.state.isServer = false;global.state.activeConv=undefined; goTo('sec-selector','privateMessage',{'category':'currentTab' ,'event': event},true,goTo('content','friends',undefined,true,()=>{goTo('friends-block','main-friend')}))">
+            <div id="logo" class="item selected" data-haptic="selection" onclick="goToHome(event)">
                 <div class="text circle"></div>
                 <div style="display: none" class="outlined notifIndicator">1</div>
             </div>

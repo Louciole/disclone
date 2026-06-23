@@ -336,6 +336,44 @@ function searchEmojis(event) {
 }
 window.searchEmojis = searchEmojis
 
+/** Returns friends whose status is not offline (grey/spymode/undefined count as offline). */
+function getOnlineFriends() {
+    const offlineIcons = new Set(['grey', 'spymode'])
+    return (global.user.friends || []).filter(f => {
+        const icon = global.users[getRelevantUser(f)]?.status?.icon
+        return icon && !offlineIcons.has(icon)
+    })
+}
+window.getOnlineFriends = getOnlineFriends
+
+/** Shared fuzzy search over a given friends pool. */
+function _searchFriendsInPool(event, pool) {
+    const query = event.target.value.trim()
+    const scrollable = document.querySelector('#friends-block .scrollable')
+    if (!scrollable) return
+
+    if (!query) {
+        scrollable.innerHTML = fillWith('friendCard', pool, 'column')
+        return
+    }
+
+    const results = pool
+        .map(f => ({ friendship: f, score: fuzzyScore(query, global.users[getRelevantUser(f)]?.display ?? '') }))
+        .filter(r => r.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .map(r => r.friendship)
+
+    scrollable.innerHTML = results.length
+        ? fillWith('friendCard', results, 'column')
+        : `<div style="padding:1rem;color:var(--text2)">${_t('Aucun ami trouvé')}</div>`
+}
+
+function searchFriends(event) { _searchFriendsInPool(event, global.user.friends) }
+window.searchFriends = searchFriends
+
+function searchFriendsOnline(event) { _searchFriendsInPool(event, getOnlineFriends()) }
+window.searchFriendsOnline = searchFriendsOnline
+
 /** Returns deduplicated servers that have at least one custom emoji. */
 function _uniqueServersWithEmojis() {
     const seen = new Set()

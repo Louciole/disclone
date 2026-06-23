@@ -12,6 +12,7 @@ function goToDriveChannel(id){
     }
 
     global.state.activeChan = {id:id, slug:"-drive-"+id, type:"drive"}
+    saveLastChannel(id, 'drive')
 
     if (!global.convs) global.convs = {}
     const drive = lookFor(id, global.state.currentServer.dirs.drives)

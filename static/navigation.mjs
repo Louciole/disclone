@@ -8,6 +8,33 @@ let emptyStr = '' //DO NOT REMOVE
 
 let _skipRoutePush = false
 
+function saveLastChannel(channelId, type) {
+    const serverId = global.state.currentServer?.id
+    if (serverId == null) return
+    try {
+        localStorage.setItem('nav_server_' + serverId, JSON.stringify({ id: channelId, type }))
+    } catch(e) {}
+}
+window.saveLastChannel = saveLastChannel
+
+function restoreLastChannel() {
+    const serverId = global.state.currentServer?.id
+    if (serverId == null) return false
+    try {
+        const saved = localStorage.getItem('nav_server_' + serverId)
+        if (!saved) return false
+        const { id, type } = JSON.parse(saved)
+        const dirs = global.state.currentServer.dirs
+        if (!dirs) return false
+        if (type === 'channel' && dirs.channels?.some(c => c.id === id)) { goToChannel(id); return true }
+        if (type === 'vocal'   && dirs.vocals?.some(c => c.id === id))   { goToVocalChannel(id); return true }
+        if (type === 'note'    && dirs.notes?.some(c => c.id === id))    { goToNoteChannel(id); return true }
+        if (type === 'forum'   && dirs.forums?.some(c => c.id === id))   { goToForumChannel(id); return true }
+        if (type === 'drive'   && dirs.drives?.some(c => c.id === id))   { goToDriveChannel(id); return true }
+    } catch(e) {}
+    return false
+}
+
 function pushRoute(hash) {
     if (_skipRoutePush) return
     history.pushState(null, '', '/channels' + (hash ? '#' + hash : ''))
@@ -198,6 +225,7 @@ function goToConv(convId){
     }
 
     global.state.activeConv = convId
+    try { localStorage.setItem('nav_last_dm', convId) } catch(e) {}
     loadConv(convId)
 
     // Load call state for this conversation
@@ -255,6 +283,7 @@ function goToChannel(id){
     global.state.activeConv = id
     global.state.activeChan = {id:id, slug:"-conv-"+id, type:"conv"}
     loadChan(id)
+    saveLastChannel(id, 'channel')
 
     if (global.state.isMobile) {
         mobileDisplayContent()
@@ -276,6 +305,7 @@ function goToVocalChannel(id){
     }
 
     global.state.activeChan = {id:id, slug:"-vocal-"+id, type:"vocal"}
+    saveLastChannel(id, 'vocal')
 
     if (!global.convs) global.convs = {}
     const room = lookFor(id, global.state.currentServer.dirs.vocals)
@@ -301,6 +331,7 @@ function goToNoteChannel(id){
     }
 
     global.state.activeChan = {id:id, slug:"-note-"+id, type:"note"}
+    saveLastChannel(id, 'note')
 
     if (!global.convs) global.convs = {}
     loadNote(id)
@@ -324,6 +355,7 @@ function goToForumChannel(id){
     }
 
     global.state.activeChan = {id:id, slug:"-forum-"+id, type:"forum"}
+    saveLastChannel(id, 'forum')
 
     loadForum(id)
 
@@ -373,6 +405,31 @@ function goToFriends(event){
     goTo('content',"friends",undefined,false)
     goTo('friends-block','main-friend')
 }
+
+// Called by the logo button in main.html when switching to the @me section.
+// Restores the last visited DM if one is stored in localStorage.
+function goToHome(event) {
+    global.state.isServer = false
+    global.state.activeConv = undefined
+
+    let lastDmId = null
+    try {
+        const lastDm = localStorage.getItem('nav_last_dm')
+        if (lastDm) {
+            const id = parseInt(lastDm)
+            if (!isNaN(id) && global.convs?.[id]) lastDmId = id
+        }
+    } catch(e) {}
+
+    goTo('sec-selector', 'privateMessage', {'category': 'currentTab', 'event': event}, true, () => {
+        if (lastDmId && document.getElementById('conv' + lastDmId)) {
+            goToConv(lastDmId)
+        } else {
+            goTo('content', 'friends', undefined, false, () => goTo('friends-block', 'main-friend'))
+        }
+    })
+}
+window.goToHome = goToHome
 window.goToFriends = goToFriends
 
 function insertStandardEmoji(event,target){
@@ -675,7 +732,11 @@ function goToServer(event,id){
     global.state.activeConv = undefined
     global.state.isServer = true
     loadServer(id)
-    goTo('sec-selector','serverSelector',{'category':'currentTab' ,'event': event},true,()=> goToChannel(global.state.currentServer.dirs.channels[0].id))
+    goTo('sec-selector','serverSelector',{'category':'currentTab' ,'event': event},true,()=> {
+        if (!restoreLastChannel()) {
+            goToChannel(global.state.currentServer.dirs.channels[0].id)
+        }
+    })
 
 }
 window.goToServer = goToServer

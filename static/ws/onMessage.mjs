@@ -90,6 +90,8 @@ export async function onMessage(event) {
                         setElement('global.user.status', message.content.content.status)
                     }
                     setElement('global.users['.concat(message.content.content.id,"].status"), message.content.content.status)
+                    // Re-render online friends list when any friend's status changes
+                    setElement('global.user.friends', global.user.friends)
                     break;
                 case "typing":
                     if(global.state.activeConv === message.content.conv){

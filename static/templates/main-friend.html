@@ -1,12 +1,15 @@
 <div class="search">
     <label style="width: 100%;">
-        <input type="text" placeholder="${_t('Rechercher')}">
+        <input type="text" placeholder="${_t('Rechercher')}" oninput="searchFriendsOnline(event)">
     </label>
     <div class="icon-wrapper">
         <img class="icon" src="/static/icons/material/search.svg"/>
     </div>
 </div>
-<div class="h2">${_t("EN LIGNE")} ─ 0</div>
+<div class="h2">${_t("EN LIGNE")} ─ ${Subscribe("global.user.friends", () => getOnlineFriends().length)}</div>
 <div class="scrollable">
-
+    ${Subscribe("global.user.friends", () => fillWith("friendCard", getOnlineFriends()), 'column')}
+</div>
+<div class="modale" id="more-friends">
+    <div class="item crit" onclick="friend('remove', global.state.modaltarget)">${_t("Retirer l'ami")}</div>
 </div>
