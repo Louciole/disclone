@@ -464,44 +464,68 @@ export function getRelevantUser(element){
 }
 window.getRelevantUser = getRelevantUser
 
+function sendCurrentMessage(target){
+    const onload = function(){
+        if (handleQuotaError(this)) return
+        const attachments = this.responseText
+        const currentDate = new Date();
+        const timestamp = currentDate.getTime();
+        // Use timestamp as temporary ID (server should return real ID, but for now...)
+        const tempId = Object.keys(global.convs[global.state.activeConv].messages || {}).length
+        const message = {"id":tempId, "sender": global.user.id,"place":global.state.activeConv, "body": target.value, "timestamp":timestamp, "reply":global.convs[global.state.activeConv].reply, "attachments":attachments}
+        handleMessageGroup(message)
+
+        addElement('global.convs['.concat(global.state.activeConv,'].messages'), message)
+        bumpConvActivity(global.state.activeConv, timestamp)
+
+        target.value = ''
+        resizeHeight(undefined, target)
+        updateSendButton(target)
+        cancelReply()
+        removeAllAttachments()
+    }
+
+    if (target.value.trim() !== '' || global.state?.currentMessageAttachments?.length>0){
+        // Send attachment objects with metadata for backend
+        const attachmentData = (global.state.currentMessageAttachments || []).map(a => ({
+            dataUrl: a.dataUrl,
+            filename: a.name,
+            mimeType: a.type
+        }))
+        xhr("send_message?conv=".concat(encodeURI(JSON.stringify({'id':global.state.activeConv})), "&content=", encodeURIComponent(target.value),"&reply=",global.convs[global.state.activeConv].reply), onload,"POST",true,{"attachments":attachmentData})
+    }
+}
+window.sendCurrentMessage = sendCurrentMessage
+
 function sendMessage(event){
-    if (event.key === "Enter" && !event.shiftKey){
-        const target = event.currentTarget
-
-        const onload = function(){
-            if (handleQuotaError(this)) return
-            const attachments = this.responseText
-            const currentDate = new Date();
-            const timestamp = currentDate.getTime();
-            // Use timestamp as temporary ID (server should return real ID, but for now...)
-            const tempId = Object.keys(global.convs[global.state.activeConv].messages || {}).length
-            const message = {"id":tempId, "sender": global.user.id,"place":global.state.activeConv, "body": target.value, "timestamp":timestamp, "reply":global.convs[global.state.activeConv].reply, "attachments":attachments}
-            handleMessageGroup(message)
-
-            addElement('global.convs['.concat(global.state.activeConv,'].messages'), message)
-            bumpConvActivity(global.state.activeConv, timestamp)
-
-            target.value = ''
-            resizeHeight(event, target)
-            cancelReply()
-            removeAllAttachments()
-        }
-
-        if (target.value.trim() !== '' || global.state?.currentMessageAttachments?.length>0){
-            // Send attachment objects with metadata for backend
-            const attachmentData = (global.state.currentMessageAttachments || []).map(a => ({
-                dataUrl: a.dataUrl,
-                filename: a.name,
-                mimeType: a.type
-            }))
-            xhr("send_message?conv=".concat(encodeURI(JSON.stringify({'id':global.state.activeConv})), "&content=", encodeURIComponent(target.value),"&reply=",global.convs[global.state.activeConv].reply), onload,"POST",true,{"attachments":attachmentData})
-        }
+    // On mobile, Enter inserts a newline; the send button is used to send instead
+    if (event.key === "Enter" && !event.shiftKey && !global.state.isMobile){
+        sendCurrentMessage(event.currentTarget)
         event.preventDefault()
     }else{
         sendTyping()
     }
 }
 window.sendMessage = sendMessage
+
+// Grey the mobile send button when there's nothing to send, accent it otherwise
+function updateSendButton(textarea){
+    if (!textarea){
+        // called from attachment handlers without a reference to the textarea
+        textarea = document.querySelector('.chat-input textarea')
+    }
+    const btn = textarea?.closest('.chat-input')?.querySelector('.send-btn')
+    if (!btn) return
+    const hasContent = textarea.value.trim() !== '' || global.state?.currentMessageAttachments?.length>0
+    btn.classList.toggle('active', hasContent)
+}
+window.updateSendButton = updateSendButton
+
+function sendButtonClick(event){
+    const textarea = event.currentTarget.closest('.chat-input').querySelector('textarea')
+    sendCurrentMessage(textarea)
+}
+window.sendButtonClick = sendButtonClick
 
 function resizeHeight(event, target = undefined){
     if (!target){

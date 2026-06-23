@@ -1090,6 +1090,26 @@ section{
     position: relative;
 }
 
+.chat-input .send-btn {
+    height: 2.2rem;
+    width: 2.2rem;
+    margin-top: 0;
+    border-radius: 50%;
+    background: var(--text2bis);
+    transition: background 0.15s ease;
+    flex-shrink: 0;
+}
+
+.chat-input .send-btn.active {
+    background: var(--accent);
+}
+
+.chat-input .send-btn img.icon {
+    height: 1.3rem;
+    /* render the icon white on top of the coloured circle */
+    filter: brightness(0) invert(1);
+}
+
 .message-group{
     display: flex;
     min-height: 2rem;

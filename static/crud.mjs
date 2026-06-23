@@ -808,6 +808,7 @@ function renderAttachmentPreviews() {
     const box = document.getElementById("imageBox")
     const container = box.querySelector('.attachments-container')
     if (!container) return
+    if (window.updateSendButton) updateSendButton()
 
     container.innerHTML = ''
 
@@ -893,6 +894,7 @@ function removeAllAttachments() {
     const box = document.getElementById("imageBox")
     box.style.display = "none"
     global.state.currentMessageAttachments = []
+    if (window.updateSendButton) updateSendButton()
 }
 window.removeAllAttachments = removeAllAttachments
 
