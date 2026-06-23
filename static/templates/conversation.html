@@ -1,4 +1,4 @@
-<div class="neutral" ondragover="event.preventDefault();event.currentTarget.classList.add('dragging')">
+<div class="neutral" ondragover="if(!global.state.isMobile){event.preventDefault();event.currentTarget.classList.add('dragging')}">
 
     <div class="selected-info">
         <div class="title">
@@ -162,7 +162,7 @@
         <div id="createConvBtn" class="blue btn disabled" onclick="createConv(event)">${_t("Créer un MP")}</div>
     </div>
 
-    <div id="upload-wrapper" ondragleave="event.preventDefault();console.log(event.currentTarget.parentElement); event.currentTarget.parentElement.classList.remove('dragging')" ondrop="dropFileMessage(event)">
+    <div id="upload-wrapper" ondragleave="if(!global.state.isMobile){event.preventDefault();event.currentTarget.parentElement.classList.remove('dragging')}" ondrop="if(!global.state.isMobile)dropFileMessage(event)">
         <div>
             <div>
                 <h2>${_t("Uploader vers @")}${Subscribe("global.convs["+global.state.activeConv+"].name", ()=>{return getConvName(global.convs[global.state.activeConv], true)})}</h2>

@@ -55,6 +55,13 @@ section{
     user-select: none;
 }
 
+#app-track{
+    display: flex;
+    flex: 1 1 auto;
+    height: 100%;
+    min-width: 0;
+}
+
 #content{
     background: var(--bg);
     height: 100%;
@@ -3570,13 +3577,30 @@ img[src="/static/attachments/null"]{
     color: var(--text2);
 }
 
-.mobile #content{
-    display: none;
-    width: 100vw;
+/* Mobile: the two "screens" become a single horizontal track that slides.
+   Pane A = server rail (70px) + channel/conv list (rest) = 100vw.
+   Pane B = content = 100vw. --pane-x: 0 shows A, -100vw shows B. */
+.mobile #app-track{
+    width: 200vw;
+    flex: none;
+    transform: translateX(var(--pane-x, 0));
+    transition: transform .25s ease;
+    will-change: transform;
 }
-
+.mobile.pane-dragging #app-track{
+    transition: none; /* follow the finger while dragging */
+}
+.mobile #main-selector{
+    flex: 0 0 70px;
+}
 .mobile #sec-column{
-    width: 100%;
+    flex: 0 0 calc(100vw - 70px);
+    width: calc(100vw - 70px);
+}
+.mobile #content{
+    display: flex;
+    flex: 0 0 100vw;
+    width: 100vw;
 }
 
 .serveur img {

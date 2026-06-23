@@ -24,6 +24,7 @@
     <script type="module" src="/static/controls.mjs"></script>
     <script type="module" src="/static/misc.mjs"></script>
     <script type="module" src="/static/discover.mjs"></script>
+    <script type="module" src="/static/swipe.mjs"></script>
     <link href="/static/style.css" rel="stylesheet">
     <link href="/static/workspaces/spreadsheet.css" rel="stylesheet">
 </head>
@@ -32,6 +33,7 @@
         <h1>Mycelium is loading</h1>
         <div class="spinner"></div>
     </div>
+    <div id="app-track">
     <section id="main-selector">
         <div class="container">
             <div id="logo" class="item selected" data-haptic="selection" onclick="global.state.isServer = false;global.state.activeConv=undefined; goTo('sec-selector','privateMessage',{'category':'currentTab' ,'event': event},true,goTo('content','friends',undefined,true,()=>{goTo('friends-block','main-friend')}))">
@@ -62,6 +64,7 @@
     <section id="content">
 
     </section>
+    </div>
     <div id="notif" class="a🪟2🥹" style="display: none">
     </div>
 

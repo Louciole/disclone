@@ -231,25 +231,17 @@ function goToConv(convId){
 }
 window.goToConv = goToConv
 
+// Slide the mobile track to the content pane (section 3).
 function mobileDisplayContent(){
-    const content = document.getElementById('content')
-    const secColumn = document.getElementById('sec-column')
-    const maincolumn = document.getElementById('main-selector')
-
-    content.style.display="flex"
-    secColumn.style.display="none"
-    maincolumn.style.display="none"
+    document.body.style.setProperty('--pane-x', '-100vw')
+    document.body.dataset.pane = 'content'
 }
 window.mobileDisplayContent = mobileDisplayContent
 
+// Slide the mobile track back to the selectors pane (sections 1 + 2).
 function mobileHideContent(){
-    const content = document.getElementById('content')
-    const secColumn = document.getElementById('sec-column')
-    const maincolumn = document.getElementById('main-selector')
-
-    content.style.display="none"
-    secColumn.style.display="flex"
-    maincolumn.style.display="flex"
+    document.body.style.setProperty('--pane-x', '0px')
+    document.body.dataset.pane = 'selectors'
 }
 window.mobileHideContent = mobileHideContent
 
