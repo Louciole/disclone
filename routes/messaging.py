@@ -504,7 +504,10 @@ def _resolveMessagePlace(self, uid, conv):
 
 def notifyConvMessage(self,uid ,conv, message):
     members = self.db.getAll("accessconversation", conv["id"], "conversation")
-    sender_name = self.db.getSomething("mycelium_account", uid).get("display", "User")
+    sender = self.db.getSomething("mycelium_account", uid)
+    sender_name = sender.get("display", "User") if sender else "User"
+    sender_pfp = sender.get("pfp") if sender else None
+    avatar_url = f"https://mycelium.carbonlab.dev/static/attachments/{sender_pfp}" if sender_pfp else ""
 
     for user in members:
         if user["account"] != uid:
@@ -514,7 +517,7 @@ def notifyConvMessage(self,uid ,conv, message):
             self.sendPushNotification(user["account"], {
                 "title": sender_name,
                 "body": message.get("body", "New message"),
-                "data": {"type": "message", "convId": str(conv["id"])}
+                "data": {"type": "message", "convId": str(conv["id"]), "avatarUrl": avatar_url}
             })
 
             notif  = self.db.getFilters("offline_notifs", ["account", "=", user['account'], "and", "conversation", "=", conv["id"]])

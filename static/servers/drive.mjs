@@ -398,9 +398,14 @@ function downloadDriveFile(file_id, filename) {
     // filename is optional — resolve from loaded state so callers don't have to
     // pass it through inline HTML (avoids breakage on names with quotes).
     if (!filename) filename = findDriveFile(file_id)?.filename || 'download'
-    // Create a temporary link to download the file
+    const url = `/download_drive_file?file_id=${file_id}`
+    // Capacitor WebView silently ignores the `download` attribute; use blob fetch instead.
+    if (window.Capacitor?.isNativePlatform?.()) {
+        nativeBlobDownload(url, filename)
+        return
+    }
     const link = document.createElement('a')
-    link.href = `/download_drive_file?file_id=${file_id}`
+    link.href = url
     link.download = filename
     document.body.appendChild(link)
     link.click()

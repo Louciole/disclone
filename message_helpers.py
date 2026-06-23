@@ -60,6 +60,8 @@ def notifyChannelMesage(self, uid, channel, message, channel_type="textual"):
 
         sender = self.db.getSomething("mycelium_account", uid)
         sender_name = sender.get("display", "Someone") if sender else "Someone"
+        sender_pfp = sender.get("pfp") if sender else None
+        avatar_url = f"https://mycelium.carbonlab.dev/static/attachments/{sender_pfp}" if sender_pfp else ""
 
         # Offline notifs only for mention targets
         for target_uid in mention_targets:
@@ -81,6 +83,7 @@ def notifyChannelMesage(self, uid, channel, message, channel_type="textual"):
                     "convId": str(channel["id"]),
                     "serverId": str(server_id),
                     "groupTitle": channel.get("name", "channel"),
+                    "avatarUrl": avatar_url,
                 }
             })
 

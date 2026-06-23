@@ -78,4 +78,8 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Required on Android 13+ (API 33) to display notifications at runtime. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Required for DownloadManager to write to public Downloads on Android ≤ 9 (API 28).
+         Not needed on Android 10+ where DownloadManager uses scoped storage internally. -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
 </manifest>

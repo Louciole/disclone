@@ -5,6 +5,8 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Build;
 import android.service.notification.StatusBarNotification;
@@ -13,7 +15,9 @@ import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.app.Person;
 import androidx.core.app.RemoteInput;
+import androidx.core.graphics.drawable.IconCompat;
 
+import java.net.URL;
 import java.util.Map;
 
 /**
@@ -72,7 +76,7 @@ final class NotificationHelper {
                 style.setConversationTitle(groupTitle);
                 style.setGroupConversation(true);
             }
-            Person sender = new Person.Builder().setName(title).setKey("peer:" + convId).build();
+            Person sender = buildSender(title, convId, data.get("avatarUrl"));
             style.addMessage(body, System.currentTimeMillis(), sender);
             b.setStyle(style);
         } else {
@@ -112,6 +116,17 @@ final class NotificationHelper {
                 .setOnlyAlertOnce(true)
                 .setSubText(ctx.getString(R.string.notif_reply_failed));
         notify(ctx, notifId, b);
+    }
+
+    private static Person buildSender(String name, String convId, String avatarUrl) {
+        Person.Builder builder = new Person.Builder().setName(name).setKey("peer:" + convId);
+        if (avatarUrl != null && !avatarUrl.isEmpty()) {
+            try {
+                Bitmap bmp = BitmapFactory.decodeStream(new URL(avatarUrl).openStream());
+                if (bmp != null) builder.setIcon(IconCompat.createWithBitmap(bmp));
+            } catch (Exception ignored) {}
+        }
+        return builder.build();
     }
 
     // ----------------------------------------------------------------- internals

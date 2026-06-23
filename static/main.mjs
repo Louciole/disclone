@@ -197,6 +197,63 @@ function isImageAttachment(attachment) {
 }
 window.isImageAttachment = isImageAttachment
 
+/**
+ * Download a file on native Capacitor (Android/iOS).
+ * The `download` attribute is silently ignored by both WebViews, so we fetch
+ * the file as a Blob and trigger the save via a temporary blob URL instead.
+ * On plain browsers the onclick is a no-op and the default <a download> runs.
+ */
+async function nativeBlobDownload(url, filename) {
+    const absoluteUrl = new URL(url, location.href).href;
+
+    // Android: delegate to the native DownloadManager plugin.
+    // The plugin reads session cookies from the WebView's own CookieManager
+    // (including HttpOnly cookies) and passes them to DownloadManager, which
+    // downloads in the background and shows an OS notification — same UX as Discord.
+    if (window.Capacitor?.getPlatform() === 'android') {
+        try {
+            await window.Capacitor.Plugins.Download.downloadFile({ url: absoluteUrl, filename });
+        } catch (e) {
+            console.error('[nativeBlobDownload] Android plugin failed:', e);
+            window.open(absoluteUrl, '_blank');
+        }
+        return;
+    }
+
+    // iOS: fetch the blob in JS and hand it to the native share sheet (Files, AirDrop, …).
+    try {
+        const response = await fetch(url, { credentials: 'include' });
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        const blob = await response.blob();
+        const file = new File([blob], filename, { type: blob.type || 'application/octet-stream' });
+        if (navigator.canShare?.({ files: [file] })) {
+            await navigator.share({ files: [file] });
+            return;
+        }
+        // Fallback for very old WebView versions that predate Web Share Level 2
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+    } catch (e) {
+        if (e.name === 'AbortError') return; // user dismissed share sheet — not an error
+        console.error('[nativeBlobDownload] iOS failed:', e);
+        window.open(absoluteUrl, '_blank');
+    }
+}
+window.nativeBlobDownload = nativeBlobDownload
+
+async function downloadAttachment(url, filename, event) {
+    if (!window.Capacitor?.isNativePlatform?.()) return;
+    event.preventDefault();
+    await nativeBlobDownload(url, filename);
+}
+window.downloadAttachment = downloadAttachment
+
 function loadEmojis(){
 
     global.state.emojis = []
