@@ -6779,3 +6779,27 @@ span.progress-bar {
     background: color-mix(in srgb, var(--accent) 10%, transparent);
     border-radius: 8px;
 }
+
+/* ── Offline mode ── */
+#offline-banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100000;
+    background: #b4541e;
+    color: #fff;
+    text-align: center;
+    font-size: 13px;
+    line-height: 1.4;
+    padding: 4px 12px;
+    pointer-events: none;
+}
+/* Dim and disable actions that need the network while offline. */
+body.offline .chat-input,
+body.offline .send-btn,
+body.offline .call-action,
+body.offline [data-needs-network] {
+    opacity: 0.5;
+    pointer-events: none;
+}

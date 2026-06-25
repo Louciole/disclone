@@ -27,6 +27,26 @@
     <script type="module" src="/static/swipe.mjs"></script>
     <link href="/static/style.css" rel="stylesheet">
     <link href="/static/workspaces/spreadsheet.css" rel="stylesheet">
+    <script>
+        // Register the asset service worker (offline shell + self-updating cache).
+        // Skipped on localhost so it never interferes with the dev edit-reload loop.
+        if ('serviceWorker' in navigator && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw', { scope: '/' }).then((reg) => {
+                    reg.addEventListener('updatefound', () => {
+                        const w = reg.installing;
+                        if (!w) return;
+                        w.addEventListener('statechange', () => {
+                            if (w.state === 'installed' && navigator.serviceWorker.controller) {
+                                // A new version is cached; it activates on next load.
+                                console.log('[sw] update ready — reload to apply');
+                            }
+                        });
+                    });
+                }).catch((e) => console.warn('[sw] registration failed', e));
+            });
+        }
+    </script>
 </head>
 <body>
     <div id="loading-screen">

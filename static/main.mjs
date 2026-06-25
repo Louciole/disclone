@@ -10,9 +10,11 @@ import {} from "/static/avatar.mjs"; // DO NOT REMOVE
 import {} from "/static/imageEditor.mjs"; // Image crop/resize editor
 import { initDrag } from "./drag.mjs";
 import emojis from "/static/emojis.mjs";
-import {addElement, deleteElement, pushElement, setElement} from "/static/framework/vesta.mjs";
+import {addElement, deleteElement, pushElement, setElement, updateElement} from "/static/framework/vesta.mjs";
 import {xhr} from "./framework/templating.mjs";
 import {initTranslations} from "./translations/translation.mjs";
+import {initConnectivity} from "/static/framework/connectivity.mjs";
+import {loadSnapshot, saveSnapshot} from "/static/framework/persistence.mjs";
 import CallManager from "/static/webrtc.mjs";
 import {} from "/static/constants.mjs"; // Expose and parseJsonArray globally
 import {} from "/static/mentions.mjs"; // Mention autocomplete system
@@ -63,13 +65,13 @@ const onInvitationsLoaded = function(){
     loadUsers(usersToload)
 }
 
-export function postWS(){
-    const userList = JSON.stringify(Object.keys(global.users).map(cle => parseInt(cle)))
-    xhr("subscribe?client_id="+global.state.clientID+"&cat=user&items="+userList,undefined)
+// markReady reveals the UI. It is safe to call WITHOUT a websocket (offline
+// boot), and is idempotent — postWS and the offline path both call it.
+export function markReady(){
+    if (global.state._ready) return
+    global.state._ready = true
 
-    global.state.callManager = new CallManager();
-
-    console.log("Client ready", global)
+    console.log("UI ready", global)
     hideLoadingScreen()
 
     // URL routing: restore view from hash on initial load, handle browser back/forward
@@ -81,6 +83,17 @@ export function postWS(){
 
     // Hide native splash screen once the app is ready
     hideSplash();
+}
+window.markReady = markReady
+
+// postWS runs only once the websocket handshake has completed (online).
+export function postWS(){
+    const userList = JSON.stringify(Object.keys(global.users).map(cle => parseInt(cle)))
+    xhr("subscribe?client_id="+global.state.clientID+"&cat=user&items="+userList,undefined)
+
+    global.state.callManager = new CallManager();
+
+    markReady();
 
     // Register for push notifications now that the user is authenticated
     // (requires google-services.json / Firebase to be configured)
@@ -778,6 +791,18 @@ window.deleteServer = deleteServer
 
 initNavigation()
 printWatermark("Mycelium@carbonlab.dev", "https://github.com/Louciole/mycelium")
+
+// ── Connectivity + persistence ──
+// One way of working for online and offline: render whatever was cached, then
+// always attempt the network refresh. Online, the refresh overwrites the cache
+// paint; offline, those requests fail harmlessly and the cached state stands.
+// Must run AFTER initNavigation() (which sets window.global).
+initConnectivity()
+// Snapshot the navigable state when the app is hidden/closed (covers mobile
+// backgrounding). Bounded: one record, overwritten.
+document.addEventListener('visibilitychange', () => { if (document.hidden) saveSnapshot() })
+window.addEventListener('pagehide', saveSnapshot)
+
 await initTranslations()
 goTo('content',"friends",undefined,true,()=>{goTo('friends-block','main-friend')})
 loadTemplate("profile-info.html")
@@ -785,6 +810,22 @@ loadTemplate("create-poll.html")
 loadTemplate("create-block.html")
 loadTemplate("create-forum-post.html")
 loadTemplate("poll-voters.html")
+
+// Local-first paint: rehydrate global from the last snapshot so a cold start
+// (notably offline) shows servers/convs immediately, before any network call.
+const _snapshot = await loadSnapshot()
+if (_snapshot) {
+    for (const k in _snapshot) global[k] = _snapshot[k]
+    if (global.user?.id) global.users[global.user.id] = global.user
+    setElement('global.servers', global.servers || {})
+    updateElement('global.convs')
+    updateElement('global.privateConvs')
+    markReady()
+    initWebSockets()   // idempotent; reconnects when the network returns
+}
+
+// Network bootstrap (always): refreshes the cache paint when online, fails
+// silently when offline.
 loadUser()
 xhr("get_blocked", onBlockedLoaded)
 xhr("get_friends", onFriendsLoaded)

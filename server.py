@@ -126,6 +126,19 @@ class Mycelium(ForumMixin, Server):
     def privacy(self):
         return self.file(PATH + "/static/home/privacy.html")
 
+    @Server.expose
+    def sw(self):
+        # Service worker served at root so its scope covers '/channels' (the app
+        # entry), not just '/static'. no-cache so version bumps propagate fast.
+        content = self.file(PATH + "/static/sw.js", responseFile=False)
+        self.response.type = "application/javascript"
+        self.response.headers = [
+            ('Content-Type', 'application/javascript'),
+            ('Service-Worker-Allowed', '/'),
+            ('Cache-Control', 'no-cache'),
+        ]
+        return content
+
 
     @Server.expose
     def channels(self, uid="me"):

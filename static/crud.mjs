@@ -120,6 +120,10 @@ export function loadUsers(keys){
 window.loadUsers = loadUsers
 
 export function loadConv(key){
+    // Offline: the snapshot already holds this conv's processed messageGroups.
+    // Skip the (synchronous) fetch so it can't throw or overwrite cached state.
+    if (global.state.offline) return
+
     const onload = function() {
     };
 
@@ -159,6 +163,10 @@ export function loadConv(key){
 }
 
 export function loadChan(key){
+    // Offline: keep the snapshotted channel state; the fetch+reset below would
+    // wipe it and throw on a synchronous network error.
+    if (global.state.offline) return
+
     const onload = function() {
     };
 
@@ -207,6 +215,12 @@ export function loadNote(key){
         })
     };
 
+    // Offline: render the snapshotted note (if any) without fetching.
+    if (global.state.offline) {
+        if (global.notes[key]) onload()
+        return
+    }
+
     const request = xhr("get_note_content?channel_id="+JSON.stringify(key), onload, "GET",false)
     const elements = JSON.parse(request.responseText)
 
@@ -226,6 +240,12 @@ export function loadNote(key){
 }
 
 export function loadForum(key){
+    // Offline: show the snapshotted forum (if any) without fetching.
+    if (global.state.offline) {
+        if (global.forums?.[key]) goTo('content','server-forum-content',undefined,false)
+        return
+    }
+
     const request = xhr("get_forum_content?channel_id="+JSON.stringify(key), function(){}, "GET", false)
     const elements = JSON.parse(request.responseText)
 
@@ -248,6 +268,15 @@ export function loadForum(key){
 }
 
 export function loadForumPost(postId){
+    // Offline: reopen the snapshotted post (if any) without fetching.
+    if (global.state.offline) {
+        if (global.convs?.[postId]?.messageGroups) {
+            global.state.activeConv = postId
+            goTo('content','server-forum-post',undefined,false)
+        }
+        return
+    }
+
     const request = xhr("get_forum_post?post_id="+JSON.stringify(postId), function(){}, "GET", false)
     const elements = JSON.parse(request.responseText)
 
