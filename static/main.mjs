@@ -14,7 +14,7 @@ import {addElement, deleteElement, pushElement, setElement, updateElement} from 
 import {xhr} from "./framework/templating.mjs";
 import {initTranslations} from "./translations/translation.mjs";
 import {initConnectivity} from "/static/framework/connectivity.mjs";
-import {loadSnapshot, saveSnapshot} from "/static/framework/persistence.mjs";
+import {loadSnapshot, saveSnapshot, configurePersistence} from "/static/framework/persistence.mjs";
 import CallManager from "/static/webrtc.mjs";
 import {} from "/static/constants.mjs"; // Expose and parseJsonArray globally
 import {} from "/static/mentions.mjs"; // Mention autocomplete system
@@ -797,7 +797,13 @@ printWatermark("Mycelium@carbonlab.dev", "https://github.com/Louciole/mycelium")
 // always attempt the network refresh. Online, the refresh overwrites the cache
 // paint; offline, those requests fail harmlessly and the cached state stands.
 // Must run AFTER initNavigation() (which sets window.global).
-initConnectivity()
+// App-specific config for the generic framework persistence engine: which
+// global subtrees to snapshot, and the IndexedDB name.
+configurePersistence({
+    keys: ['user', 'users', 'servers', 'convs', 'privateConvs', 'notes', 'forums'],
+    dbName: 'mycelium',
+})
+initConnectivity({ bannerText: 'Hors-ligne — données enregistrées' })
 // Snapshot the navigable state when the app is hidden/closed (covers mobile
 // backgrounding). Bounded: one record, overwritten.
 document.addEventListener('visibilitychange', () => { if (document.hidden) saveSnapshot() })
